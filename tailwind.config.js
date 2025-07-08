@@ -4,11 +4,11 @@ module.exports = {
   ],
   theme: {
     extend: {
-      colors: {
-        'primary-btn': '#2F5D62',
-      },
       fontFamily: {
-        serifpro: ['"Source Serif Pro"', 'serif'],
+        serifpro: ['var(--font-ibm-plex-serif)', 'serif'],
+        sans: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        heading: ['IBM Plex Serif', 'serif'],
+        subheading: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
     },
   },

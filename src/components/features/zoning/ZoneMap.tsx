@@ -175,7 +175,7 @@ export default function ZoneMap() {
         mapRef.current = null;
       }
     };
-  }, []); // selectedLot not used in effect, so leave dependency array empty
+  }, []); 
 
 
   return (
