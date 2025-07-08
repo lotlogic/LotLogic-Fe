@@ -3,7 +3,14 @@ module.exports = {
     "./src/**/*.{js,ts,jsx,tsx,mdx}", // <-- Required for App Router
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'primary-btn': '#2F5D62',
+      },
+      fontFamily: {
+        serifpro: ['"Source Serif Pro"', 'serif'],
+      },
+    },
   },
   plugins: [],
 }

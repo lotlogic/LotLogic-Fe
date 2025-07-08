@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+.mapboxgl-ctrl-attrib {
+  background-color: transparent !important;
+  /* color: #888 !important; */
+  font-size: 12px;
+}
+
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

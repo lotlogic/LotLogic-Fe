@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🧱 LotLogic Frontend
 
-## Getting Started
+A modern frontend for visualizing zoning and lot data using Mapbox, built with **Next.js 15**, **Tailwind CSS 4**, **React 19**, and **TanStack Query**.
 
-First, run the development server:
+---
+
+## 🚀 Features
+
+- Interactive Mapbox map for zoning and lot visualization
+- Clickable lots with detailed sidebar info (block, section, zoning, overlays, etc.)
+- Dynamic coloring for zoning, overlays, and water lots
+- Responsive, modern UI with custom font and brand button color
+- Sidebar with tabbed details (Lot Details, Zoning Info)
+- Zoom to selected lot
+- Clean, accessible design
+
+---
+
+## 🛠️ Tech Stack
+
+- **Next.js 15 (App Router)**
+- **TailwindCSS 4** (with custom font and color)
+- **Mapbox GL JS**
+- **React 19**
+- **TanStack React Query**
+- **Zustand (State Management)**
+- **Zod + React Hook Form (Validation & Forms)**
+- **Lucide React (Icons)**
+
+---
+
+## 📦 Installation
+
+Make sure you have `pnpm` installed.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🏃‍♂️ Running the Project
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🌍 Mapbox Setup
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+You need a Mapbox access token. Create a `.env.local` file in the project root:
 
-## Deploy on Vercel
+```
+NEXT_PUBLIC_MAPBOX_TOKEN=your_mapbox_token_here
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🖼️ Main Component: ZoneMap
+
+The core of the app is the `ZoneMap` component:
+- Renders a Mapbox map with a custom vector tileset for blocks/lots
+- Click a lot to open a sidebar with:
+  - Identification, location, measurements, zoning info, and coordinates
+  - Tabbed interface for details and zoning
+  - "Zoom to Lot" button
+- Custom coloring for zoning, overlays, and water
+- Uses Lucide icons for UI
+
+---
+
+## 🎨 Customization
+
+- **Font:** Uses [Source Serif Pro](https://fonts.google.com/specimen/Source+Serif+Pro) via Tailwind (`font-serifpro`)
+- **Button Color:** Brand color `#2F5D62` via Tailwind (`bg-primary-btn`)
+- **Map Style:** Mapbox Streets v12, with overlays for zoning and masking
+
+---
+
+## 📝 Scripts
+
+- `pnpm dev` — Start development server
+- `pnpm build` — Build for production
+- `pnpm start` — Start production server
+- `pnpm lint` — Lint code
+
+---
+
+## 📁 Project Structure
+
+- `src/components/features/zoning/ZoneMap.tsx` — Main interactive map and sidebar
+- `src/app/globals.css` — Global styles and font imports
+- `tailwind.config.js` — Tailwind theme customization
+
+---
+
+## 📄 License
+
+MIT
