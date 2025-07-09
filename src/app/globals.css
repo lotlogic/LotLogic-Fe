@@ -29,5 +29,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: IBM Plex Serif, DM Sans, sans-serif;
+  font-family: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-ibm-plex-serif), serif;
 }

@@ -5,7 +5,7 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        serifpro: ['var(--font-ibm-plex-serif)', 'serif'],
+        serifpro: ['var(--font-ibm-plex-serif)', 'DM Sans'],
         sans: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         heading: ['IBM Plex Serif', 'serif'],
         subheading: ['DM Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
