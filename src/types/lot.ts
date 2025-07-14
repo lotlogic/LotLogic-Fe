@@ -1,10 +1,12 @@
 import { ReactNode } from 'react';
 
-export type LotSidebarProps = {
+export interface LotSidebarProps {
   open: boolean;
   onClose: () => void;
   lot: LotData;
-};
+  geometry?: any; 
+  onSelectFloorPlan?: (data: { url: string; coordinates: [[number, number], [number, number], [number, number], [number, number]] }) => void;
+}
 
 export type CollapsibleSectionProps = {
   title: string;

@@ -5,33 +5,60 @@ import { LotSidebarProps } from "@/types/lot";
 import { getZoningColor } from "@/lib/utils/zoning";
 import { SummaryView } from "./SummaryView";
 import { DetailedRulesView } from "./DetailedRulesView";
-import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter"; 
+import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
 import { HouseDesignList } from "../facades/HouseDesignList";
+import { BedDouble, Bath, Car, Building2, Star, Funnel } from "lucide-react";
 
-export function LotSidebar({ open, onClose, lot }: LotSidebarProps) {
+
+interface HouseDesignItem {
+    id: string;
+    title: string;
+    area: string;
+    image: string;
+    images: { src: string; faced: string; }[];
+    bedrooms: number;
+    bathrooms: number;
+    cars: number;
+    storeys: number;
+    isFavorite: boolean;
+    floorPlanImage?: string;
+}
+
+export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: LotSidebarProps) {
     const [showDetailedRules, setShowDetailedRules] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
     const [showHouseDesigns, setShowHouseDesigns] = React.useState(false);
-  
+
+
+    // Filter states
     const [bedroom, setBedroom] = React.useState<[number, number]>([2, 4]);
     const [bathroom, setBathroom] = React.useState<[number, number]>([2, 4]);
     const [cars, setCars] = React.useState<[number, number]>([2, 4]);
     const [storeys, setStoreys] = React.useState<[number, number]>([2, 4]);
-  
+
+
+    const [selectedHouseDesign, setSelectedHouseDesign] = React.useState<HouseDesignItem | null>(null);
+    const [selectedImageIdx, setSelectedImageIdx] = React.useState(0);
+
     if (!open || !lot) return null;
-  
+
     const zoningColor = getZoningColor(lot.zoning);
     const zoningText = lot.zoning || '--';
-  
+
     const handleShowHouseDesign = () => {
       const filterPayload = { bedroom, bathroom, cars, storeys };
       console.log("Filter Payload:", filterPayload);
       setShowHouseDesigns(true);
       setShowFilter(false);
+      setSelectedHouseDesign(null);
     };
 
     const handleBackClick = () => {
-      if (showHouseDesigns) {
+      if (selectedHouseDesign) {
+        setSelectedHouseDesign(null);
+        setSelectedImageIdx(0);
+        setShowHouseDesigns(true);
+      } else if (showHouseDesigns) {
         setShowHouseDesigns(false);
         setShowFilter(true);
       } else if (showFilter) {
@@ -40,19 +67,124 @@ export function LotSidebar({ open, onClose, lot }: LotSidebarProps) {
         setShowDetailedRules(false);
       }
     };
-  
-    const headerTitle = showHouseDesigns 
-      ? 'House Designs' 
-      : showDetailedRules 
-        ? 'Planning Rules' 
-        : 'Build Your Site';
-        
-    const showBackArrow = showDetailedRules || showFilter || showHouseDesigns;
-  
+
+    // Callback when a house design item is clicked in HouseDesignList
+    const handleDesignClick = (design: HouseDesignItem | null) => {
+        if (!design) {
+            // Clear overlay and selection when collapsing
+            if (onSelectFloorPlan) onSelectFloorPlan(undefined as any); 
+            setSelectedHouseDesign(null);
+            return;
+        }
+        let coordinates: [[number, number], [number, number], [number, number], [number, number]] | null = null;
+        if (geometry && geometry.type === 'Polygon' && Array.isArray(geometry.coordinates)) {
+            const ring = geometry.coordinates[0];
+            if (ring && ring.length >= 4) {
+                coordinates = [ring[0], ring[1], ring[2], ring[3]] as [[number, number], [number, number], [number, number], [number, number]];
+            }
+        }
+        if (onSelectFloorPlan && design.floorPlanImage && coordinates) {
+            onSelectFloorPlan({
+                url: design.floorPlanImage,
+                coordinates,
+            });
+        }
+        setSelectedHouseDesign(design);
+        setSelectedImageIdx(0);
+        setShowHouseDesigns(false);
+    };
+
+    // Function to render the detailed view of a single house design
+    const renderDetailedHouseDesign = (design: HouseDesignItem) => {
+      if (!design) return null;
+      const images = design.images;
+      const mainImage = images[selectedImageIdx]?.src;
+      const facedOption = images[selectedImageIdx]?.faced;
+
+
+      return (
+        <div
+          key={design.id}
+          className="rounded-2xl border border-gray-200 bg-[#eaf3f2] p-4"
+        >
+          <div className="flex gap-4">
+            <img src={images[0].src} alt="House" className="w-24 h-24 rounded-lg object-cover" />
+            <div className="flex-1">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-bold text-lg">{design.title}</div>
+                  <div className="text-gray-600 text-sm">Single Storey &nbsp; Area: {design.area} ft</div>
+                </div>
+                <Star
+                    className={`h-6 w-6 ${
+                      design.isFavorite ? 'text-[#2F5D62] fill-[#2F5D62]' : 'text-gray-400'
+                    }`}
+
+                />
+              </div>
+              <div className="flex gap-4 mt-2 text-gray-700">
+                <span className="flex items-center gap-1"><BedDouble className="h-5 w-5" />{design.bedrooms}</span>
+                <span className="flex items-center gap-1"><Bath className="h-5 w-5" />{design.bathrooms}</span>
+                <span className="flex items-center gap-1"><Car className="h-5 w-5" />{design.cars}</span>
+                <span className="flex items-center gap-1"><Building2 className="h-5 w-5" />{design.storeys}</span>
+              </div>
+              <div className="mt-2 text-gray-700 text-sm">
+                Faced Option: <span className="font-semibold text-[#2F5D62]">{facedOption}</span>
+              </div>
+            </div>
+          </div>
+          {/* Main image */}
+          <img src={mainImage} alt="Main" className="w-full h-56 rounded-xl object-cover mt-4" />
+          {/* Thumbnails and Enquire button  */}
+          <div className="flex items-center justify-between gap-2 mt-2">
+            <div className="flex gap-2">
+              {images.map((img, imgIdx) => (
+                <button
+                  key={img.src}
+                  onClick={() => setSelectedImageIdx(imgIdx)}
+                  className={`w-14 h-14 rounded object-cover border-2 ${selectedImageIdx === imgIdx ? 'border-[#2F5D62]' : 'border-transparent'}`}
+                  style={{ padding: 0, background: 'none' }}
+                  tabIndex={0}
+                  aria-label={`Select image ${imgIdx + 1}`}
+                >
+                  <img src={img.src} className="w-14 h-14 rounded object-cover" alt={`Thumbnail ${imgIdx + 1}`} />
+                </button>
+              ))}
+            </div>
+            <Button
+              className="bg-[#2F5D62] text-white px-9 py-3 rounded-lg font-medium"
+              onClick={() => console.log('Enquire Now for', design.title)}
+            >
+              Enquire Now
+            </Button>
+          </div>
+          {/* If you have a floor plan image, render it here */}
+          {/* {design.floorPlanImage && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Floor Plan</h3>
+              <img src={design.floorPlanImage} alt={`${design.title} Floor Plan`} className="w-full rounded-xl object-contain" />
+            </div>
+          )} */}
+        </div>
+      );
+    };
+
+
+    const headerTitle = selectedHouseDesign
+      ? selectedHouseDesign.title
+      : showHouseDesigns
+        ? 'House Designs'
+        : showDetailedRules
+          ? 'Planning Rules'
+          : 'Build Your Site';
+
+    const showBackArrow = showDetailedRules || showFilter || showHouseDesigns || selectedHouseDesign;
+
     return (
-      <aside className="fixed top-[80px] left-[20px] h-[calc(100vh-100px)] w-[550px] max-w-full z-50 bg-white shadow-2xl rounded-xl flex flex-col font-serifpro">
+      <aside className="fixed top-[80px] left-[20px] h-[calc(100vh-100px)] w-[550px] max-w-full z-50 bg-white shadow-2xl rounded-2xl border border-gray-200 flex flex-col font-serifpro">
         {/* Header */}
-        <div className="flex items-center p-6 pb-4 border-b border-gray-100 sticky top-0 z-10 bg-white">
+
+        <div className="flex items-start p-6 pb-4 border-b border-gray-200 sticky top-0 z-10 bg-white rounded-t-2xl">
           {showBackArrow && (
             <button
               onClick={handleBackClick}
@@ -67,8 +199,12 @@ export function LotSidebar({ open, onClose, lot }: LotSidebarProps) {
               {headerTitle}
             </h2>
             <div className="text-gray-600 mt-1 text-base font-normal">
-              Lot ID: {lot.id || '--'}, {lot.suburb || '--'} | {lot.address || '--'}
-              {(showDetailedRules || showFilter || showHouseDesigns) && (
+              {selectedHouseDesign ? (
+                  `Lot ID: ${lot.id || '--'}, ${lot.suburb || '--'} | ${lot.address || '--'}`
+              ) : (
+                  `Lot ID: ${lot.id || '--'}, ${lot.suburb || '--'} | ${lot.address || '--'}`
+              )}
+              {(showDetailedRules || showFilter || showHouseDesigns || selectedHouseDesign) && (
                   <div className="mt-2 flex flex-wrap items-center text-xs font-normal">
                       {lot.size && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md flex items-center text-gray-700"><Diamond className="h-3 w-3 mr-1" />{lot.size}m²</span>}
                       {lot.type && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md text-gray-700">{lot.type}</span>}
@@ -86,18 +222,21 @@ export function LotSidebar({ open, onClose, lot }: LotSidebarProps) {
             <X className="h-6 w-6" />
           </button>
         </div>
-  
+
         {/* Main content area */}
         <div className="flex-grow overflow-y-auto">
-          {showHouseDesigns ? (
+          {selectedHouseDesign ? ( // Render detailed house view if a design is selected
+            renderDetailedHouseDesign(selectedHouseDesign)
+          ) : showHouseDesigns ? ( // Render list of house designs
             <HouseDesignList
               filter={{ bedroom, bathroom, cars, storeys }}
               onShowFilter={() => {
                 setShowHouseDesigns(false);
                 setShowFilter(true);
               }}
+              onDesignClick={handleDesignClick} // Pass the handler
             />
-          ) : showFilter ? (
+          ) : showFilter ? ( // Render filter section
             <FilterSectionWithSingleLineSliders
               bedroom={bedroom}
               setBedroom={setBedroom}
@@ -109,21 +248,21 @@ export function LotSidebar({ open, onClose, lot }: LotSidebarProps) {
               setStoreys={setStoreys}
               onShowHouseDesign={handleShowHouseDesign}
             />
-          ) : !showDetailedRules ? (
+          ) : !showDetailedRules ? ( // Render summary view
             <SummaryView
               lot={lot}
               zoningColor={zoningColor}
               zoningText={zoningText}
               onShowDetailedRules={() => setShowDetailedRules(true)}
             />
-          ) : (
+          ) : ( // Render detailed rules view
             <DetailedRulesView lot={lot} />
           )}
         </div>
-  
+
         {/* Action Button - Conditional */}
-        {!showDetailedRules && !showFilter && !showHouseDesigns && (
-          <div className="sticky bottom-0 p-6 border-t border-gray-100 bg-white">
+        {!showDetailedRules && !showFilter && !showHouseDesigns && !selectedHouseDesign && (
+          <div className="sticky bottom-0 p-6 border-t border-gray-200 bg-white rounded-b-2xl">
             <Button
               className="w-full text-lg py-3 rounded-lg"
               onClick={() => setShowFilter(true)}
