@@ -4,7 +4,7 @@ export interface LotSidebarProps {
   open: boolean;
   onClose: () => void;
   lot: LotData;
-  geometry?: any; 
+  geometry?: GeoJSON.Geometry; 
   onSelectFloorPlan?: (data: { url: string; coordinates: [[number, number], [number, number], [number, number], [number, number]] }) => void;
 }
 

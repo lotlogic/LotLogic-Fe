@@ -7,7 +7,7 @@ import { SummaryView } from "./SummaryView";
 import { DetailedRulesView } from "./DetailedRulesView";
 import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
 import { HouseDesignList } from "../facades/HouseDesignList";
-import { BedDouble, Bath, Car, Building2, Star, Funnel } from "lucide-react";
+import { BedDouble, Bath, Car, Building2, Star } from "lucide-react";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { GetYourQuoteSidebar } from "../quote/QuoteSideBar";
 

@@ -5,6 +5,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl, { Map, MapMouseEvent, MapboxGeoJSONFeature } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { LotSidebar } from "./LotSidebar";
+import { SearchControl } from "../map/SearchControl";
+import { LayersButton } from "../map/LayersButton";
+import '../map/MapControls.css';
+import { ZoningLayersSidebar } from "./ZoningLayerSidebar";
 
 type LotProperties = {
   ADDRESSES?: string;
@@ -51,9 +55,9 @@ type FloorPlan = {
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
 
 // Debounce utility function
-const debounce = (func: Function, wait: number) => {
+const debounce = (func: (...args: unknown[]) => void, wait: number) => {
   let timeout: NodeJS.Timeout;
-  return (...args: any[]) => {
+  return (...args: unknown[]) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
@@ -65,6 +69,7 @@ export default function ZoneMap() {
   const [selectedLot, setSelectedLot] = useState<MapboxGeoJSONFeature & { properties: LotProperties } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFloorPlan, setSelectedFloorPlan] = useState<FloorPlan | null>(null);
+  const [isZoningSidebarOpen, setIsZoningSidebarOpen] = useState(false);
 
   // Initialize map layers
   const initializeMapLayers = useCallback((map: mapboxgl.Map) => {
@@ -106,7 +111,6 @@ export default function ZoneMap() {
       }
     });
 
-    // Add controls
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     map.addControl(new mapboxgl.ScaleControl(), 'bottom-left');
 
@@ -272,6 +276,15 @@ export default function ZoneMap() {
     setSelectedFloorPlan(null);
   }, []);
 
+  const handleSearchResult = useCallback((coordinates: [number, number]) => {
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: coordinates,
+        zoom: 15
+      });
+    }
+  }, []);
+
   return (
     <div className="relative h-[600px] w-full rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
       {isLoading && (
@@ -280,7 +293,29 @@ export default function ZoneMap() {
         </div>
       )}
 
-      <div ref={mapContainer} className="h-full w-full" />
+      {/* Search Control */}
+      <div className="absolute top-4 right-5 z-10">
+        <SearchControl onResultSelect={handleSearchResult} />
+      </div>
+
+      {/* Layers Button */}
+      <div className="absolute top-45 right-5 z-10">
+        <LayersButton 
+          onClick={() => setIsZoningSidebarOpen(true)}
+          isActive={isZoningSidebarOpen}
+        />
+      </div>
+
+      <ZoningLayersSidebar
+        open={isZoningSidebarOpen}
+        onClose={() => setIsZoningSidebarOpen(false)}
+        mapInstance={mapRef.current} // Pass the map instance
+      />
+
+      <div 
+        ref={mapContainer} 
+        className="h-full w-full" 
+      />
 
       {!isLoading && selectedLot && (
         <LotSidebar
@@ -304,7 +339,7 @@ export default function ZoneMap() {
           geometry={selectedLot.geometry}
           onSelectFloorPlan={setSelectedFloorPlan}
         />
-      )}
+      )}  
     </div>
   );
 }
