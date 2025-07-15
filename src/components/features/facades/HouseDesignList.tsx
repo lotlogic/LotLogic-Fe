@@ -1,21 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { BedDouble, Bath, Car, Building2, Star, Funnel, ChevronUp } from "lucide-react";
+import { HouseDesignItem } from "@/types/houseDesign";
 
-// Define the type for a single house design item
-interface HouseDesignItem {
-    id: string;
-    title: string;
-    area: string;
-    image: string;
-    images: { src: string; faced: string; }[];
-    bedrooms: number;
-    bathrooms: number;
-    cars: number;
-    storeys: number;
-    isFavorite: boolean;
-    floorPlanImage?: string;
-}
 
 const initialHouseData: HouseDesignItem[] = [
   {

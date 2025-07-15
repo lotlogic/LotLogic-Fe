@@ -1,4 +1,4 @@
-import { X, ChevronLeft, Diamond } from "lucide-react";
+import { Diamond } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import React from 'react';
 import { LotSidebarProps } from "@/types/lot";
@@ -8,6 +8,8 @@ import { DetailedRulesView } from "./DetailedRulesView";
 import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
 import { HouseDesignList } from "../facades/HouseDesignList";
 import { BedDouble, Bath, Car, Building2, Star, Funnel } from "lucide-react";
+import { Sidebar } from "@/components/ui/Sidebar";
+import { GetYourQuoteSidebar } from "../quote/QuoteSideBar";
 
 
 interface HouseDesignItem {
@@ -39,6 +41,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
 
     const [selectedHouseDesign, setSelectedHouseDesign] = React.useState<HouseDesignItem | null>(null);
     const [selectedImageIdx, setSelectedImageIdx] = React.useState(0);
+    const [showQuoteSidebar, setShowQuoteSidebar] = React.useState(false);
 
     if (!open || !lot) return null;
 
@@ -70,28 +73,27 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
 
     // Callback when a house design item is clicked in HouseDesignList
     const handleDesignClick = (design: HouseDesignItem | null) => {
-        if (!design) {
-            // Clear overlay and selection when collapsing
-            if (onSelectFloorPlan) onSelectFloorPlan(undefined as any); 
-            setSelectedHouseDesign(null);
-            return;
-        }
-        let coordinates: [[number, number], [number, number], [number, number], [number, number]] | null = null;
-        if (geometry && geometry.type === 'Polygon' && Array.isArray(geometry.coordinates)) {
-            const ring = geometry.coordinates[0];
-            if (ring && ring.length >= 4) {
-                coordinates = [ring[0], ring[1], ring[2], ring[3]] as [[number, number], [number, number], [number, number], [number, number]];
+        if (!design) return; // Handle null case
+        
+        // Only trigger overlay if card is not expanded
+        if (!selectedHouseDesign) {
+            let coordinates: [[number, number], [number, number], [number, number], [number, number]] | null = null;
+            if (geometry && geometry.type === 'Polygon' && Array.isArray(geometry.coordinates)) {
+                const ring = geometry.coordinates[0];
+                if (ring && ring.length >= 4) {
+                    coordinates = [ring[0], ring[1], ring[2], ring[3]] as [[number, number], [number, number], [number, number], [number, number]];
+                }
+            }
+            if (onSelectFloorPlan && design.floorPlanImage && coordinates) {
+                onSelectFloorPlan({
+                    url: design.floorPlanImage,
+                    coordinates,
+                });
             }
         }
-        if (onSelectFloorPlan && design.floorPlanImage && coordinates) {
-            onSelectFloorPlan({
-                url: design.floorPlanImage,
-                coordinates,
-            });
-        }
-        setSelectedHouseDesign(design);
-        setSelectedImageIdx(0);
-        setShowHouseDesigns(false);
+      setSelectedHouseDesign(design);
+      setSelectedImageIdx(0); // Reset to first image when a new design is selected
+      setShowHouseDesigns(false); // Hide the list, show the detailed design
     };
 
     // Function to render the detailed view of a single house design
@@ -153,18 +155,11 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
             </div>
             <Button
               className="bg-[#2F5D62] text-white px-9 py-3 rounded-lg font-medium"
-              onClick={() => console.log('Enquire Now for', design.title)}
+              onClick={() => setShowQuoteSidebar(true)}
             >
               Enquire Now
             </Button>
           </div>
-          {/* If you have a floor plan image, render it here */}
-          {/* {design.floorPlanImage && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Floor Plan</h3>
-              <img src={design.floorPlanImage} alt={`${design.title} Floor Plan`} className="w-full rounded-xl object-contain" />
-            </div>
-          )} */}
         </div>
       );
     };
@@ -178,53 +173,40 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
           ? 'Planning Rules'
           : 'Build Your Site';
 
-    const showBackArrow = showDetailedRules || showFilter || showHouseDesigns || selectedHouseDesign;
+    const showBackArrow = showDetailedRules || showFilter || showHouseDesigns || !!selectedHouseDesign;
+
+    const headerContent = (
+      <>
+        <h2 className="text-2xl font-medium text-[#000000]">
+          {headerTitle}
+        </h2>
+        <div className="text-gray-600 mt-1 text-base font-normal">
+          {selectedHouseDesign ? (
+              `Lot ID: ${lot.id || '--'}, ${lot.suburb || '--'} | ${lot.address || '--'}`
+          ) : (
+              `Lot ID: ${lot.id || '--'}, ${lot.suburb || '--'} | ${lot.address || '--'}`
+          )}
+          {(showDetailedRules || showFilter || showHouseDesigns || selectedHouseDesign) && (
+              <div className="mt-2 flex flex-wrap items-center text-xs font-normal">
+                  {lot.size && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md flex items-center text-gray-700"><Diamond className="h-3 w-3 mr-1" />{lot.size}m²</span>}
+                  {lot.type && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md text-gray-700">{lot.type}</span>}
+                  {lot.zoning && <span className="mr-2 px-2 py-1 rounded-md text-black font-medium" style={{ backgroundColor: zoningColor }}>{zoningText}</span>}
+                  {lot.overlays === 'Flood' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">Flood</span>}
+              </div>
+          )}
+        </div>
+      </>
+    );
 
     return (
-      <aside className="fixed top-[80px] left-[20px] h-[calc(100vh-100px)] w-[550px] max-w-full z-50 bg-white shadow-2xl rounded-2xl border border-gray-200 flex flex-col font-serifpro">
-        {/* Header */}
-
-        <div className="flex items-start p-6 pb-4 border-b border-gray-200 sticky top-0 z-10 bg-white rounded-t-2xl">
-          {showBackArrow && (
-            <button
-              onClick={handleBackClick}
-              className="p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 mr-3"
-              aria-label="Back"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-          )}
-          <div className="flex-grow">
-            <h2 className="text-2xl font-medium text-[#000000]">
-              {headerTitle}
-            </h2>
-            <div className="text-gray-600 mt-1 text-base font-normal">
-              {selectedHouseDesign ? (
-                  `Lot ID: ${lot.id || '--'}, ${lot.suburb || '--'} | ${lot.address || '--'}`
-              ) : (
-                  `Lot ID: ${lot.id || '--'}, ${lot.suburb || '--'} | ${lot.address || '--'}`
-              )}
-              {(showDetailedRules || showFilter || showHouseDesigns || selectedHouseDesign) && (
-                  <div className="mt-2 flex flex-wrap items-center text-xs font-normal">
-                      {lot.size && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md flex items-center text-gray-700"><Diamond className="h-3 w-3 mr-1" />{lot.size}m²</span>}
-                      {lot.type && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md text-gray-700">{lot.type}</span>}
-                      {lot.zoning && <span className="mr-2 px-2 py-1 rounded-md text-black font-medium" style={{ backgroundColor: zoningColor }}>{zoningText}</span>}
-                      {lot.overlays === 'Flood' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">Flood</span>}
-                  </div>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 ml-auto"
-            aria-label="Close sidebar"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
-        {/* Main content area */}
-        <div className="flex-grow overflow-y-auto">
+      <>
+        <Sidebar 
+          open={open} 
+          onClose={onClose}
+          onBack={showBackArrow ? handleBackClick : undefined}
+          showBackButton={showBackArrow}
+          headerContent={headerContent}
+        >
           {selectedHouseDesign ? ( // Render detailed house view if a design is selected
             renderDetailedHouseDesign(selectedHouseDesign)
           ) : showHouseDesigns ? ( // Render list of house designs
@@ -258,19 +240,36 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
           ) : ( // Render detailed rules view
             <DetailedRulesView lot={lot} />
           )}
-        </div>
 
-        {/* Action Button - Conditional */}
-        {!showDetailedRules && !showFilter && !showHouseDesigns && !selectedHouseDesign && (
-          <div className="sticky bottom-0 p-6 border-t border-gray-200 bg-white rounded-b-2xl">
-            <Button
-              className="w-full text-lg py-3 rounded-lg"
-              onClick={() => setShowFilter(true)}
-            >
-              Show Me What I Can Build Here
-            </Button>
-          </div>
+          {/* Action Button - Conditional */}
+          {!showDetailedRules && !showFilter && !showHouseDesigns && !selectedHouseDesign && (
+            <div className="sticky bottom-0 p-6 border-t border-gray-200 bg-white rounded-b-2xl">
+              <Button
+                className="w-full text-lg py-3 rounded-lg"
+                onClick={() => setShowFilter(true)}
+              >
+                Show Me What I Can Build Here
+              </Button>
+            </div>
+          )}
+        </Sidebar>
+        
+        {/* Quote Sidebar */}
+        {showQuoteSidebar && selectedHouseDesign && (
+          <React.Suspense fallback={<div>Loading...</div>}>
+            <GetYourQuoteSidebar
+              open={showQuoteSidebar}
+              onClose={() => setShowQuoteSidebar(false)}
+              selectedHouseDesign={selectedHouseDesign}
+              lotDetails={{
+                id: String(lot.id || ''),
+                suburb: lot.suburb || '',
+                address: lot.address || '',
+                // size: lot.size
+              }}
+            />
+          </React.Suspense>
         )}
-      </aside>
+      </>
     );
-  }
+}

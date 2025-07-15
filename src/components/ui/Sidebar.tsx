@@ -1,45 +1,56 @@
-import { ReactNode } from "react";
-import { X } from "lucide-react";
+import { X, ChevronLeft } from "lucide-react";
 import clsx from "clsx";
-
-type SidebarProps = {
-  open: boolean;
-  onClose: () => void;
-  title?: string;
-  children: ReactNode;
-  widthClass?: string; 
-  className?: string;
-};
 
 export function Sidebar({
   open,
   onClose,
-  title,
+  onBack,
+  showBackButton = false,
+  headerContent,
   children,
-  widthClass = "w-96",
+  widthClass = "w-[550px] max-w-full",
   className,
-}: SidebarProps) {
+}: {
+  open: boolean;
+  onClose: () => void;
+  onBack?: () => void;
+  showBackButton?: boolean;
+  headerContent?: React.ReactNode;
+  children: React.ReactNode;
+  widthClass?: string;
+  className?: string;
+}) {
+  if (!open) return null;
   return (
-    <div
+    <aside
       className={clsx(
-        "fixed top-0 right-0 h-full z-50 transition-transform duration-300 bg-white shadow-xl",
+        "fixed top-[80px] left-[20px] h-[calc(100vh-100px)] z-50 bg-white shadow-2xl rounded-2xl border border-gray-200 flex flex-col font-serifpro transition-transform duration-300",
         widthClass,
-        open ? "translate-x-0" : "translate-x-full",
         className
       )}
-      aria-hidden={!open}
     >
-      <div className="flex items-center justify-between p-4 border-b">
-        {title && <h2 className="text-lg font-bold">{title}</h2>}
+      <div className="flex items-start p-6 pb-4 border-b border-gray-200 sticky top-0 z-10 bg-white rounded-t-2xl">
+        {showBackButton && onBack && (
+          <button
+            onClick={onBack}
+            className="p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 mr-3"
+            aria-label="Back"
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+        )}
+        <div className="flex-grow">
+          {headerContent}
+        </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+          className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 ml-auto"
           aria-label="Close sidebar"
         >
-          <X className="h-5 w-5" />
+          <X className="h-6 w-6" />
         </button>
       </div>
-      <div className="overflow-y-auto h-[calc(100%-64px)] p-4">{children}</div>
-    </div>
+      <div className="flex-grow overflow-y-auto">{children}</div>
+    </aside>
   );
 }
