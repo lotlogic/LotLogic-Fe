@@ -10,4 +10,5 @@ export interface HouseDesignItem {
   storeys: number;
   isFavorite: boolean;
   floorPlanImage?: string;
+  isExpanded?: boolean;
 }

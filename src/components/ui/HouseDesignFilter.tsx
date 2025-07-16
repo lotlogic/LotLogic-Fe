@@ -31,7 +31,7 @@ const FilterRow = React.memo(({
       </div>
       <div className="flex items-center">
         <RangeValueDisplay value={value[0]} />
-        <div className="flex-1 px-4"> {/* Keep inner horizontal padding for slider */}
+        <div className="flex-1 px-4"> 
           <Slider
             min={minRange}
             max={maxRange}
@@ -83,7 +83,7 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
   setStoreys,
   onShowHouseDesign,
 }: FilterSectionProps) => {
-  // Define initial filter values to use for reset.
+
   const INITIAL_BEDROOM_RANGE: RangeValue = [2, 4];
   const INITIAL_BATHROOM_RANGE: RangeValue = [2, 4];
   const INITIAL_CARS_RANGE: RangeValue = [2, 4];
@@ -104,10 +104,8 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
   };
 
   return (
-    // The main container for the filter section now has consistent horizontal padding (px-6)
     <div className="flex flex-col h-full px-6"> {/* Added px-6 here */}
       {/* Sticky Header with "Filters" title and "Reset" button */}
-      {/* Removed -mx-6 and px-6 from here to simplify, as parent now has px-6 */}
       <div className="sticky top-0 z-10 bg-white pt-6 pb-4 border-b border-gray-100 flex justify-between items-center">
         <span className="text-xl font-bold text-gray-900">Filters</span>
         <Button
@@ -121,7 +119,6 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
       </div>
 
       {/* Scrollable Content */}
-      {/* Removed -mx-6 and px-6 from here as parent now has px-6 */}
       <div className="flex-grow overflow-y-auto py-6"> {/* Adjusted padding here to align with content */}
         {FILTER_CONFIGS.map(({ icon, label, key }) => (
           <FilterRow
@@ -137,7 +134,6 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
       </div>
 
       {/* Sticky Footer with "Show House Design" button */}
-      {/* Removed -mx-6 and px-6 from here as parent now has px-6 */}
       <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-100 pb-6">
         <Button
           className="w-full bg-[#2F5D62] text-white text-lg py-3 rounded-lg font-medium"

@@ -53,12 +53,12 @@ export function SummaryView({ lot, zoningColor, zoningText, onShowDetailedRules 
       </div>
 
       {/* Land Use Details */}
-      <div className="bg-white rounded-xl shadow border border-gray-100 p-6 mx-6 mb-4 flex flex-col">
+      <div className="bg-white rounded-xl shadow border border-gray-100 p-4 mx-6 mb-4 flex flex-col">
         <div className="flex items-center mb-2">
-          <div className="p-2 rounded-lg" style={{ backgroundColor: '#EAEFEF' }}>
-            <Home className="h-5 w-5" style={{ color: '#2F5D62' }} />
+          <div className="p-2 rounded-full" style={{ backgroundColor: '#EAEFEF' }}>
+            <Home className="h-4 w-4" style={{ color: '#2F5D62' }} />
           </div>
-          <span className="font-semibold text-gray-800 text-lg ml-2">Land Use Details</span>
+          <span className="font-semibold text-gray-800 text-base ml-2">Land Use Details</span>
         </div>
 
         <div className="flex flex-wrap items-center text-gray-700 text-base">
@@ -72,12 +72,12 @@ export function SummaryView({ lot, zoningColor, zoningText, onShowDetailedRules 
       </div>
 
       {/* Planning Rules */}
-      <div className="bg-white rounded-xl shadow border border-gray-100 p-6 mx-6 mb-4 flex flex-col">
+      <div className="bg-white rounded-xl shadow border border-gray-100 p-4 mx-6 mb-4 flex flex-col">
         <div className="flex items-center mb-3">
-          <div className="p-2 rounded-lg" style={{ backgroundColor: '#EAEFEF' }}>
-            <Info className="h-5 w-5" style={{ color: '#2F5D62' }} />
+          <div className="p-2 rounded-full" style={{ backgroundColor: '#EAEFEF' }}>
+            <Info className="h-4 w-4" style={{ color: '#2F5D62' }} />
           </div>
-          <span className="font-semibold text-gray-800 text-lg ml-2">Planning Rules</span>
+                      <span className="font-semibold text-gray-800 text-base ml-2">Planning Rules</span>
         </div>
         <div className="text-gray-700 text-base space-y-2">
           <div className="flex justify-between">

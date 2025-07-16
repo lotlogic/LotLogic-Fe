@@ -106,6 +106,11 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick }: HouseDe
                 key={house.id}
                 className="rounded-2xl border border-gray-200 bg-[#eaf3f2] p-4"
                 style={{ cursor: 'pointer' }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedIdx(null);
+                    onDesignClick(null);
+                }}
               >
                 <div className="flex gap-4">
                   <img src={images[0].src} alt="House" className="w-24 h-24 rounded-lg object-cover" />
@@ -116,7 +121,7 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick }: HouseDe
                         <div className="text-gray-600 text-sm">Single Storey &nbsp; Area: {house.area} ft</div>
                       </div>
                       {/* Collapse button */}
-                      <button
+                      {/* <button
                         className="ml-2 p-1 rounded-full hover:bg-gray-200"
                         onClick={e => {
                           e.stopPropagation();
@@ -126,7 +131,7 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick }: HouseDe
                         aria-label="Collapse"
                       >
                         <ChevronUp className="h-5 w-5" />
-                      </button>
+                      </button> */}
                       <Star
                         className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
                           house.isFavorite ? 'text-[#2F5D62] fill-[#2F5D62]' : 'text-gray-400'
@@ -188,7 +193,8 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick }: HouseDe
                 } else {
                   setExpandedIdx(idx);
                   setSelectedImageIdx(0);
-                  onDesignClick(house);
+                  const houseWithOverlayOnly = { ...house, overlayOnly: true };
+                  onDesignClick(houseWithOverlayOnly);
                 }
               }}
             >

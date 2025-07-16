@@ -8,7 +8,7 @@ export function Sidebar({
   showBackButton = false,
   headerContent,
   children,
-  widthClass = "w-[550px] max-w-full",
+  widthClass = "w-[496px] max-w-full",
   className,
 }: {
   open: boolean;
@@ -44,7 +44,7 @@ export function Sidebar({
         </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 ml-auto"
+          className="p-2 rounded-full hover:bg-gray-100 text-[#000000] hover:text-gray-700 ml-auto"
           aria-label="Close sidebar"
         >
           <X className="h-6 w-6" />

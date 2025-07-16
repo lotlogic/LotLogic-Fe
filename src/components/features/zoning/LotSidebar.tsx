@@ -75,6 +75,24 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
     const handleDesignClick = (design: HouseDesignItem | null) => {
         if (!design) return; // Handle null case
         
+        // Check if this is an overlay-only request
+        if ((design as any).overlayOnly) {
+            let coordinates: [[number, number], [number, number], [number, number], [number, number]] | null = null;
+            if (geometry && geometry.type === 'Polygon' && Array.isArray(geometry.coordinates)) {
+                const ring = geometry.coordinates[0];
+                if (ring && ring.length >= 4) {
+                    coordinates = [ring[0], ring[1], ring[2], ring[3]] as [[number, number], [number, number], [number, number], [number, number]];
+                }
+            }
+            if (onSelectFloorPlan && design.floorPlanImage && coordinates) {
+                onSelectFloorPlan({
+                    url: design.floorPlanImage,
+                    coordinates,
+                });
+            }
+            return; 
+        }
+        
         // Only trigger overlay if card is not expanded
         if (!selectedHouseDesign) {
             let coordinates: [[number, number], [number, number], [number, number], [number, number]] | null = null;
@@ -178,7 +196,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
     const headerContent = (
       <>
         <h2 className="text-2xl font-medium text-[#000000]">
-          {headerTitle}
+        {headerTitle}
         </h2>
         <div className="text-gray-600 mt-1 text-base font-normal">
           {selectedHouseDesign ? (
@@ -216,7 +234,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
                 setShowHouseDesigns(false);
                 setShowFilter(true);
               }}
-              onDesignClick={handleDesignClick} // Pass the handler
+              onDesignClick={handleDesignClick} 
             />
           ) : showFilter ? ( // Render filter section
             <FilterSectionWithSingleLineSliders
