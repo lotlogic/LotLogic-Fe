@@ -2,34 +2,10 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/Button";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { MultiSelect } from "@/components/ui/MultiSelect";
+import { GetYourQuoteSidebarProps } from "@/types/houseDesign";
+import { builderOptions } from "@/constants/houseDesigns";
 
-interface HouseDesignItem {
-    id: string;
-    title: string;
-    area: string;
-    image: string;
-    images: { src: string; faced: string; }[];
-    bedrooms: number;
-    bathrooms: number;
-    cars: number;
-    storeys: number;
-    isFavorite: boolean;
-    floorPlanImage?: string;
-}
-
-interface GetYourQuoteSidebarProps {
-    open: boolean;
-    onClose: () => void;
-    selectedHouseDesign: HouseDesignItem | null;
-    lotDetails: {
-        id: string | number; 
-        suburb: string;
-        address: string;
-        size?: number;
-    };
-}
-
-export function GetYourQuoteSidebar({ open, onClose, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
+export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
     const [showThankYou, setShowThankYou] = useState(false);
     const [lotSecured, setLotSecured] = useState(false);
@@ -38,16 +14,7 @@ export function GetYourQuoteSidebar({ open, onClose, selectedHouseDesign, lotDet
 
     const facedOption = selectedHouseDesign?.images[0]?.faced || 'N/A';
 
-    const builderOptions = [
-        { id: 'metricon', label: 'Metricon Homes', logoText: 'M' },
-        { id: 'simonds', label: 'Simonds Homes', logoText: 'S' },
-        { id: 'porter-davis', label: 'Porter Davis Homes', logoText: 'P' },
-        { id: 'burbank', label: 'Burbank Homes', logoText: 'B' },
-        { id: 'henley', label: 'Henley Homes', logoText: 'H' },
-        { id: 'clarendon', label: 'Clarendon Homes', logoText: 'C' },
-        { id: 'g-j-gardner', label: 'G.J. Gardner Homes', logoText: 'G' },
-        { id: 'boutique', label: 'Boutique Homes', logoText: 'B' },
-    ];
+
 
     const headerContent = (
         <>
@@ -92,7 +59,7 @@ export function GetYourQuoteSidebar({ open, onClose, selectedHouseDesign, lotDet
         <Sidebar 
             open={open} 
             onClose={onClose}
-            onBack={onClose}
+            onBack={onBack || onClose}
             showBackButton={true}
             headerContent={headerContent}
         >

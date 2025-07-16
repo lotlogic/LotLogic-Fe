@@ -10,21 +10,7 @@ import { HouseDesignList } from "../facades/HouseDesignList";
 import { BedDouble, Bath, Car, Building2, Star } from "lucide-react";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { GetYourQuoteSidebar } from "../quote/QuoteSideBar";
-
-
-interface HouseDesignItem {
-    id: string;
-    title: string;
-    area: string;
-    image: string;
-    images: { src: string; faced: string; }[];
-    bedrooms: number;
-    bathrooms: number;
-    cars: number;
-    storeys: number;
-    isFavorite: boolean;
-    floorPlanImage?: string;
-}
+import { HouseDesignItem } from "@/types/houseDesign";
 
 export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: LotSidebarProps) {
     const [showDetailedRules, setShowDetailedRules] = React.useState(false);
@@ -42,6 +28,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
     const [selectedHouseDesign, setSelectedHouseDesign] = React.useState<HouseDesignItem | null>(null);
     const [selectedImageIdx, setSelectedImageIdx] = React.useState(0);
     const [showQuoteSidebar, setShowQuoteSidebar] = React.useState(false);
+    const [quoteDesign, setQuoteDesign] = React.useState<HouseDesignItem | null>(null);
 
     if (!open || !lot) return null;
 
@@ -153,31 +140,6 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
               </div>
             </div>
           </div>
-          {/* Main image */}
-          <img src={mainImage} alt="Main" className="w-full h-56 rounded-xl object-cover mt-4" />
-          {/* Thumbnails and Enquire button  */}
-          <div className="flex items-center justify-between gap-2 mt-2">
-            <div className="flex gap-2">
-              {images.map((img, imgIdx) => (
-                <button
-                  key={img.src}
-                  onClick={() => setSelectedImageIdx(imgIdx)}
-                  className={`w-14 h-14 rounded object-cover border-2 ${selectedImageIdx === imgIdx ? 'border-[#2F5D62]' : 'border-transparent'}`}
-                  style={{ padding: 0, background: 'none' }}
-                  tabIndex={0}
-                  aria-label={`Select image ${imgIdx + 1}`}
-                >
-                  <img src={img.src} className="w-14 h-14 rounded object-cover" alt={`Thumbnail ${imgIdx + 1}`} />
-                </button>
-              ))}
-            </div>
-            <Button
-              className="bg-[#2F5D62] text-white px-9 py-3 rounded-lg font-medium"
-              onClick={() => setShowQuoteSidebar(true)}
-            >
-              Enquire Now
-            </Button>
-          </div>
         </div>
       );
     };
@@ -234,9 +196,13 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
                 setShowHouseDesigns(false);
                 setShowFilter(true);
               }}
-              onDesignClick={handleDesignClick} 
+              onDesignClick={handleDesignClick}
+              onEnquireNow={(design) => {
+                setShowQuoteSidebar(true);
+                setQuoteDesign(design);
+              }}
             />
-          ) : showFilter ? ( // Render filter section
+          ) : showFilter ? ( 
             <FilterSectionWithSingleLineSliders
               bedroom={bedroom}
               setBedroom={setBedroom}
@@ -248,14 +214,14 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
               setStoreys={setStoreys}
               onShowHouseDesign={handleShowHouseDesign}
             />
-          ) : !showDetailedRules ? ( // Render summary view
+          ) : !showDetailedRules ? ( 
             <SummaryView
               lot={lot}
               zoningColor={zoningColor}
               zoningText={zoningText}
               onShowDetailedRules={() => setShowDetailedRules(true)}
             />
-          ) : ( // Render detailed rules view
+          ) : ( 
             <DetailedRulesView lot={lot} />
           )}
 
@@ -273,12 +239,20 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
         </Sidebar>
         
         {/* Quote Sidebar */}
-        {showQuoteSidebar && selectedHouseDesign && (
+        {showQuoteSidebar && quoteDesign && (
           <React.Suspense fallback={<div>Loading...</div>}>
             <GetYourQuoteSidebar
               open={showQuoteSidebar}
-              onClose={() => setShowQuoteSidebar(false)}
-              selectedHouseDesign={selectedHouseDesign}
+              onClose={() => {
+                setShowQuoteSidebar(false);
+                setQuoteDesign(null);
+              }}
+              onBack={() => {
+                setShowQuoteSidebar(false);
+                setQuoteDesign(null);
+                setShowHouseDesigns(true);
+              }}
+              selectedHouseDesign={quoteDesign}
               lotDetails={{
                 id: String(lot.id || ''),
                 suburb: lot.suburb || '',

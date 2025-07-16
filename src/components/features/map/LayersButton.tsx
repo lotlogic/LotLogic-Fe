@@ -2,11 +2,7 @@
 
 import React from 'react';
 import { Layers } from 'lucide-react';
-
-interface LayersButtonProps {
-    onClick: () => void;
-    isActive?: boolean;
-}
+import { LayersButtonProps } from '@/types/ui';
 
 export function LayersButton({ onClick, isActive = false }: LayersButtonProps) {
     return (

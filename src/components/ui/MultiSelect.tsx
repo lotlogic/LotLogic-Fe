@@ -1,21 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
-
-interface Option {
-  id: string;
-  label: string;
-  logo?: string;
-  logoText?: string;
-}
-
-interface MultiSelectProps {
-  options: Option[];
-  selectedOptions: string[];
-  onSelectionChange: (selectedIds: string[]) => void;
-  placeholder?: string;
-  label?: string;
-  className?: string;
-}
+import { MultiSelectProps } from '@/types/ui';
 
 export function MultiSelect({ 
   options, 

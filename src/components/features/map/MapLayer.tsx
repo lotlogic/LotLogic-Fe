@@ -4,9 +4,9 @@ import React from "react";
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl, { Map, MapMouseEvent, MapboxGeoJSONFeature } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { LotSidebar } from "./LotSidebar";
-import { SearchControl } from "../map/SearchControl";
-import { LayersButton } from "../map/LayersButton";
+import { LotSidebar } from "../lots/LotSidebar";
+import { SearchControl } from "./SearchControl";
+import { LayersButton } from "./LayersButton";
 import '../map/MapControls.css';
 import { ZoningLayersSidebar } from "./ZoningLayerSidebar";
 
@@ -237,7 +237,6 @@ export default function ZoneMap() {
     };
   }, [selectedLot]);
 
-  // Handle floor plan overlay
   useEffect(() => {
     if (!mapRef.current || !selectedFloorPlan) return;
     const map = mapRef.current;
@@ -245,11 +244,10 @@ export default function ZoneMap() {
     const sourceId = 'floorplan-image';
     const layerId = 'floorplan-layer';
 
-    // Cleanup previous layers
+
     if (map.getLayer(layerId)) map.removeLayer(layerId);
     if (map.getSource(sourceId)) map.removeSource(sourceId);
 
-    // Add new floor plan
     map.addSource(sourceId, {
       type: 'image',
       url: selectedFloorPlan.url,
@@ -309,7 +307,7 @@ export default function ZoneMap() {
       <ZoningLayersSidebar
         open={isZoningSidebarOpen}
         onClose={() => setIsZoningSidebarOpen(false)}
-        mapInstance={mapRef.current} // Pass the map instance
+        mapInstance={mapRef.current} 
       />
 
       <div 

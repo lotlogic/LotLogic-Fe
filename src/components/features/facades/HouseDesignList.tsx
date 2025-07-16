@@ -1,57 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { BedDouble, Bath, Car, Building2, Star, Funnel, ChevronUp } from "lucide-react";
-import { HouseDesignItem } from "@/types/houseDesign";
+import { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
+import { initialHouseData } from "@/constants/houseDesigns";
 
-
-const initialHouseData: HouseDesignItem[] = [
-  {
-    id: "design1",
-    title: "Allium Place, Orlando",
-    area: "2,096.00",
-    image: "/images/brick.jpg",
-    images: [
-      { src: "/images/brick.jpg", faced: "Brick" },
-      { src: "/images/timmerland.jpg", faced: "Render" },
-      { src: "/images/weatherboard.jpg", faced: "Weatherboard" },
-    ],
-    bedrooms: 4,
-    bathrooms: 2,
-    cars: 2,
-    storeys: 2,
-    isFavorite: false,
-    floorPlanImage: "/images/floorplan.jpg",
-  },
-  {
-    id: "design2",
-    title: "Example Design B",
-    area: "1,800.00",
-    image: "/images/timmerland.jpg",
-    images: [
-      { src: "/images/timmerland.jpg", faced: "Timber" },
-      { src: "/images/brick.jpg", faced: "Brick" },
-    ],
-    bedrooms: 4,
-    bathrooms: 2,
-    cars: 2,
-    storeys: 2,
-    isFavorite: false,
-    floorPlanImage: "/images/floorplan.jpg",
-  },
-];
-
-interface HouseDesignListProps {
-  filter: {
-    bedroom: [number, number];
-    bathroom: [number, number];
-    cars: [number, number];
-    storeys: [number, number];
-  };
-  onShowFilter: () => void;
-  onDesignClick: (design: HouseDesignItem | null) => void;
-}
-
-export function HouseDesignList({ filter, onShowFilter, onDesignClick }: HouseDesignListProps) {
+export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquireNow }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [houseDesigns, setHouseDesigns] = useState<HouseDesignItem[]>(initialHouseData);
@@ -174,7 +127,12 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick }: HouseDe
                   <Button
                     className="bg-[#2F5D62] text-white px-9 py-3 rounded-lg font-medium"
                     data-ignore-collapse
-                    onClick={e => e.stopPropagation()}
+                    onClick={e => {
+                      e.stopPropagation();
+                      if (onEnquireNow) {
+                        onEnquireNow(house);
+                      }
+                    }}
                   >
                     Enquire Now
                   </Button>

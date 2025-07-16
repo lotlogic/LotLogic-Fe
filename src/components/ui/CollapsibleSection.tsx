@@ -16,4 +16,4 @@ export function CollapsibleSection({ title, children, initialOpen = true }: Coll
       {isOpen && <div className="mt-2 text-sm text-gray-700">{children}</div>}
     </div>
   );
-}
+} 

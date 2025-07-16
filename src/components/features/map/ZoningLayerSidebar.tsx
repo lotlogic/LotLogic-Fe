@@ -3,12 +3,7 @@
 import React, { useRef, useEffect } from 'react';
 import { X, ChevronLeft } from 'lucide-react'; 
 import mapboxgl, { Map } from 'mapbox-gl';
-
-interface ZoningLayersSidebarProps {
-  open: boolean;
-  onClose: () => void;
-  mapInstance: Map | null; 
-}
+import { ZoningLayersSidebarProps } from '@/types/ui';
 
 export function ZoningLayersSidebar({ open, onClose, mapInstance }: ZoningLayersSidebarProps) {
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -20,14 +15,23 @@ export function ZoningLayersSidebar({ open, onClose, mapInstance }: ZoningLayers
       }
     };
 
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
     if (open) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscapeKey);
     } else {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
     };
   }, [open, onClose]);
 
@@ -60,18 +64,32 @@ export function ZoningLayersSidebar({ open, onClose, mapInstance }: ZoningLayers
   return (
     <div
       ref={sidebarRef}
-      className={`fixed top-20 right-0 h-full w-full sm:w-[350px] sm:h-[400px] bg-white shadow-lg z-30 transition-transform duration-300 ease-in-out
+      className={`absolute top-0 right-0 h-full w-[350px] bg-white shadow-lg z-30 transition-transform duration-300 ease-in-out
         ${open ? 'translate-x-0' : 'translate-x-full'}`}
     >
-      <div className="p-4 border-b flex items-center justify-between">
-        <button onClick={onClose} className="text-gray-600 hover:text-gray-800">
-          <ChevronLeft className="h-6 w-6" />
-        </button>
-        <h2 className="text-xl font-semibold text-gray-800">Zoning Layers</h2>
-        <p className="text-sm text-gray-600 mb-4">Exploring information and property details</p>
-        <button onClick={onClose} className="text-gray-600 hover:text-gray-800">
-          <X className="h-6 w-6" />
-        </button>
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-between mb-2">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }} 
+            className="text-gray-600 hover:text-gray-800 p-1 rounded hover:bg-gray-100 transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h2 className="text-lg font-semibold text-gray-800">Zoning Layers</h2>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }} 
+            className="text-gray-600 hover:text-gray-800 p-1 rounded hover:bg-gray-100 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <p className="text-xs text-gray-600">Exploring information and property details</p>
       </div>
       <div className="p-4 overflow-y-auto h-[calc(100%-60px)]"> 
 

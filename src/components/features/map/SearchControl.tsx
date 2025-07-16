@@ -2,16 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X } from 'lucide-react'; 
-
-interface SearchResult {
-  id: string;
-  place_name: string;
-  center: [number, number];
-}
-
-interface SearchControlProps {
-  onResultSelect: (coordinates: [number, number]) => void;
-}
+import { SearchControlProps, SearchResult } from '@/types/ui';
 
 export function SearchControl({ onResultSelect }: SearchControlProps) {
   const [query, setQuery] = useState('');

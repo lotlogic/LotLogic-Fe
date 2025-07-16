@@ -1,5 +1,5 @@
 import Header from "@/components/layouts/Header";
-import ZoneMap from "@/components/features/zoning/ZoneMap";
+import ZoneMap from "@/components/features/map/MapLayer";
 
 export default function Home() {
   return (

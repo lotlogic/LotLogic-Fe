@@ -1,6 +1,6 @@
 import { Home } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { CollapsibleSection } from "@/components/ui/zoningColorMap";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { LotData } from "@/types/lot";
 
 interface DetailedRulesViewProps {

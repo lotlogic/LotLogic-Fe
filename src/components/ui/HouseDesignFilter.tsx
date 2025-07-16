@@ -2,18 +2,8 @@ import React from "react";
 import { BedDouble, Bath, Car, Building2, RotateCcw } from "lucide-react"; 
 import { Slider } from "./slider";
 import { Button } from "./Button";
-
-type RangeValue = [number, number];
-type RangeSetter = React.Dispatch<React.SetStateAction<RangeValue>>;
-
-interface FilterRowProps {
-  icon: React.ReactNode;
-  label: string;
-  value: RangeValue;
-  setValue: (v: RangeValue) => void;
-  minRange: number;
-  maxRange: number;
-}
+import { FilterRowProps, FilterSectionProps, RangeValue, RangeSetter } from "@/types/houseDesign";
+import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "@/constants/houseDesigns";
 
 const FilterRow = React.memo(({
   icon,
@@ -53,24 +43,7 @@ const RangeValueDisplay = React.memo(({ value }: { value: number }) => (
   </div>
 ));
 
-const FILTER_CONFIGS = [
-  { icon: <BedDouble />, label: "Bedroom", key: "bedroom" },
-  { icon: <Bath />, label: "Bathroom", key: "bathroom" },
-  { icon: <Car />, label: "Cars", key: "cars" },
-  { icon: <Building2 />, label: "Storeys", key: "storeys" },
-] as const;
 
-interface FilterSectionProps {
-  bedroom: RangeValue;
-  setBedroom: RangeSetter;
-  bathroom: RangeValue;
-  setBathroom: RangeSetter;
-  cars: RangeValue;
-  setCars: RangeSetter;
-  storeys: RangeValue;
-  setStoreys: RangeSetter;
-  onShowHouseDesign: () => void;
-}
 
 export const FilterSectionWithSingleLineSliders = React.memo(({
   bedroom,
@@ -84,10 +57,7 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
   onShowHouseDesign,
 }: FilterSectionProps) => {
 
-  const INITIAL_BEDROOM_RANGE: RangeValue = [2, 4];
-  const INITIAL_BATHROOM_RANGE: RangeValue = [2, 4];
-  const INITIAL_CARS_RANGE: RangeValue = [2, 4];
-  const INITIAL_STOREYS_RANGE: RangeValue = [2, 4];
+
 
   const stateMap = {
     bedroom: { value: bedroom, setValue: setBedroom },
@@ -97,10 +67,10 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
   };
 
   const handleReset = () => {
-    setBedroom(INITIAL_BEDROOM_RANGE);
-    setBathroom(INITIAL_BATHROOM_RANGE);
-    setCars(INITIAL_CARS_RANGE);
-    setStoreys(INITIAL_STOREYS_RANGE);
+    setBedroom(INITIAL_FILTER_RANGES.bedroom);
+    setBathroom(INITIAL_FILTER_RANGES.bathroom);
+    setCars(INITIAL_FILTER_RANGES.cars);
+    setStoreys(INITIAL_FILTER_RANGES.storeys);
   };
 
   return (
@@ -120,17 +90,26 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
 
       {/* Scrollable Content */}
       <div className="flex-grow overflow-y-auto py-6"> {/* Adjusted padding here to align with content */}
-        {FILTER_CONFIGS.map(({ icon, label, key }) => (
-          <FilterRow
-            key={key}
-            icon={icon}
-            label={label}
-            value={stateMap[key].value}
-            setValue={stateMap[key].setValue}
-            minRange={1}
-            maxRange={5}
-          />
-        ))}
+        {FILTER_CONFIGS.map(({ icon, label, key }) => {
+          const IconComponent = {
+            'BedDouble': BedDouble,
+            'Bath': Bath,
+            'Car': Car,
+            'Building2': Building2,
+          }[icon];
+          
+          return (
+            <FilterRow
+              key={key}
+              icon={<IconComponent />}
+              label={label}
+              value={stateMap[key].value}
+              setValue={stateMap[key].setValue}
+              minRange={1}
+              maxRange={5}
+            />
+          );
+        })}
       </div>
 
       {/* Sticky Footer with "Show House Design" button */}
