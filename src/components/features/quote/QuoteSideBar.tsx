@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/Button";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { MultiSelect } from "@/components/ui/MultiSelect";
-import { GetYourQuoteSidebarProps } from "@/types/houseDesign";
+import { GetYourQuoteSidebarProps, quoteFormSchema, QuoteFormData } from "@/types/houseDesign";
 import { builderOptions } from "@/constants/houseDesigns";
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
@@ -10,9 +10,88 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
     const [showThankYou, setShowThankYou] = useState(false);
     const [lotSecured, setLotSecured] = useState(false);
     
+    // Form state
+    const [formData, setFormData] = useState<QuoteFormData>({
+        yourName: '',
+        emailAddress: '',
+        phoneNumber: '',
+        selectedBuilders: [],
+        additionalComments: '',
+    });
+    
+    // Validation errors
+    const [errors, setErrors] = useState<Partial<Record<keyof QuoteFormData, string>>>({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
     if (!open) return null;
 
     const facedOption = selectedHouseDesign?.images[0]?.faced || 'N/A';
+
+    // Update selectedBuilders in formData when it changes
+    React.useEffect(() => {
+        setFormData(prev => ({ ...prev, selectedBuilders }));
+    }, [selectedBuilders]);
+
+    // Reset form when sidebar opens
+    React.useEffect(() => {
+        if (open) {
+            setFormData({
+                yourName: '',
+                emailAddress: '',
+                phoneNumber: '',
+                selectedBuilders: [],
+                additionalComments: '',
+            });
+            setErrors({});
+            setShowThankYou(false);
+            setLotSecured(false);
+        }
+    }, [open]);
+
+    // Handle form field changes
+    const handleInputChange = (field: keyof QuoteFormData, value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        // Clear error when user starts typing
+        if (errors[field]) {
+            setErrors(prev => ({ ...prev, [field]: '' }));
+        }
+    };
+
+    // Handle form submission
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        
+        try {
+            // Validate form data
+            const validatedData = quoteFormSchema.parse(formData);
+            
+            // Here you would typically send the data to your API
+            console.log('Form data validated:', validatedData);
+            
+            // Simulate API call
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            setShowThankYou(true);
+            setErrors({});
+        } catch (error: any) {
+            // Handle Zod validation errors
+            if (error.name === 'ZodError') {
+                const fieldErrors: Partial<Record<keyof QuoteFormData, string>> = {};
+                
+                error.errors?.forEach((err: any) => {
+                    const field = err.path[0] as keyof QuoteFormData;
+                    fieldErrors[field] = err.message;
+                });
+                
+                setErrors(fieldErrors);
+            } else {
+                console.error('Form submission error:', error);
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
 
 
@@ -117,49 +196,82 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 </div>
             ) : (
                 // Initial form screen
-                <form className="space-y-4 p-6">
+                <form onSubmit={handleSubmit} className="space-y-4 p-6">
                     <div>
                         <label htmlFor="yourName" className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
                         <input
                             type="text"
                             id="yourName"
-                            className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62]"
+                            value={formData.yourName}
+                            onChange={(e) => handleInputChange('yourName', e.target.value)}
+                            className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                errors.yourName ? 'border-red-500' : 'border-gray-300'
+                            }`}
                             placeholder="Your name"
                         />
+                        {errors.yourName && (
+                            <p className="mt-1 text-sm text-red-600">{errors.yourName}</p>
+                        )}
                     </div>
                     <div>
                         <label htmlFor="emailAddress" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
                         <input
                             type="email"
                             id="emailAddress"
-                            className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62]"
+                            value={formData.emailAddress}
+                            onChange={(e) => handleInputChange('emailAddress', e.target.value)}
+                            className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                errors.emailAddress ? 'border-red-500' : 'border-gray-300'
+                            }`}
                             placeholder="you@company.com"
                         />
+                        {errors.emailAddress && (
+                            <p className="mt-1 text-sm text-red-600">{errors.emailAddress}</p>
+                        )}
                     </div>
                     <div>
                         <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                         <input
                             type="tel"
                             id="phoneNumber"
-                            className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62]"
+                            value={formData.phoneNumber}
+                            onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                            className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+                            }`}
                             placeholder="+1 (555) 000-0000"
                         />
+                        {errors.phoneNumber && (
+                            <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
+                        )}
                     </div>
-                    <MultiSelect
-                        options={builderOptions}
-                        selectedOptions={selectedBuilders}
-                        onSelectionChange={setSelectedBuilders}
-                        placeholder="Choose builders to get quotes from"
-                        label="Select Builders (Multiple Selection)"
-                    />
+                    <div>
+                        <MultiSelect
+                            options={builderOptions}
+                            selectedOptions={selectedBuilders}
+                            onSelectionChange={setSelectedBuilders}
+                            placeholder="Choose builders to get quotes from"
+                            label="Select Builders (Multiple Selection)"
+                        />
+                        {errors.selectedBuilders && (
+                            <p className="mt-1 text-sm text-red-600">{errors.selectedBuilders}</p>
+                        )}
+                    </div>
                     <div>
                         <label htmlFor="additionalComments" className="block text-sm font-medium text-gray-700 mb-1">Additional Comments</label>
                         <textarea
                             id="additionalComments"
                             rows={3}
-                            className="block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62]"
+                            value={formData.additionalComments}
+                            onChange={(e) => handleInputChange('additionalComments', e.target.value)}
+                            className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                errors.additionalComments ? 'border-red-500' : 'border-gray-300'
+                            }`}
                             placeholder="Any specific requirements or questions?"
                         ></textarea>
+                        {errors.additionalComments && (
+                            <p className="mt-1 text-sm text-red-600">{errors.additionalComments}</p>
+                        )}
                     </div>
 
                     {selectedHouseDesign && (
@@ -182,17 +294,18 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                             </div>
                         </div>
                     )}
+
+                    {/* Submit Button */}
+                    <div className="sticky bottom-0 pt-6 border-t border-gray-200 bg-white">
+                        <Button
+                            type="submit"
+                            className="w-full text-lg py-3 rounded-lg bg-[#2F5D62] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Submitting...' : 'Get Quote'}
+                        </Button>
+                    </div>
                 </form>
-            )}
-            {!showThankYou && !lotSecured && (
-                <div className="sticky bottom-0 p-6 border-t border-gray-200 bg-white rounded-b-2xl">
-                    <Button
-                        className="w-full text-lg py-3 rounded-lg bg-[#2F5D62] text-white"
-                        onClick={() => setShowThankYou(true)}
-                    >
-                        Get Quote
-                    </Button>
-                </div>
             )}
         </Sidebar>
     );

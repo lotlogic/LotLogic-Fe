@@ -35,6 +35,18 @@ export interface ZoningLayersSidebarProps {
   mapInstance: any;
 }
 
+export interface SavedButtonProps {
+  onClick: () => void;
+  isActive?: boolean;
+}
+
+export interface SavedPropertiesSidebarProps {
+  open: boolean;
+  onClose: () => void;
+  savedProperties: any[];
+  onViewDetails: (property: any) => void;
+}
+
 export interface SummaryViewProps {
   lot: any;
   onClose: () => void;

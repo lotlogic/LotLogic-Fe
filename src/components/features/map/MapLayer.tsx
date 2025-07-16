@@ -7,8 +7,10 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { LotSidebar } from "../lots/LotSidebar";
 import { SearchControl } from "./SearchControl";
 import { LayersButton } from "./LayersButton";
+import { SavedButton } from "./SavedButton";
 import '../map/MapControls.css';
 import { ZoningLayersSidebar } from "./ZoningLayerSidebar";
+import { SavedPropertiesSidebar } from "./SavedPropertiesSidebar";
 
 type LotProperties = {
   ADDRESSES?: string;
@@ -70,6 +72,43 @@ export default function ZoneMap() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFloorPlan, setSelectedFloorPlan] = useState<FloorPlan | null>(null);
   const [isZoningSidebarOpen, setIsZoningSidebarOpen] = useState(false);
+  const [isSavedSidebarOpen, setIsSavedSidebarOpen] = useState(false);
+
+  // Mock saved properties data
+  const savedProperties = [
+    {
+      id: '1',
+      lotId: '205',
+      suburb: 'Rydalmere',
+      address: '15 Bowden Street',
+      size: 495,
+      zoning: 'RZ2: Low density residential',
+      overlays: 'Flood',
+      houseDesign: {
+        id: 'design1',
+        title: 'Allium Place, Orlando',
+        area: '2,096.00',
+        image: '/images/brick.jpg',
+        images: [
+          { src: '/images/brick.jpg', faced: 'Brick' },
+          { src: '/images/timmerland.jpg', faced: 'Render' },
+          { src: '/images/weatherboard.jpg', faced: 'Weatherboard' },
+        ],
+        bedrooms: 4,
+        bathrooms: 2,
+        cars: 2,
+        storeys: 1,
+        isFavorite: true,
+        floorPlanImage: '/images/floorplan.jpg',
+      }
+    }
+  ];
+
+  const handleViewDetails = (property: any) => {
+    // Handle viewing property details
+    console.log('View details for property:', property);
+    setIsSavedSidebarOpen(false);
+  };
 
   // Initialize map layers
   const initializeMapLayers = useCallback((map: mapboxgl.Map) => {
@@ -284,7 +323,7 @@ export default function ZoneMap() {
   }, []);
 
   return (
-    <div className="relative h-[600px] w-full rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+    <div className="relative h-full w-full">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-20">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -304,10 +343,25 @@ export default function ZoneMap() {
         />
       </div>
 
+      {/* Saved Button */}
+      <div className="absolute top-57 right-5 z-10">
+        <SavedButton 
+          onClick={() => setIsSavedSidebarOpen(true)}
+          isActive={isSavedSidebarOpen}
+        />
+      </div>
+
       <ZoningLayersSidebar
         open={isZoningSidebarOpen}
         onClose={() => setIsZoningSidebarOpen(false)}
         mapInstance={mapRef.current} 
+      />
+
+      <SavedPropertiesSidebar
+        open={isSavedSidebarOpen}
+        onClose={() => setIsSavedSidebarOpen(false)}
+        savedProperties={savedProperties}
+        onViewDetails={handleViewDetails}
       />
 
       <div 
