@@ -2,19 +2,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import { X, Star, BedDouble, Bath, Car, Building2, ExternalLink, Bookmark } from 'lucide-react';
-import { HouseDesignItem } from '@/types/houseDesign';
 import { SavedPropertiesSidebarProps } from '@/types/ui';
-
-interface SavedProperty {
-    id: string;
-    lotId: string;
-    suburb: string;
-    address: string;
-    size: number;
-    zoning: string;
-    overlays?: string;
-    houseDesign: HouseDesignItem;
-}
 
 export function SavedPropertiesSidebar({ 
     open, 
@@ -62,7 +50,7 @@ export function SavedPropertiesSidebar({
                 <div className="flex items-center justify-between">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900">Your Shortlist</h2>
-                        <p className="text-sm text-gray-600 mt-1">List of properties that you've shortlisted.</p>
+                        <p className="text-sm text-gray-600 mt-1">List of properties that you&apos;ve shortlisted.</p>
                     </div>
                     <button 
                         onClick={onClose}

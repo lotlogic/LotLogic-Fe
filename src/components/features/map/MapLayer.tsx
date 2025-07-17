@@ -12,6 +12,25 @@ import '../map/MapControls.css';
 import { ZoningLayersSidebar } from "./ZoningLayerSidebar";
 import { SavedPropertiesSidebar } from "./SavedPropertiesSidebar";
 
+interface SavedProperty {
+    id: string;
+    lotId: string;
+    suburb: string;
+    address: string;
+    size: number;
+    zoning: string;
+    overlays?: string;
+    houseDesign: {
+        id: string;
+        title: string;
+        image: string;
+        bedrooms: number;
+        bathrooms: number;
+        cars: number;
+        storeys: number;
+    };
+}
+
 type LotProperties = {
   ADDRESSES?: string;
   AP_NUMBER?: string;
@@ -104,7 +123,7 @@ export default function ZoneMap() {
     }
   ];
 
-  const handleViewDetails = (property: any) => {
+  const handleViewDetails = (property: SavedProperty) => {
     // Handle viewing property details
     console.log('View details for property:', property);
     setIsSavedSidebarOpen(false);

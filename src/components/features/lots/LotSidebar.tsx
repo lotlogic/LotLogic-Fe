@@ -63,7 +63,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
         if (!design) return; // Handle null case
         
         // Check if this is an overlay-only request
-        if ((design as any).overlayOnly) {
+        if ((design as HouseDesignItem & { overlayOnly?: boolean }).overlayOnly) {
             let coordinates: [[number, number], [number, number], [number, number], [number, number]] | null = null;
             if (geometry && geometry.type === 'Polygon' && Array.isArray(geometry.coordinates)) {
                 const ring = geometry.coordinates[0];
@@ -105,7 +105,6 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
     const renderDetailedHouseDesign = (design: HouseDesignItem) => {
       if (!design) return null;
       const images = design.images;
-      const mainImage = images[selectedImageIdx]?.src;
       const facedOption = images[selectedImageIdx]?.faced;
 
 

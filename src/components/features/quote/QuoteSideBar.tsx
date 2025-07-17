@@ -23,10 +23,6 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
     const [errors, setErrors] = useState<Partial<Record<keyof QuoteFormData, string>>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    if (!open) return null;
-
-    const facedOption = selectedHouseDesign?.images[0]?.faced || 'N/A';
-
     // Update selectedBuilders in formData when it changes
     React.useEffect(() => {
         setFormData(prev => ({ ...prev, selectedBuilders }));
@@ -47,6 +43,10 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
             setLotSecured(false);
         }
     }, [open]);
+
+    if (!open) return null;
+
+    const facedOption = selectedHouseDesign?.images[0]?.faced || 'N/A';
 
     // Handle form field changes
     const handleInputChange = (field: keyof QuoteFormData, value: string) => {
@@ -74,15 +74,21 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
             
             setShowThankYou(true);
             setErrors({});
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Handle Zod validation errors
-            if (error.name === 'ZodError') {
+            if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
                 const fieldErrors: Partial<Record<keyof QuoteFormData, string>> = {};
                 
-                error.errors?.forEach((err: any) => {
-                    const field = err.path[0] as keyof QuoteFormData;
-                    fieldErrors[field] = err.message;
-                });
+                if ('errors' in error && Array.isArray(error.errors)) {
+                    error.errors.forEach((err: unknown) => {
+                        if (err && typeof err === 'object' && 'path' in err && Array.isArray(err.path)) {
+                            const field = err.path[0] as keyof QuoteFormData;
+                            if ('message' in err && typeof err.message === 'string') {
+                                fieldErrors[field] = err.message;
+                            }
+                        }
+                    });
+                }
                 
                 setErrors(fieldErrors);
             } else {

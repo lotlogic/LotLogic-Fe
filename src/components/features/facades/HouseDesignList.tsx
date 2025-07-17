@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { BedDouble, Bath, Car, Building2, Star, Funnel, ChevronUp } from "lucide-react";
+import { BedDouble, Bath, Car, Building2, Star, Funnel } from "lucide-react";
 import { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
 import { initialHouseData } from "@/constants/houseDesigns";
 

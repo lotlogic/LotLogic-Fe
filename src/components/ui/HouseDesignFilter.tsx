@@ -2,7 +2,7 @@ import React from "react";
 import { BedDouble, Bath, Car, Building2, RotateCcw } from "lucide-react"; 
 import { Slider } from "./slider";
 import { Button } from "./Button";
-import { FilterRowProps, FilterSectionProps, RangeValue, RangeSetter } from "@/types/houseDesign";
+import { FilterRowProps, FilterSectionProps } from "@/types/houseDesign";
 import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "@/constants/houseDesigns";
 
 const FilterRow = React.memo(({
@@ -37,11 +37,15 @@ const FilterRow = React.memo(({
   );
 });
 
+FilterRow.displayName = 'FilterRow';
+
 const RangeValueDisplay = React.memo(({ value }: { value: number }) => (
   <div className="w-14 h-12 flex items-center justify-center border border-gray-200 rounded-lg text-lg font-medium bg-white text-gray-700">
     {value}
   </div>
 ));
+
+RangeValueDisplay.displayName = 'RangeValueDisplay';
 
 
 
@@ -124,3 +128,5 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
     </div>
   );
 });
+
+FilterSectionWithSingleLineSliders.displayName = 'FilterSectionWithSingleLineSliders';

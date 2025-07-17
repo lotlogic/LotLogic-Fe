@@ -1,3 +1,5 @@
+import mapboxgl from 'mapbox-gl';
+
 export interface Option {
   id: string;
   label: string;
@@ -32,7 +34,7 @@ export interface LayersButtonProps {
 export interface ZoningLayersSidebarProps {
   open: boolean;
   onClose: () => void;
-  mapInstance: any;
+  mapInstance: mapboxgl.Map | null;
 }
 
 export interface SavedButtonProps {
@@ -43,16 +45,45 @@ export interface SavedButtonProps {
 export interface SavedPropertiesSidebarProps {
   open: boolean;
   onClose: () => void;
-  savedProperties: any[];
-  onViewDetails: (property: any) => void;
+  savedProperties: SavedProperty[];
+  onViewDetails: (property: SavedProperty) => void;
+}
+
+export interface SavedProperty {
+  id: string;
+  lotId: string;
+  suburb: string;
+  address: string;
+  size: number;
+  zoning: string;
+  overlays?: string;
+  houseDesign: {
+    id: string;
+    title: string;
+    image: string;
+    bedrooms: number;
+    bathrooms: number;
+    cars: number;
+    storeys: number;
+  };
 }
 
 export interface SummaryViewProps {
-  lot: any;
+  lot: LotData;
   onClose: () => void;
 }
 
 export interface DetailedRulesViewProps {
-  lot: any;
+  lot: LotData;
   onClose: () => void;
+}
+
+export interface LotData {
+  id: string | number;
+  suburb?: string;
+  address?: string;
+  size?: number;
+  type?: string;
+  zoning?: string;
+  overlays?: string;
 } 

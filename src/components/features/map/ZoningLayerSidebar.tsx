@@ -2,7 +2,6 @@
 
 import React, { useRef, useEffect } from 'react';
 import { X, ChevronLeft } from 'lucide-react'; 
-import mapboxgl, { Map } from 'mapbox-gl';
 import { ZoningLayersSidebarProps } from '@/types/ui';
 
 export function ZoningLayersSidebar({ open, onClose, mapInstance }: ZoningLayersSidebarProps) {
