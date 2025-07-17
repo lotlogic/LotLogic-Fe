@@ -9,37 +9,18 @@ This document provides instructions for building and running the LotLogic Fronte
 
 ## Quick Start
 
-### Production Build
-
-1. **Build and run the production container:**
-   ```bash
-   docker-compose up --build
-   ```
-
-2. **Access the application:**
-   - Open your browser and navigate to `http://localhost:3000`
 
 ### Development Build
 
 1. **Build and run the development container:**
    ```bash
-   docker-compose --profile dev up --build
+   docker-compose up --build
    ```
 
 2. **Access the development application:**
    - Open your browser and navigate to `http://localhost:3001`
 
 ## Manual Docker Commands
-
-### Production
-
-```bash
-# Build the production image
-docker build -t lotlogic-fe .
-
-# Run the production container
-docker run -p 3000:3000 lotlogic-fe
-```
 
 ### Development
 
@@ -52,11 +33,6 @@ docker run -p 3001:3000 -v $(pwd):/app lotlogic-fe-dev
 ```
 
 ## Docker Compose Services
-
-### Production Service (`lotlogic-fe`)
-- **Port:** 3000
-- **Environment:** Production
-- **Features:** Optimized build, health checks, restart policy
 
 ### Development Service (`lotlogic-fe-dev`)
 - **Port:** 3001
@@ -127,24 +103,3 @@ If you encounter permission issues:
    sudo usermod -aG docker $USER
    # Log out and log back in
    ```
-
-## Production Deployment
-
-For production deployment, consider:
-
-1. **Using a reverse proxy (nginx)**
-2. **Setting up SSL/TLS certificates**
-3. **Configuring environment variables for your production environment**
-4. **Setting up monitoring and logging**
-5. **Using Docker Swarm or Kubernetes for orchestration**
-
-## File Structure
-
-```
-.
-├── Dockerfile          # Production Dockerfile
-├── Dockerfile.dev      # Development Dockerfile
-├── docker-compose.yml  # Docker Compose configuration
-├── .dockerignore       # Files to exclude from Docker build
-└── DOCKER.md          # This documentation
-``` 
