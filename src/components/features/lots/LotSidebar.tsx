@@ -11,8 +11,11 @@ import { BedDouble, Bath, Car, Building2, Star } from "lucide-react";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { GetYourQuoteSidebar } from "../quote/QuoteSideBar";
 import { HouseDesignItem } from "@/types/houseDesign";
+import { useContent } from "@/hooks/useContent";
+import { colors } from "@/constants/content";
 
 export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: LotSidebarProps) {
+    const { lotSidebar, houseDesign } = useContent();
     const [showDetailedRules, setShowDetailedRules] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
     const [showHouseDesigns, setShowHouseDesigns] = React.useState(false);
@@ -119,13 +122,15 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
               <div className="flex justify-between items-start">
                 <div>
                   <div className="font-bold text-lg">{design.title}</div>
-                  <div className="text-gray-600 text-sm">Single Storey &nbsp; Area: {design.area} ft</div>
+                  <div className="text-gray-600 text-sm">{lotSidebar.singleStorey} &nbsp; {houseDesign.area}: {design.area} {houseDesign.ft}</div>
                 </div>
                 <Star
                     className={`h-6 w-6 ${
-                      design.isFavorite ? 'text-[#2F5D62] fill-[#2F5D62]' : 'text-gray-400'
+                      design.isFavorite ? 'fill-current' : 'text-gray-400'
                     }`}
-
+                    style={{
+                      color: design.isFavorite ? colors.primary : undefined,
+                    }}
                 />
               </div>
               <div className="flex gap-4 mt-2 text-gray-700">
@@ -135,7 +140,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
                 <span className="flex items-center gap-1"><Building2 className="h-5 w-5" />{design.storeys}</span>
               </div>
               <div className="mt-2 text-gray-700 text-sm">
-                Faced Option: <span className="font-semibold text-[#2F5D62]">{facedOption}</span>
+                {lotSidebar.facedOption}: <span className="font-semibold text-[#2F5D62]">{facedOption}</span>
               </div>
             </div>
           </div>
@@ -147,10 +152,10 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
     const headerTitle = selectedHouseDesign
       ? selectedHouseDesign.title
       : showHouseDesigns
-        ? 'House Designs'
+        ? lotSidebar.houseDesigns
         : showDetailedRules
-          ? 'Planning Rules'
-          : 'Build Your Site';
+          ? lotSidebar.planningRules
+          : lotSidebar.buildYourSite;
 
     const showBackArrow = showDetailedRules || showFilter || showHouseDesigns || !!selectedHouseDesign;
 
@@ -231,7 +236,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
                 className="w-full text-lg py-3 rounded-lg"
                 onClick={() => setShowFilter(true)}
               >
-                Show Me What I Can Build Here
+                {lotSidebar.showMeWhatICanBuild}
               </Button>
             </div>
           )}

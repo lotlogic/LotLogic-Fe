@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/ui/Sidebar";
 import { MultiSelect } from "@/components/ui/MultiSelect";
 import { GetYourQuoteSidebarProps, quoteFormSchema, QuoteFormData } from "@/types/houseDesign";
 import { builderOptions } from "@/constants/houseDesigns";
+import { quote, formatContent } from "@/constants/content";
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
@@ -131,9 +132,9 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 </>
             ) : (
                 <>
-                    <h2 className="text-2xl font-medium text-[#000000]">Get Your Quote</h2>
+                    <h2 className="text-2xl font-medium text-[#000000]">{quote.title}</h2>
                     <div className="text-gray-600 mt-1 text-base font-normal">
-                        Select builders and get quotes for your dream home
+                        {quote.subtitle}
                     </div>
                 </>
             )}
@@ -156,10 +157,9 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
-                        <h3 className="text-2xl font-semibold text-gray-900">Thank You!</h3>
+                        <h3 className="text-2xl font-semibold text-gray-900">{quote.thankYou}</h3>
                         <p className="text-gray-600">
-                            Your lot has been successfully secured and is now<br />
-                            reserved for your review.
+                            {quote.lotSecured}
                         </p>
                     </div>
                 </div>
@@ -171,31 +171,31 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
-                        <h4 className="text-2xl font-bold text-gray-900">Thank You!</h4>
-                        <p className="text-gray-600">Your enquiry has been successfully submitted.</p>
+                        <h4 className="text-2xl font-bold text-gray-900">{quote.thankYou}</h4>
+                        <p className="text-gray-600">{quote.enquirySubmitted}</p>
                     </div>
                     
                     {/* Reserve Your Lot Section */}
                     <div className=" border border-gray-200 bg-[#eaf3f2]  rounded-lg p-6 space-y-4 text-center">
                         <div className="flex items-center justify-center gap-2">
-                            <h1 className="text-lg font-semibold text-gray-900">Reserve Your Lot Today</h1>
+                            <h1 className="text-lg font-semibold text-gray-900">{quote.reserveYourLot}</h1>
                         </div>
                         <p className="text-gray-600 text-sm">
-                            Secure Lot {lotDetails.id} with a refundable deposit while you compare builder quotes
+                            {formatContent(quote.secureLotDescription, { lotId: lotDetails.id })}
                         </p>
-                        <div className="text-3xl font-bold text-[#2F5D62]">$1,000</div>
+                        <div className="text-3xl font-bold text-[#2F5D62]">{quote.deposit}</div>
                         <div className="flex gap-3 pt-2 justify-center">
                             <button
                                 onClick={() => setLotSecured(true)}
                                 className="bg-[#2F5D62] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors"
                             >
-                                Secure this lot
+                                {quote.secureThisLot}
                             </button>
                             <button
                                 onClick={onClose}
                                 className="border border-[#2F5D62] text-[#2F5D62] py-3 px-6 rounded-lg font-medium hover:bg-[#2F5D62] hover:text-white transition-colors"
                             >
-                                May be later
+                                {quote.mayBeLater}
                             </button>
                         </div>
                     </div>
@@ -204,7 +204,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 // Initial form screen
                 <form onSubmit={handleSubmit} className="space-y-4 p-6">
                     <div>
-                        <label htmlFor="yourName" className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+                        <label htmlFor="yourName" className="block text-sm font-medium text-gray-700 mb-1">{quote.yourName}</label>
                         <input
                             type="text"
                             id="yourName"
@@ -220,7 +220,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                         )}
                     </div>
                     <div>
-                        <label htmlFor="emailAddress" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                        <label htmlFor="emailAddress" className="block text-sm font-medium text-gray-700 mb-1">{quote.emailAddress}</label>
                         <input
                             type="email"
                             id="emailAddress"
@@ -236,7 +236,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                         )}
                     </div>
                     <div>
-                        <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">{quote.phoneNumber}</label>
                         <input
                             type="tel"
                             id="phoneNumber"
@@ -256,15 +256,15 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                             options={builderOptions}
                             selectedOptions={selectedBuilders}
                             onSelectionChange={setSelectedBuilders}
-                            placeholder="Choose builders to get quotes from"
-                            label="Select Builders (Multiple Selection)"
+                            placeholder={quote.chooseBuilders}
+                            label={quote.selectBuilders}
                         />
                         {errors.selectedBuilders && (
                             <p className="mt-1 text-sm text-red-600">{errors.selectedBuilders}</p>
                         )}
                     </div>
                     <div>
-                        <label htmlFor="additionalComments" className="block text-sm font-medium text-gray-700 mb-1">Additional Comments</label>
+                        <label htmlFor="additionalComments" className="block text-sm font-medium text-gray-700 mb-1">{quote.additionalComments}</label>
                         <textarea
                             id="additionalComments"
                             rows={3}
@@ -308,7 +308,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                             className="w-full text-lg py-3 rounded-lg bg-[#2F5D62] text-white disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? 'Submitting...' : 'Get Quote'}
+                            {isSubmitting ? quote.submitting : quote.submit}
                         </Button>
                     </div>
                 </form>

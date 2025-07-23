@@ -1,9 +1,10 @@
 import { ButtonHTMLAttributes, ReactNode } from "react";
 import clsx from "clsx";
+import { colors } from "@/constants/content";
 
-const PRIMARY_COLOR = "#2F5D62";
-const PRIMARY_COLOR_HOVER = "#24484c";
-const PRIMARY_COLOR_DISABLED = "#2F5D62B3"; // 70% opacity
+const PRIMARY_COLOR = colors.primary;
+const PRIMARY_COLOR_HOVER = colors.accent;
+const PRIMARY_COLOR_DISABLED = `${colors.primary}B3`; // 70% opacity
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "outline" | "ghost";

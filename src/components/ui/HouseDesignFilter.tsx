@@ -4,6 +4,7 @@ import { Slider } from "./slider";
 import { Button } from "./Button";
 import { FilterRowProps, FilterSectionProps } from "@/types/houseDesign";
 import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "@/constants/houseDesigns";
+import { useContent } from "@/hooks/useContent";
 
 const FilterRow = React.memo(({
   icon,
@@ -61,7 +62,7 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
   onShowHouseDesign,
 }: FilterSectionProps) => {
 
-
+  const { filter } = useContent();
 
   const stateMap = {
     bedroom: { value: bedroom, setValue: setBedroom },
@@ -81,14 +82,14 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
     <div className="flex flex-col h-full px-6"> {/* Added px-6 here */}
       {/* Sticky Header with "Filters" title and "Reset" button */}
       <div className="sticky top-0 z-10 bg-white pt-6 pb-4 border-b border-gray-100 flex justify-between items-center">
-        <span className="text-xl font-bold text-gray-900">Filters</span>
+        <span className="text-xl font-bold text-gray-900">{filter.title}</span>
         <Button
           variant="ghost"
           onClick={handleReset}
           className="text-sm text-[#2F5D62] hover:bg-gray-100 font-medium p-2 rounded-md flex items-center gap-1"
         >
           <RotateCcw className="h-4 w-4" />
-          Reset
+          {filter.reset}
         </Button>
       </div>
 

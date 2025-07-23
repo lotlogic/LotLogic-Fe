@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { BedDouble, Bath, Car, Building2, Star, Funnel } from "lucide-react";
 import { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
 import { initialHouseData } from "@/constants/houseDesigns";
+import { houseDesign, filter as filterContent, lotSidebar, colors } from "@/constants/content";
 
 export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquireNow }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
@@ -37,7 +38,7 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
     <div className="p-6 overflow-y-auto h-full">
       <div className="flex items-center justify-between mb-4">
         <span className="text-xl font-bold">
-          <span className="text-[#2F5D62]">{filteredHouses.length}</span> House Designs
+          <span className="text-[#2F5D62]">{filteredHouses.length}</span> {houseDesign.title}
         </span>
         <Button
           variant="outline"
@@ -45,7 +46,7 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
           onClick={onShowFilter}
         >
           <Funnel className="h-4 w-4" />
-          <span>Filter</span>
+          <span>{filterContent.title}</span>
         </Button>
       </div>
       <div className="space-y-6">
@@ -71,7 +72,7 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="font-bold text-lg">{house.title}</div>
-                        <div className="text-gray-600 text-sm">Single Storey &nbsp; Area: {house.area} ft</div>
+                        <div className="text-gray-600 text-sm">{lotSidebar.singleStorey} &nbsp; {houseDesign.area}: {house.area} {houseDesign.ft}</div>
                       </div>
                       {/* Collapse button */}
                       {/* <button
@@ -87,8 +88,11 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                       </button> */}
                       <Star
                         className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
-                          house.isFavorite ? 'text-[#2F5D62] fill-[#2F5D62]' : 'text-gray-400'
+                          house.isFavorite ? 'fill-current' : 'text-gray-400'
                         }`}
+                        style={{
+                          color: house.isFavorite ? colors.primary : undefined,
+                        }}
                         onClick={(e) => handleStarClick(e, house.id)}
                         data-star-icon
                       />
@@ -100,7 +104,7 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                       <span className="flex items-center gap-1"><Building2 className="h-5 w-5" />{house.storeys}</span>
                     </div>
                     <div className="mt-2 text-gray-700 text-sm">
-                      Faced Option: <span className="font-semibold text-[#2F5D62]">{facedOption}</span>
+                      {lotSidebar.facedOption}: <span className="font-semibold text-[#2F5D62]">{facedOption}</span>
                     </div>
                   </div>
                 </div>
@@ -134,7 +138,7 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                       }
                     }}
                   >
-                    Enquire Now
+                    {houseDesign.enquireNow}
                   </Button>
                 </div>
               </div>
@@ -161,12 +165,15 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="font-bold text-lg">{house.title}</div>
-                    <div className="text-gray-600 text-sm">Single Storey &nbsp; Area: {house.area} ft</div>
+                    <div className="text-gray-600 text-sm">{lotSidebar.singleStorey} &nbsp; {houseDesign.area}: {house.area} {houseDesign.ft}</div>
                   </div>
                   <Star
                     className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
-                      house.isFavorite ? 'text-[#2F5D62] fill-[#2F5D62]' : 'text-gray-400'
+                      house.isFavorite ? 'fill-current' : 'text-gray-400'
                     }`}
+                    style={{
+                      color: house.isFavorite ? colors.primary : undefined,
+                    }}
                     onClick={(e) => handleStarClick(e, house.id)}
                     data-star-icon
                   />
