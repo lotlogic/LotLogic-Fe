@@ -4,6 +4,7 @@ import { Checkbox } from "./checkbox";
 import { Button } from "./Button";
 import { FilterRowProps, FilterSectionProps } from "@/types/houseDesign";
 import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "@/constants/houseDesigns";
+import { useContent } from "@/hooks/useContent";
 
 const FilterRow = React.memo(({
   icon,
@@ -49,7 +50,7 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
   onShowHouseDesign,
 }: FilterSectionProps) => {
 
-
+  const { filter } = useContent();
 
   const stateMap = {
     bedroom: { value: bedroom, setValue: setBedroom },

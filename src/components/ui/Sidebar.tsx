@@ -1,5 +1,6 @@
 import { X, ChevronLeft } from "lucide-react";
 import clsx from "clsx";
+import { sidebar } from "@/constants/content";
 
 export function Sidebar({
   open,
@@ -34,7 +35,7 @@ export function Sidebar({
           <button
             onClick={onBack}
             className="p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 mr-3"
-            aria-label="Back"
+            aria-label={sidebar.back}
           >
             <ChevronLeft className="h-6 w-6" />
           </button>
@@ -45,7 +46,7 @@ export function Sidebar({
         <button
           onClick={onClose}
           className="p-2 rounded-full hover:bg-gray-100 text-[#000000] hover:text-gray-700 ml-auto"
-          aria-label="Close sidebar"
+          aria-label={sidebar.close}
         >
           <X className="h-6 w-6" />
         </button>

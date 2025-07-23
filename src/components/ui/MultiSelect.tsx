@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { MultiSelectProps } from '@/types/ui';
+import { colors } from '@/constants/content';
 
 export function MultiSelect({ 
   options, 
@@ -106,7 +107,11 @@ export function MultiSelect({
                     type="checkbox"
                     checked={selectedOptions.includes(option.id)}
                     onChange={() => handleOptionToggle(option.id)}
-                    className="w-4 h-4 text-[#2F5D62] border-gray-300 rounded focus:ring-[#2F5D62]"
+                    className="w-4 h-4 border-gray-300 rounded focus:ring-2"
+                    style={{
+                      '--tw-ring-color': colors.primary,
+                      color: colors.primary,
+                    } as React.CSSProperties}
                   />
                 </div>
               </div>
