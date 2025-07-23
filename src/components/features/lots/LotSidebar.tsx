@@ -19,9 +19,9 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
 
 
     // Filter states
-    const [bedroom, setBedroom] = React.useState<[number, number]>([2, 4]);
-    const [bathroom, setBathroom] = React.useState<[number, number]>([2, 4]);
-    const [cars, setCars] = React.useState<[number, number]>([2, 4]);
+    const [bedroom, setBedroom] = React.useState<[number, number]>([3, 4]);
+    const [bathroom, setBathroom] = React.useState<[number, number, number]>([1, 2, 3]);
+    const [cars, setCars] = React.useState<[number, number, number]>([1, 2, 3]);
     const [storeys, setStoreys] = React.useState<[number, number]>([2, 4]);
 
 

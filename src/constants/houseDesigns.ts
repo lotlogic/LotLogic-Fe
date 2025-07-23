@@ -51,7 +51,6 @@ export const FILTER_CONFIGS = [
   { icon: 'BedDouble', label: "Bedroom", key: "bedroom" },
   { icon: 'Bath', label: "Bathroom", key: "bathroom" },
   { icon: 'Car', label: "Cars", key: "cars" },
-  { icon: 'Building2', label: "Storeys", key: "storeys" },
 ] as const;
 
 export const INITIAL_FILTER_RANGES = {

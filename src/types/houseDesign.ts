@@ -18,8 +18,8 @@ export interface HouseDesignItem {
 export interface HouseDesignListProps {
   filter: {
     bedroom: [number, number];
-    bathroom: [number, number];
-    cars: [number, number];
+    bathroom: [number, number, number];
+    cars: [number, number, number];
     storeys: [number, number];
   };
   onShowFilter: () => void;
@@ -43,10 +43,10 @@ export interface GetYourQuoteSidebarProps {
 export interface FilterSectionProps {
   bedroom: [number, number];
   setBedroom: React.Dispatch<React.SetStateAction<[number, number]>>;
-  bathroom: [number, number];
-  setBathroom: React.Dispatch<React.SetStateAction<[number, number]>>;
-  cars: [number, number];
-  setCars: React.Dispatch<React.SetStateAction<[number, number]>>;
+  bathroom: [number, number, number];
+  setBathroom: React.Dispatch<React.SetStateAction<[number, number, number]>>;
+  cars: [number, number, number];
+  setCars: React.Dispatch<React.SetStateAction<[number, number, number]>>;
   storeys: [number, number];
   setStoreys: React.Dispatch<React.SetStateAction<[number, number]>>;
   onShowHouseDesign: () => void;
@@ -55,10 +55,7 @@ export interface FilterSectionProps {
 export interface FilterRowProps {
   icon: React.ReactNode;
   label: string;
-  value: [number, number];
-  setValue: (v: [number, number]) => void;
-  minRange: number;
-  maxRange: number;
+  value: [number, number] | [number, number, number];
 }
 
 export type RangeValue = [number, number];
