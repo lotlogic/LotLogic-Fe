@@ -9,24 +9,24 @@ import { useContent } from "@/hooks/useContent";
 const FilterRow = React.memo(({
   icon,
   label,
-  value,
+  initial
 }: FilterRowProps) => {
   return (
-    <div className="mb-8 border-b border-gray-200 fix pb-4 overflow-hidden">
+    <div className="mb-8 border-b border-gray-200 fix pb-4">
       <div className="flex items-center mb-2">
         {React.isValidElement(icon) ? React.cloneElement(icon) : icon}
         <span className="ml-2 text-base font-semibold text-gray-800">{label}</span>
       </div>
       <div className="flex items-center">
-        <div className="flex gap-8">
-          {value.map((v, index) => (
+        <div className="flex gap-8">  
+          {INITIAL_FILTER_RANGES[initial as keyof typeof INITIAL_FILTER_RANGES].map((v: number, index:number) => (
             <div key={index} className="flex items-center space-x-2">
               <Checkbox id={`checkbox-${index}`} />
               <label
                 htmlFor={`checkbox-${index}`}
                 className="text-sm font-sm"
               >
-                {v} {label.toLowerCase()}
+                {v} {initial}
               </label>
             </div>
           ))}
@@ -76,7 +76,7 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
               key={key}
               icon={<IconComponent />}
               label={label}
-              value={stateMap[key].value}
+              initial={key}
             />
           );
         })}

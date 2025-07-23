@@ -50,12 +50,11 @@ export const builderOptions = [
 export const FILTER_CONFIGS = [
   { icon: 'BedDouble', label: "Bedroom", key: "bedroom" },
   { icon: 'Bath', label: "Bathroom", key: "bathroom" },
-  { icon: 'Car', label: "Cars", key: "cars" },
+  { icon: 'Car', label: "Cars", key: "car" },
 ] as const;
 
 export const INITIAL_FILTER_RANGES = {
-  bedroom: [2, 4] as [number, number],
-  bathroom: [2, 4] as [number, number],
-  cars: [2, 4] as [number, number],
-  storeys: [2, 4] as [number, number],
+  bedroom: [3, 4] as [number, number],
+  bathroom: [1, 2, 3] as [number, number, number],
+  car: [1, 2, 3] as [number, number, number],
 };
