@@ -11,60 +11,24 @@ import { SavedButton } from "./SavedButton";
 import '../map/MapControls.css';
 import { ZoningLayersSidebar } from "./ZoningLayerSidebar";
 import { SavedPropertiesSidebar } from "./SavedPropertiesSidebar";
-
-interface SavedProperty {
-    id: string;
-    lotId: string;
-    suburb: string;
-    address: string;
-    size: number;
-    zoning: string;
-    overlays?: string;
-    houseDesign: {
-        id: string;
-        title: string;
-        image: string;
-        bedrooms: number;
-        bathrooms: number;
-        cars: number;
-        storeys: number;
-    };
-}
+import { useLotCalculation } from "@/hooks/useLotCalculation";
+import { SavedProperty } from "@/types/ui";
 
 type LotProperties = {
   ADDRESSES?: string;
-  AP_NUMBER?: string;
   BLOCK_DERIVED_AREA?: string;
   BLOCK_KEY: string; 
-  BLOCK_LEASED_AREA?: string;
   BLOCK_NUMBER: number; 
   BLOCK_SECTION?: string;
-  BLOCK_TYPE_ID?: string;
-  CURRENT_LIFECYCLE_STAGE?: string;
-  DEPOSITED_PLAN_NO?: string;
   DISTRICT_CODE: number; 
   DISTRICT_NAME?: string;
   DISTRICT_SHORT?: string;
-  DIVISION_CODE?: number; 
-  DIVISION_NAME?: string; 
-  DIVISION_SHORT?: string; 
-  GROUND_LEVEL?: number; 
-  GlobalID?: string;
   ID: number; 
   LAND_USE_POLICY_ZONES?: string;
-  LAST_UPDATE?: string;
-  NEW_TERRITORY_PLAN?: string;
   OBJECTID: number; 
   OVERLAY_PROVISION_ZONES?: string;
-  PLAN_NUMBERS?: string;
   SECTION_NUMBER: number; 
-  SENSITIVE_FLAG?: string; 
-  STRATUM_DATUM_ID?: string; 
-  STRATUM_HIGHEST_LEVEL?: number; 
-  STRATUM_LOWEST_LEVEL?: number; 
-  TRANSITION_FLAG?: string;
   TYPE?: string;
-  VOLUME_FOLIO?: string; 
   WATER_FLAG?: string;
 };
 
@@ -84,6 +48,20 @@ const debounce = (func: (...args: unknown[]) => void, wait: number) => {
   };
 };
 
+function createLabelElement(text: string) {
+  const el = document.createElement('div');
+  el.style.background = 'white';
+  el.style.border = '1.5px solid #2F5D62';
+  el.style.borderRadius = '4px';
+  el.style.padding = '2px 6px';
+  el.style.fontSize = '14px';
+  el.style.fontWeight = 'bold';
+  el.style.color = '#2F5D62';
+  el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.08)';
+  el.innerText = text;
+  return el;
+}
+
 export default function ZoneMap() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Map | null>(null);
@@ -92,9 +70,16 @@ export default function ZoneMap() {
   const [selectedFloorPlan, setSelectedFloorPlan] = useState<FloorPlan | null>(null);
   const [isZoningSidebarOpen, setIsZoningSidebarOpen] = useState(false);
   const [isSavedSidebarOpen, setIsSavedSidebarOpen] = useState(false);
+  const [edgeMarkers, setEdgeMarkers] = useState<mapboxgl.Marker[]>([]);
+
+  // Get the lot ID for the API call
+  const lotId = selectedLot?.properties?.BLOCK_KEY || null;
+  
+  // Use TanStack Query for lot calculation
+  const { data: lotApiData, isLoading: isLoadingLotData, error: lotApiError } = useLotCalculation(lotId);
 
   // Mock saved properties data
-  const savedProperties = [
+  const savedProperties: SavedProperty[] = [
     {
       id: '1',
       lotId: '205',
@@ -106,19 +91,11 @@ export default function ZoneMap() {
       houseDesign: {
         id: 'design1',
         title: 'Allium Place, Orlando',
-        area: '2,096.00',
         image: '/images/brick.jpg',
-        images: [
-          { src: '/images/brick.jpg', faced: 'Brick' },
-          { src: '/images/timmerland.jpg', faced: 'Render' },
-          { src: '/images/weatherboard.jpg', faced: 'Weatherboard' },
-        ],
         bedrooms: 4,
         bathrooms: 2,
         cars: 2,
         storeys: 1,
-        isFavorite: true,
-        floorPlanImage: '/images/floorplan.jpg',
       }
     }
   ];
@@ -227,8 +204,9 @@ export default function ZoneMap() {
     const handleClick = (e: MapMouseEvent) => {
       if (selectedLot) return; // Skip if sidebar is open
       const feature = e.features?.[0];
-      if (feature) {
+      if (feature && feature.properties) {
         setSelectedLot(feature as MapboxGeoJSONFeature & { properties: LotProperties });
+        
         // Fly to the selected feature
         map.flyTo({
           center: e.lngLat,
@@ -272,8 +250,8 @@ export default function ZoneMap() {
       type: 'fill',
       source: sourceId,
       paint: {
-        'fill-color': '#EAEFEF',
-        'fill-opacity': 0.3
+        'fill-color': '#FFFFFF',
+        'fill-opacity': 1.0
       }
     });
 
@@ -294,6 +272,51 @@ export default function ZoneMap() {
       if (map.getSource(sourceId)) map.removeSource(sourceId);
     };
   }, [selectedLot]);
+
+  useEffect(() => {
+    edgeMarkers.forEach(marker => marker.remove());
+    setEdgeMarkers([]);
+
+    if (!mapRef.current || !selectedLot || !lotApiData?.matches?.[0]?.lotDimensions) return;
+
+    const map = mapRef.current;
+    const coordinates = selectedLot.geometry?.type === 'Polygon'
+      ? selectedLot.geometry.coordinates[0]
+      : null;
+    if (!coordinates || coordinates.length < 4) return;
+
+    // Get width/depth from API
+    const { width, depth } = lotApiData.matches[0].lotDimensions;
+    // Repeat for each edge (assuming rectangle, 4 sides)
+    const labels = [
+      `${width.toFixed(2)}m`,
+      `${depth.toFixed(2)}m`,
+      `${width.toFixed(2)}m`,
+      `${depth.toFixed(2)}m`
+    ];
+
+    const newMarkers: mapboxgl.Marker[] = [];
+    for (let i = 0; i < 4; i++) {
+      const coord1 = coordinates[i];
+      const coord2 = coordinates[(i + 1) % 4];
+      // Midpoint
+      const midpoint: [number, number] = [
+        (coord1[0] + coord2[0]) / 2,
+        (coord1[1] + coord2[1]) / 2
+      ];
+      const marker = new mapboxgl.Marker({ element: createLabelElement(labels[i]), anchor: 'center' })
+        .setLngLat(midpoint)
+        .addTo(map);
+      newMarkers.push(marker);
+    }
+    setEdgeMarkers(newMarkers);
+
+    // Cleanup on unmount/lot change
+    return () => {
+      newMarkers.forEach(marker => marker.remove());
+      setEdgeMarkers([]);
+    };
+  }, [selectedLot, lotApiData]);
 
   useEffect(() => {
     if (!mapRef.current || !selectedFloorPlan) return;
@@ -388,24 +411,26 @@ export default function ZoneMap() {
         className="h-full w-full" 
       />
 
-      {!isLoading && selectedLot && (
+      {/* Lot Sidebar */}
+      {selectedLot && (
         <LotSidebar
           open={!!selectedLot}
           onClose={handleCloseSidebar}
+          isLoadingApiData={isLoadingLotData}
+          apiError={lotApiError}
           lot={{
-            id: selectedLot.properties.ID,
-            suburb: selectedLot.properties.DISTRICT_NAME,
-            address: selectedLot.properties.ADDRESSES,
-            zoning: selectedLot.properties.LAND_USE_POLICY_ZONES,
+            id: selectedLot.properties.BLOCK_KEY,
+            suburb: selectedLot.properties.DISTRICT_NAME || '',
+            address: selectedLot.properties.ADDRESSES || '',
             size: selectedLot.properties.BLOCK_DERIVED_AREA,
-            width: selectedLot.properties.WIDTH,
-            depth: selectedLot.properties.DEPTH,
-            frontageType: selectedLot.properties.FRONTAGE_TYPE,
+            type: selectedLot.properties.TYPE,
+            zoning: selectedLot.properties.LAND_USE_POLICY_ZONES,
             overlays: selectedLot.properties.OVERLAY_PROVISION_ZONES,
-            planningId: selectedLot.properties.PLAN_NUMBERS,
-            maxHeight: selectedLot.properties.MAX_BUILDING_HEIGHT,
-            maxSize: selectedLot.properties.MAX_LOT_SIZE,
-            maxFSR: selectedLot.properties.MAX_FSR,
+            width: lotApiData?.matches?.[0]?.lotDimensions?.width,
+            depth: lotApiData?.matches?.[0]?.lotDimensions?.depth,
+            apiDimensions: lotApiData?.matches?.[0]?.lotDimensions,
+            apiZoning: lotApiData?.zoning,
+            apiMatches: lotApiData?.matches,
           }}
           geometry={selectedLot.geometry}
           onSelectFloorPlan={setSelectedFloorPlan}

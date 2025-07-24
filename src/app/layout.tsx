@@ -4,6 +4,7 @@ import "./globals.css";
 import { IBM_Plex_Serif } from 'next/font/google';
 import { DM_Sans } from 'next/font/google';
 import { app, brand } from "@/constants/content";
+import { QueryProvider } from "@/providers/QueryProvider";
 
 
 const ibmPlexSerif = IBM_Plex_Serif({
@@ -47,7 +48,9 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${geistSans.variable} ${geistMono.variable} ${ibmPlexSerif.variable}`}
       >
-        {children}
+        <QueryProvider>
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );
