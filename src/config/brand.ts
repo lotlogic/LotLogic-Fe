@@ -54,7 +54,7 @@ export const BRAND_CONFIG = {
 
   // API endpoints (for different environments)
   api: {
-    development: "http://localhost:3001/api",
+    development: "http://localhost:3000",
     staging: "https://staging-api.lotlogic.com",
     production: "https://api.lotlogic.com",
   },

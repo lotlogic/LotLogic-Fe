@@ -7,15 +7,17 @@ import { SummaryView } from "./SummaryView";
 import { DetailedRulesView } from "./DetailedRulesView";
 import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
 import { HouseDesignList } from "../facades/HouseDesignList";
-import { BedDouble, Bath, Car, Building2, Star } from "lucide-react";
+import { BedDouble, Bath, Car, Building2, Star, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { GetYourQuoteSidebar } from "../quote/QuoteSideBar";
 import { HouseDesignItem } from "@/types/houseDesign";
 import { useContent } from "@/hooks/useContent";
 import { colors } from "@/constants/content";
+import { useQueryClient } from '@tanstack/react-query';
 
-export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: LotSidebarProps) {
+export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, isLoadingApiData = false, apiError = null }: LotSidebarProps) {
     const { lotSidebar, houseDesign } = useContent();
+    const queryClient = useQueryClient();
     const [showDetailedRules, setShowDetailedRules] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
     const [showHouseDesigns, setShowHouseDesigns] = React.useState(false);
@@ -74,9 +76,10 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
                     coordinates = [ring[0], ring[1], ring[2], ring[3]] as [[number, number], [number, number], [number, number], [number, number]];
                 }
             }
-            if (onSelectFloorPlan && design.floorPlanImage && coordinates) {
+            const floorplan  = lot.apiMatches?.[0]?.floorplanUrl;
+            if (onSelectFloorPlan && floorplan && coordinates) {
                 onSelectFloorPlan({
-                    url: design.floorPlanImage,
+                    url: floorplan,
                     coordinates,
                 });
             }
@@ -92,9 +95,11 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
                     coordinates = [ring[0], ring[1], ring[2], ring[3]] as [[number, number], [number, number], [number, number], [number, number]];
                 }
             }
-            if (onSelectFloorPlan && design.floorPlanImage && coordinates) {
+            const floorplanUrl = lot.apiMatches?.[0]?.floorplanUrl || design.floorPlanImage;
+
+            if (onSelectFloorPlan && floorplanUrl && coordinates) {
                 onSelectFloorPlan({
-                    url: design.floorPlanImage,
+                    url: floorplanUrl,
                     coordinates,
                 });
             }
@@ -182,6 +187,19 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
       </>
     );
 
+    // Show loading indicator if API data is being fetched
+    const showLoading = isLoadingApiData && !lot.apiDimensions;
+    
+    // Show error state if API call failed
+    const showError = apiError && !lot.apiDimensions;
+
+    // Handle retry
+    const handleRetry = () => {
+      if (lot.id) {
+        queryClient.invalidateQueries({ queryKey: ['lot-calculation', lot.id] });
+      }
+    };
+
     return (
       <>
         <Sidebar 
@@ -219,12 +237,38 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
               onShowHouseDesign={handleShowHouseDesign}
             />
           ) : !showDetailedRules ? ( 
-            <SummaryView
-              lot={lot}
-              zoningColor={zoningColor}
-              zoningText={zoningText}
-              onShowDetailedRules={() => setShowDetailedRules(true)}
-            />
+            <>
+              {showLoading ? (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: colors.primary }} />
+                  <span className="text-gray-600">Loading lot dimensions...</span>
+                </div>
+              ) : showError ? (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <AlertCircle className="h-6 w-6 mb-3" style={{ color: colors.error }} />
+                  <div className="text-center mb-4">
+                    <p className="text-gray-600 mb-2">Failed to load lot dimensions</p>
+                    <p className="text-sm text-gray-500">{apiError?.message || 'Unknown error occurred'}</p>
+                  </div>
+                  <Button
+                    onClick={handleRetry}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    disabled={isLoadingApiData}
+                  >
+                    <RefreshCw className={`h-4 w-4 ${isLoadingApiData ? 'animate-spin' : ''}`} />
+                    Retry
+                  </Button>
+                </div>
+              ) : (
+                <SummaryView
+                  lot={lot}
+                  zoningColor={zoningColor}
+                  zoningText={zoningText}
+                  onShowDetailedRules={() => setShowDetailedRules(true)}
+                />
+              )}
+            </>
           ) : ( 
             <DetailedRulesView lot={lot} />
           )}

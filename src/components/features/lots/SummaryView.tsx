@@ -35,11 +35,17 @@ export function SummaryView({ lot, zoningColor, zoningText, onShowDetailedRules 
         <div className="flex flex-col justify-center flex-grow">
           <div className="flex items-baseline mb-1">
             <span className="text-gray-700 text-sm font-normal min-w-[85px]">Width:</span>
-            <span className="ml-1 text-gray-500 text-sm font-normal">{lot.width ? `${lot.width} m` : '--'}</span>
+            <span className="ml-1 text-gray-500 text-sm font-normal">
+              {lot.apiDimensions?.width ? `${lot.apiDimensions.width.toFixed(2)}m` : 
+               lot.width ? `${lot.width} m` : '--'}
+            </span>
           </div>
           <div className="flex items-baseline mb-1">
             <span className="text-gray-700 text-sm font-normal min-w-[85px]">Depth:</span>
-            <span className="ml-1 text-gray-500 text-sm font-normal">{lot.depth ? `${lot.depth} m` : '--'}</span>
+            <span className="ml-1 text-gray-500 text-sm font-normal">
+              {lot.apiDimensions?.depth ? `${lot.apiDimensions.depth.toFixed(2)}m` : 
+               lot.depth ? `${lot.depth} m` : '--'}
+            </span>
           </div>
           <div className="flex items-baseline mb-1">
             <span className="text-gray-700 text-sm font-normal min-w-[85px]">Frontage type:</span>
