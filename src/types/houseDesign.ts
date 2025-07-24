@@ -17,10 +17,9 @@ export interface HouseDesignItem {
 
 export interface HouseDesignListProps {
   filter: {
-    bedroom: [];
-    bathroom: [];
-    cars: [];
-    storeys: [];
+    bedroom: number[];
+    bathroom: number[];
+    car: number[];
   };
   onShowFilter: () => void;
   onDesignClick: (design: HouseDesignItem | null) => void;
@@ -41,20 +40,20 @@ export interface GetYourQuoteSidebarProps {
 }
 
 export interface FilterSectionProps {
-  bedroom: [];
-  setBedroom: React.Dispatch<React.SetStateAction<[]>>;
-  bathroom: [];
-  setBathroom: React.Dispatch<React.SetStateAction<[]>>;
-  cars: [];
-  setCars: React.Dispatch<React.SetStateAction<[]>>;
-  storeys: [];
-  setStoreys: React.Dispatch<React.SetStateAction<[]>>;
+  bedroom: number[];
+  setBedroom: React.Dispatch<React.SetStateAction<number[]>>;
+  bathroom: number[];
+  setBathroom: React.Dispatch<React.SetStateAction<number[]>>;
+  car: number[];
+  setCar: React.Dispatch<React.SetStateAction<number[]>>;
   onShowHouseDesign: () => void;
 }
 
 export interface FilterRowProps {
   icon: React.ReactNode;
   label: string;
+  value: number[];
+  setValue: (value: number[]) => void;
   initial: string;
 }
 

@@ -4,11 +4,12 @@ import { Checkbox } from "./checkbox";
 import { Button } from "./Button";
 import { FilterRowProps, FilterSectionProps } from "@/types/houseDesign";
 import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "@/constants/houseDesigns";
-import { useContent } from "@/hooks/useContent";
 
 const FilterRow = React.memo(({
   icon,
   label,
+  value,
+  setValue,
   initial
 }: FilterRowProps) => {
   return (
@@ -21,7 +22,17 @@ const FilterRow = React.memo(({
         <div className="flex gap-8">  
           {INITIAL_FILTER_RANGES[initial as keyof typeof INITIAL_FILTER_RANGES].map((v: number, index:number) => (
             <div key={index} className="flex items-center space-x-2">
-              <Checkbox id={`checkbox-${index}`} />
+              <Checkbox
+                id={`checkbox-${index}`}
+                checked={value.includes(v)}
+                onCheckedChange={(checked) => {
+                  checked
+                    ? !value.includes(v)
+                      ? setValue([...value, v])
+                      : setValue([...value])
+                    : setValue(value.filter(item => item !== v))
+                }}
+              />
               <label
                 htmlFor={`checkbox-${index}`}
                 className="text-sm font-sm"
@@ -45,17 +56,15 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
   setBedroom,
   bathroom,
   setBathroom,
-  cars,
-  setCars,
+  car,
+  setCar,
   onShowHouseDesign,
 }: FilterSectionProps) => {
-
-  const { filter } = useContent();
 
   const stateMap = {
     bedroom: { value: bedroom, setValue: setBedroom },
     bathroom: { value: bathroom, setValue: setBathroom },
-    cars: { value: cars, setValue: setCars },
+    car: { value: car, setValue: setCar },
   };
 
   return (
@@ -75,6 +84,8 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
             <FilterRow
               key={key}
               icon={<IconComponent />}
+              value={stateMap[key].value}
+              setValue={stateMap[key].setValue}
               label={label}
               initial={key}
             />

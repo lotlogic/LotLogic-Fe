@@ -22,10 +22,9 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
 
 
     // Filter states
-    const [bedroom, setBedroom] = React.useState<[]>([]);
-    const [bathroom, setBathroom] = React.useState<[]>([]);
-    const [cars, setCars] = React.useState<[]>([]);
-    const [storeys, setStoreys] = React.useState<[]>([]);
+    const [bedroom, setBedroom] = React.useState<number[]>([]);
+    const [bathroom, setBathroom] = React.useState<number[]>([]);
+    const [car, setCar] = React.useState<number[]>([]);
 
 
     const [selectedHouseDesign, setSelectedHouseDesign] = React.useState<HouseDesignItem | null>(null);
@@ -39,7 +38,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
     const zoningText = lot.zoning || '--';
 
     const handleShowHouseDesign = () => {
-      const filterPayload = { bedroom, bathroom, cars, storeys };
+      const filterPayload = { bedroom, bathroom, car };
       console.log("Filter Payload:", filterPayload);
       setShowHouseDesigns(true);
       setShowFilter(false);
@@ -195,7 +194,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
             renderDetailedHouseDesign(selectedHouseDesign)
           ) : showHouseDesigns ? ( // Render list of house designs
             <HouseDesignList
-              filter={{ bedroom, bathroom, cars, storeys }}
+              filter={{ bedroom, bathroom, car }}
               onShowFilter={() => {
                 setShowHouseDesigns(false);
                 setShowFilter(true);
@@ -212,10 +211,8 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
               setBedroom={setBedroom}
               bathroom={bathroom}
               setBathroom={setBathroom}
-              cars={cars}
-              setCars={setCars}
-              storeys={storeys}
-              setStoreys={setStoreys}
+              car={car}
+              setCar={setCar}
               onShowHouseDesign={handleShowHouseDesign}
             />
           ) : !showDetailedRules ? ( 
