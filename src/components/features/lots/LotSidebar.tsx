@@ -7,7 +7,7 @@ import { SummaryView } from "./SummaryView";
 import { DetailedRulesView } from "./DetailedRulesView";
 import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
 import { HouseDesignList } from "../facades/HouseDesignList";
-import { BedDouble, Bath, Car, Building2, Star, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { BedDouble, Bath, Car, Building2, Star, ArrowRight} from "lucide-react";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { GetYourQuoteSidebar } from "../quote/QuoteSideBar";
 import { HouseDesignItem } from "@/types/houseDesign";
@@ -18,7 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, isLoadingApiData = false, apiError = null }: LotSidebarProps) {
     const { lotSidebar, houseDesign } = useContent();
     const queryClient = useQueryClient();
-    const [showDetailedRules, setShowDetailedRules] = React.useState(false);
+    // const [showDetailedRules, setShowDetailedRules] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
     const [showHouseDesigns, setShowHouseDesigns] = React.useState(false);
 
@@ -58,9 +58,10 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
         setShowFilter(true);
       } else if (showFilter) {
         setShowFilter(false);
-      } else if (showDetailedRules) {
-        setShowDetailedRules(false);
       }
+      // else if (showDetailedRules) {
+      //   setShowDetailedRules(false);
+      // }
     };
 
     // Callback when a house design item is clicked in HouseDesignList
@@ -158,11 +159,11 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
       ? selectedHouseDesign.title
       : showHouseDesigns
         ? lotSidebar.houseDesigns
-        : showDetailedRules
-          ? lotSidebar.planningRules
-          : lotSidebar.buildYourSite;
+        // : showDetailedRules
+        //   ? lotSidebar.planningRules
+        : lotSidebar.buildYourSite;
 
-    const showBackArrow = showDetailedRules || showFilter || showHouseDesigns || !!selectedHouseDesign;
+    const showBackArrow = showFilter || showHouseDesigns || !!selectedHouseDesign;
 
     const headerContent = (
       <>
@@ -171,11 +172,11 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
         </h2>
         <div className="text-gray-600 mt-1 text-base font-normal">
           {selectedHouseDesign ? (
-              `Lot ID: ${lot.id || '--'}, ${lot.suburb || '--'} | ${lot.address || '--'}`
+              `Lot ID: ${lot.id || '--'}, ${lot.suburb?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'} | ${lot.address?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'}`
           ) : (
-              `Lot ID: ${lot.id || '--'}, ${lot.suburb || '--'} | ${lot.address || '--'}`
+              `Lot ID: ${lot.id || '--'}, ${lot.suburb?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'} | ${lot.address?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'}`
           )}
-          {(showDetailedRules || showFilter || showHouseDesigns || selectedHouseDesign) && (
+          {(showFilter || showHouseDesigns || selectedHouseDesign) && (
               <div className="mt-2 flex flex-wrap items-center text-xs font-normal">
                   {lot.size && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md flex items-center text-gray-700"><Diamond className="h-3 w-3 mr-1" />{lot.size}m²</span>}
                   {lot.type && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md text-gray-700">{lot.type}</span>}
@@ -236,54 +237,38 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
               setStoreys={setStoreys}
               onShowHouseDesign={handleShowHouseDesign}
             />
-          ) : !showDetailedRules ? ( 
-            <>
-              {showLoading ? (
-                <div className="flex items-center justify-center p-8">
-                  <Loader2 className="h-6 w-6 animate-spin mr-2" style={{ color: colors.primary }} />
-                  <span className="text-gray-600">Loading lot dimensions...</span>
-                </div>
-              ) : showError ? (
-                <div className="flex flex-col items-center justify-center p-8">
-                  <AlertCircle className="h-6 w-6 mb-3" style={{ color: colors.error }} />
-                  <div className="text-center mb-4">
-                    <p className="text-gray-600 mb-2">Failed to load lot dimensions</p>
-                    <p className="text-sm text-gray-500">{apiError?.message || 'Unknown error occurred'}</p>
-                  </div>
-                  <Button
-                    onClick={handleRetry}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                    disabled={isLoadingApiData}
-                  >
-                    <RefreshCw className={`h-4 w-4 ${isLoadingApiData ? 'animate-spin' : ''}`} />
-                    Retry
-                  </Button>
-                </div>
-              ) : (
-                <SummaryView
-                  lot={lot}
-                  zoningColor={zoningColor}
-                  zoningText={zoningText}
-                  onShowDetailedRules={() => setShowDetailedRules(true)}
-                />
-              )}
-            </>
           ) : ( 
-            <DetailedRulesView lot={lot} />
+            <SummaryView
+              lot={lot}
+              zoningColor={zoningColor}
+              zoningText={zoningText}
+              // onShowDetailedRules={() => setShowDetailedRules(true)}
+            />
           )}
 
           {/* Action Button - Conditional */}
-          {!showDetailedRules && !showFilter && !showHouseDesigns && !selectedHouseDesign && (
-            <div className="sticky bottom-0 p-6 border-t border-gray-200 bg-white rounded-b-2xl">
+            {!showFilter && !showHouseDesigns && !selectedHouseDesign && (
+            <div className="sticky bottom-0 px-6 pt-0 pb-6">
+            <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
+                             <div className="text-left mb-4">
+                 <p className="text-gray-600 text-base font-medium">
+                   Get inspired with new house designs
+                 </p>
+               </div>
               <Button
-                className="w-full text-lg py-3 rounded-lg"
+                className="w-full text-base py-4 rounded-xl font-semibold animated-gradient-button transition-all duration-300 shadow-md cursor-pointer"
                 onClick={() => setShowFilter(true)}
               >
-                {lotSidebar.showMeWhatICanBuild}
+                <span className="flex items-center justify-center gap-2">
+                  {lotSidebar.showMeWhatICanBuild}
+
+                  <ArrowRight className='h-6 w-8'/>
+
+                </span>
               </Button>
             </div>
-          )}
+          </div>
+            )}
         </Sidebar>
         
         {/* Quote Sidebar */}
