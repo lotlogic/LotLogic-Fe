@@ -159,9 +159,11 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
       ? selectedHouseDesign.title
       : showHouseDesigns
         ? lotSidebar.houseDesigns
+        : showFilter
+          ? "Build A House"
         // : showDetailedRules
         //   ? lotSidebar.planningRules
-        : lotSidebar.buildYourSite;
+          : lotSidebar.buildYourSite;
 
     const showBackArrow = showFilter || showHouseDesigns || !!selectedHouseDesign;
 
@@ -170,21 +172,23 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
         <h2 className="text-2xl font-medium text-[#000000]">
         {headerTitle}
         </h2>
-        <div className="text-gray-600 mt-1 text-base font-normal">
-          {selectedHouseDesign ? (
-              `Lot ID: ${lot.id || '--'}, ${lot.suburb?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'} | ${lot.address?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'}`
-          ) : (
-              `Lot ID: ${lot.id || '--'}, ${lot.suburb?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'} | ${lot.address?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'}`
-          )}
-          {(showFilter || showHouseDesigns || selectedHouseDesign) && (
-              <div className="mt-2 flex flex-wrap items-center text-xs font-normal">
-                  {lot.size && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md flex items-center text-gray-700"><Diamond className="h-3 w-3 mr-1" />{lot.size}m²</span>}
-                  {lot.type && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md text-gray-700">{lot.type}</span>}
-                  {lot.zoning && <span className="mr-2 px-2 py-1 rounded-md text-black font-medium" style={{ backgroundColor: zoningColor }}>{zoningText}</span>}
-                  {lot.overlays === 'Flood' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">Flood</span>}
-              </div>
-          )}
-        </div>
+        {!showFilter && (
+          <div className="text-gray-600 mt-1 text-base font-normal">
+            {selectedHouseDesign ? (
+                `Lot ID: ${lot.id || '--'}, ${lot.suburb?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'} | ${lot.address?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'}`
+            ) : (
+                `Lot ID: ${lot.id || '--'}, ${lot.suburb?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'} | ${lot.address?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'}`
+            )}
+            {(showHouseDesigns || selectedHouseDesign) && (
+                <div className="mt-2 flex flex-wrap items-center text-xs font-normal">
+                    {lot.size && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md flex items-center text-gray-700"><Diamond className="h-3 w-3 mr-1" />{lot.size}m²</span>}
+                    {lot.type && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md text-gray-700">{lot.type}</span>}
+                    {lot.zoning && <span className="mr-2 px-2 py-1 rounded-md text-black font-medium" style={{ backgroundColor: zoningColor }}>{zoningText}</span>}
+                    {lot.overlays === 'Flood' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">Flood</span>}
+                </div>
+            )}
+          </div>
+        )}
       </>
     );
 
