@@ -10,7 +10,7 @@ import { HouseDesignList } from "../facades/HouseDesignList";
 import { BedDouble, Bath, Car, Building2, Star } from "lucide-react";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { GetYourQuoteSidebar } from "../quote/QuoteSideBar";
-import { HouseDesignItem } from "@/types/houseDesign";
+import { DesignState, HouseDesignItem } from "@/types/houseDesign";
 import { useContent } from "@/hooks/useContent";
 import { colors } from "@/constants/content";
 
@@ -25,6 +25,13 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
     const [bedroom, setBedroom] = React.useState<number[]>([]);
     const [bathroom, setBathroom] = React.useState<number[]>([]);
     const [car, setCar] = React.useState<number[]>([]);
+    const [design, setDesign] = React.useState<DesignState>({
+      rumpus: false,
+      alfresco: false,
+      pergola: false,
+    });
+    const [min_size, setMinSize] = React.useState<number>(NaN);
+    const [max_size, setMaxSize] = React.useState<number>(NaN);
 
 
     const [selectedHouseDesign, setSelectedHouseDesign] = React.useState<HouseDesignItem | null>(null);
@@ -38,7 +45,16 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
     const zoningText = lot.zoning || '--';
 
     const handleShowHouseDesign = () => {
-      const filterPayload = { bedroom, bathroom, car };
+      const filterPayload = { 
+        bedroom,
+        bathroom,
+        car,
+        rumpus: design.rumpus,
+        alfresco: design.alfresco,
+        pergola: design.pergola,
+        min_size,
+        max_size
+      };
       console.log("Filter Payload:", filterPayload);
       setShowHouseDesigns(true);
       setShowFilter(false);
@@ -213,6 +229,12 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
               setBathroom={setBathroom}
               car={car}
               setCar={setCar}
+              design={design}
+              setDesign={setDesign}
+              min_size={min_size}
+              setMinSize={setMinSize}
+              max_size={max_size}
+              setMaxSize={setMaxSize}
               onShowHouseDesign={handleShowHouseDesign}
             />
           ) : !showDetailedRules ? ( 

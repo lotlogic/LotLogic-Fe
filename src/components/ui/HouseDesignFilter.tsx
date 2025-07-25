@@ -1,8 +1,9 @@
 import React from "react";
-import { BedDouble, Bath, Car, Building2, RotateCcw } from "lucide-react"; 
+import { BedDouble, Bath, Car, Building2 } from "lucide-react"; 
 import { Checkbox } from "./checkbox";
 import { Button } from "./Button";
-import { FilterRowProps, FilterSectionProps } from "@/types/houseDesign";
+import { Input } from "./input";
+import { DesignRowProps, FilterRowProps, FilterSectionProps, HouseSizeInputRowProps } from "@/types/houseDesign";
 import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "@/constants/houseDesigns";
 
 const FilterRow = React.memo(({
@@ -42,13 +43,112 @@ const FilterRow = React.memo(({
             </div>
           ))}
         </div>
-
       </div>
     </div>
   );
 });
 
 FilterRow.displayName = 'FilterRow';
+
+const DesignRow = React.memo(({
+  rumpus = false,
+  alfresco = false,
+  pergola = false,
+  onChange
+}: DesignRowProps) => {
+  return (
+    <div className="mb-8 border-b border-gray-200 fix pb-4">
+      <div className="flex items-center">
+        <div className="flex gap-8">  
+          <div className="flex items-center space-x-3">
+            <Checkbox
+              id="checkbox-rumpus"
+              checked={rumpus}
+              onCheckedChange={(checked: boolean) => {
+                onChange('rumpus', checked);
+              }}
+            />
+            <label htmlFor="checkbox-rumpus" className="text-sm font-bold">
+              Rumpus
+            </label>
+
+            <Checkbox
+              id="checkbox-alfresco"
+              checked={alfresco}
+              onCheckedChange={(checked: boolean) => {
+                onChange('alfresco', checked);
+              }}
+            />
+            <label htmlFor="checkbox-alfresco" className="text-sm font-bold">
+              Alfresco
+            </label>
+
+            <Checkbox
+              id="checkbox-pergola"
+              checked={pergola}
+              onCheckedChange={(checked: boolean) => {
+                onChange('pergola', checked);
+              }}
+            />
+            <label htmlFor="checkbox-pergola" className="text-sm font-bold">
+              Pergola
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+DesignRow.displayName = 'DesignRow';
+
+const HouseSizeInputRow = React.memo(({
+  min_size,
+  setMinSize,
+  max_size,
+  setMaxSize
+}: HouseSizeInputRowProps) => {
+  return (
+    <div className="fix pb-4">
+      <div className="flex items-center mb-2">
+        {React.isValidElement(<Building2 />) ? React.cloneElement(<Building2 />) : <Building2 />}
+        <span className="ml-2 text-base font-semibold text-gray-800">Enter House Size</span>
+      </div>
+      <div className="flex items-center">
+        <div className="flex gap-8">  
+          <div className="flex items-center space-x-3">
+            <Input 
+              type="text"
+              value={isNaN(min_size) ? "" : min_size}
+              placeholder="Min: 150m²"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const val = e.target.value;
+                const num = parseInt(val, 10);
+                if (!isNaN(num))
+                  setMinSize(num);
+              }}
+            />
+          </div>
+          <div className="flex items-center space-x-3">
+            <Input
+            type="text"
+            value={isNaN(max_size) ? "" : max_size}
+            placeholder="Max: 300m²" 
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                const val = e.target.value;
+                const num = parseInt(val, 10);
+                if (!isNaN(num))
+                  setMaxSize(num);
+              }}
+          />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+HouseSizeInputRow.displayName = 'HouseSizeInputRow';
 
 
 export const FilterSectionWithSingleLineSliders = React.memo(({
@@ -58,6 +158,12 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
   setBathroom,
   car,
   setCar,
+  design,
+  setDesign,
+  min_size,
+  setMinSize,
+  max_size,
+  setMaxSize,
   onShowHouseDesign,
 }: FilterSectionProps) => {
 
@@ -67,11 +173,16 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
     car: { value: car, setValue: setCar },
   };
 
+
+  const handleChange = (key: keyof typeof design, value: boolean) => {
+    setDesign(prev => ({ ...prev, [key]: value }));
+  };
+
   return (
     <div className="flex flex-col h-full px-6"> {/* Added px-6 here */}
 
       {/* Scrollable Content */}
-      <div className="flex-grow overflow-y-auto py-6 "> {/* Adjusted padding here to align with content */}
+      <div className="flex-grow overflow-y-auto py-6">
         {FILTER_CONFIGS.map(({ icon, label, key }) => {
           const IconComponent = {
             'BedDouble': BedDouble,
@@ -79,7 +190,7 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
             'Car': Car,
             'Building2': Building2,
           }[icon];
-          
+
           return (
             <FilterRow
               key={key}
@@ -91,6 +202,19 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
             />
           );
         })}
+
+        <DesignRow
+          rumpus={design.rumpus}
+          alfresco={design.alfresco}
+          pergola={design.pergola}
+          onChange={handleChange}
+        />
+        <HouseSizeInputRow 
+          min_size={min_size}
+          setMinSize={setMinSize}
+          max_size={max_size}
+          setMaxSize={setMaxSize}
+        />
       </div>
 
       {/* Sticky Footer with "Show House Design" button */}

@@ -57,4 +57,5 @@ export const INITIAL_FILTER_RANGES = {
   bedroom: [3, 4] as [number, number],
   bathroom: [1, 2, 3] as [number, number, number],
   car: [1, 2, 3] as [number, number, number],
+  building: [] as [],
 };

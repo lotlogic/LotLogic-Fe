@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { boolean, z } from "zod";
 
 export interface HouseDesignItem {
   id: string;
@@ -46,7 +46,24 @@ export interface FilterSectionProps {
   setBathroom: React.Dispatch<React.SetStateAction<number[]>>;
   car: number[];
   setCar: React.Dispatch<React.SetStateAction<number[]>>;
+  design: DesignState;
+  setDesign: React.Dispatch<React.SetStateAction<DesignState>>;
+  min_size: number;
+  setMinSize: React.Dispatch<React.SetStateAction<number>>;
+  max_size: number;
+  setMaxSize: React.Dispatch<React.SetStateAction<number>>;
   onShowHouseDesign: () => void;
+}
+
+export interface HouseSizeInputRowProps {
+  min_size: number;
+  setMinSize: React.Dispatch<React.SetStateAction<number>>;
+  max_size: number;
+  setMaxSize: React.Dispatch<React.SetStateAction<number>>;
+  sizeErrors?: {
+    min_size?: string;
+    max_size?: string;
+  };
 }
 
 export interface FilterRowProps {
@@ -55,6 +72,19 @@ export interface FilterRowProps {
   value: number[];
   setValue: (value: number[]) => void;
   initial: string;
+}
+
+export interface DesignState {
+  rumpus: boolean;
+  alfresco: boolean;
+  pergola: boolean;
+}
+
+export interface DesignRowProps {
+  rumpus: boolean;
+  alfresco: boolean;
+  pergola: boolean;
+  onChange: (key: 'rumpus' | 'alfresco' | 'pergola', value: boolean) => void;
 }
 
 export type RangeValue = [number, number];
