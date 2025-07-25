@@ -7,7 +7,7 @@ interface SummaryViewProps {
   lot: LotData;
   zoningColor: string;
   zoningText: string;
-  onShowDetailedRules: () => void;
+  onShowDetailedRules?: () => void;
 }
 
 export function SummaryView({ lot, zoningColor, zoningText, onShowDetailedRules }: SummaryViewProps) {
@@ -23,7 +23,7 @@ export function SummaryView({ lot, zoningColor, zoningText, onShowDetailedRules 
       </div>
 
       {/* Lot Size Card */}
-      <div className="bg-white rounded-xl shadow border border-gray-100 p-6 mx-6 mb-4 flex items-center font-[DM Sans]">
+      {/* <div className="bg-white rounded-xl shadow border border-gray-100 p-6 mx-6 mb-4 flex items-center font-[DM Sans]">
         <div className="flex flex-col items-start min-w-[150px]">
           <div className="flex items-center mb-2">
             <Diamond className="h-5 w-5 text-gray-700 mr-2" />
@@ -47,13 +47,26 @@ export function SummaryView({ lot, zoningColor, zoningText, onShowDetailedRules 
                lot.depth ? `${lot.depth} m` : '--'}
             </span>
           </div>
-          <div className="flex items-baseline mb-1">
-            <span className="text-gray-700 text-sm font-normal min-w-[85px]">Frontage type:</span>
-            <span className={`ml-1 text-sm font-normal ${lot.frontageType === 'Standard' ? 'text-teal-600' : 'text-gray-500'}`}>{lot.frontageType || '--'}</span>
+        </div>
+      </div> */}
+
+      <div className="bg-white rounded-xl shadow border border-gray-100 p-6 mx-6 mb-4 flex items-center font-[DM Sans]">
+        <div className="flex flex-col items-start min-w-[150px]">
+          <div className="flex items-center mb-2">
+            <Diamond className="h-5 w-5 text-gray-700 mr-2" />
+            <span className="font-medium text-sm text-gray-700">Lot Size</span>
           </div>
-          <div className="flex items-baseline">
-            <span className="text-gray-700 text-sm font-normal min-w-[85px]">Overlays:</span>
-            <span className={`ml-1 text-sm font-normal ${lot.overlays === 'Flood' ? 'text-teal-600' : 'text-gray-500'}`}>{lot.overlays || '--'}</span>
+          <div className="text-2xl font-bold text-black leading-none">{lot.size}m²</div>
+        </div>
+        <div className="h-20 w-px bg-gray-200 mx-6" />
+        <div className="flex flex-col justify-center flex-grow">
+          <div className="flex items-baseline mb-1">
+            <span className="text-gray-700 text-sm font-normal min-w-[85px]">Width:</span>
+            <span className="ml-1 text-gray-500 text-sm font-normal">{lot.apiDimensions?.width?.toFixed(2)}m</span>
+          </div>
+          <div className="flex items-baseline mb-1">
+            <span className="text-gray-700 text-sm font-normal min-w-[85px]">Depth:</span>
+            <span className="ml-1 text-gray-500 text-sm font-normal">{lot.apiDimensions?.depth?.toFixed(2)}m</span>
           </div>
         </div>
       </div>
@@ -77,8 +90,8 @@ export function SummaryView({ lot, zoningColor, zoningText, onShowDetailedRules 
         </div>
       </div>
 
-      {/* Planning Rules */}
-      <div className="bg-white rounded-xl shadow border border-gray-100 p-4 mx-6 mb-4 flex flex-col">
+      {/* Planning Rules - Commented Out */}
+      {/* <div className="bg-white rounded-xl shadow border border-gray-100 p-4 mx-6 mb-4 flex flex-col">
         <div className="flex items-center mb-3">
           <div className="p-2 rounded-full" style={{ backgroundColor: '#EAEFEF' }}>
             <Info className="h-4 w-4" style={{ color: '#2F5D62' }} />
@@ -107,14 +120,14 @@ export function SummaryView({ lot, zoningColor, zoningText, onShowDetailedRules 
           href="#"
           onClick={(e) => {
             e.preventDefault();
-            onShowDetailedRules();
+            onShowDetailedRules?.();
           }}
           className="block mt-4 font-medium hover:underline text-sm opacity-80"
           style={{ color: '#2F5D62' }}
         >
           View detailed planning rules &rarr;
         </a>
-      </div>
+      </div> */}
     </>
   );
 }
