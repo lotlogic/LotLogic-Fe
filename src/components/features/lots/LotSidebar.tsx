@@ -7,16 +7,18 @@ import { SummaryView } from "./SummaryView";
 import { DetailedRulesView } from "./DetailedRulesView";
 import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
 import { HouseDesignList } from "../facades/HouseDesignList";
-import { BedDouble, Bath, Car, Building2, Star } from "lucide-react";
+import { BedDouble, Bath, Car, Building2, Star, ArrowRight} from "lucide-react";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { GetYourQuoteSidebar } from "../quote/QuoteSideBar";
 import { DesignState, HouseDesignItem } from "@/types/houseDesign";
 import { useContent } from "@/hooks/useContent";
 import { colors } from "@/constants/content";
+import { useQueryClient } from '@tanstack/react-query';
 
-export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: LotSidebarProps) {
+export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, isLoadingApiData = false, apiError = null }: LotSidebarProps) {
     const { lotSidebar, houseDesign } = useContent();
-    const [showDetailedRules, setShowDetailedRules] = React.useState(false);
+    const queryClient = useQueryClient();
+    // const [showDetailedRules, setShowDetailedRules] = React.useState(false);
     const [showFilter, setShowFilter] = React.useState(false);
     const [showHouseDesigns, setShowHouseDesigns] = React.useState(false);
 
@@ -71,9 +73,10 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
         setShowFilter(true);
       } else if (showFilter) {
         setShowFilter(false);
-      } else if (showDetailedRules) {
-        setShowDetailedRules(false);
       }
+      // else if (showDetailedRules) {
+      //   setShowDetailedRules(false);
+      // }
     };
 
     // Callback when a house design item is clicked in HouseDesignList
@@ -89,9 +92,10 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
                     coordinates = [ring[0], ring[1], ring[2], ring[3]] as [[number, number], [number, number], [number, number], [number, number]];
                 }
             }
-            if (onSelectFloorPlan && design.floorPlanImage && coordinates) {
+            const floorplan  = lot.apiMatches?.[0]?.floorplanUrl;
+            if (onSelectFloorPlan && floorplan && coordinates) {
                 onSelectFloorPlan({
-                    url: design.floorPlanImage,
+                    url: floorplan,
                     coordinates,
                 });
             }
@@ -107,9 +111,11 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
                     coordinates = [ring[0], ring[1], ring[2], ring[3]] as [[number, number], [number, number], [number, number], [number, number]];
                 }
             }
-            if (onSelectFloorPlan && design.floorPlanImage && coordinates) {
+            const floorplanUrl = lot.apiMatches?.[0]?.floorplanUrl || design.floorPlanImage;
+
+            if (onSelectFloorPlan && floorplanUrl && coordinates) {
                 onSelectFloorPlan({
-                    url: design.floorPlanImage,
+                    url: floorplanUrl,
                     coordinates,
                 });
             }
@@ -168,100 +174,130 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan }: 
       ? selectedHouseDesign.title
       : showHouseDesigns
         ? lotSidebar.houseDesigns
-        : showDetailedRules
-          ? lotSidebar.planningRules
+        : showFilter
+          ? "Build A House"
+        // : showDetailedRules
+        //   ? lotSidebar.planningRules
           : lotSidebar.buildYourSite;
 
-    const showBackArrow = showDetailedRules || showFilter || showHouseDesigns || !!selectedHouseDesign;
+    const showBackArrow = showFilter || showHouseDesigns || !!selectedHouseDesign;
 
     const headerContent = (
       <>
         <h2 className="text-2xl font-medium text-[#000000]">
         {headerTitle}
         </h2>
-        <div className="text-gray-600 mt-1 text-base font-normal">
-          {selectedHouseDesign ? (
-              `Lot ID: ${lot.id || '--'}, ${lot.suburb || '--'} | ${lot.address || '--'}`
-          ) : (
-              `Lot ID: ${lot.id || '--'}, ${lot.suburb || '--'} | ${lot.address || '--'}`
-          )}
-          {(showDetailedRules || showFilter || showHouseDesigns || selectedHouseDesign) && (
-              <div className="mt-2 flex flex-wrap items-center text-xs font-normal">
-                  {lot.size && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md flex items-center text-gray-700"><Diamond className="h-3 w-3 mr-1" />{lot.size}m²</span>}
-                  {lot.type && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md text-gray-700">{lot.type}</span>}
-                  {lot.zoning && <span className="mr-2 px-2 py-1 rounded-md text-black font-medium" style={{ backgroundColor: zoningColor }}>{zoningText}</span>}
-                  {lot.overlays === 'Flood' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">Flood</span>}
-              </div>
-          )}
-        </div>
+        {!showFilter && (
+          <div className="text-gray-600 mt-1 text-base font-normal">
+            {selectedHouseDesign ? (
+                `Lot ID: ${lot.id || '--'}, ${lot.suburb?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'} | ${lot.address?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'}`
+            ) : (
+                `Lot ID: ${lot.id || '--'}, ${lot.suburb?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'} | ${lot.address?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'}`
+            )}
+            {(showHouseDesigns || selectedHouseDesign) && (
+                <div className="mt-2 flex flex-wrap items-center text-xs font-normal">
+                    {lot.size && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md flex items-center text-gray-700"><Diamond className="h-3 w-3 mr-1" />{lot.size}m²</span>}
+                    {lot.type && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md text-gray-700">{lot.type}</span>}
+                    {lot.zoning && <span className="mr-2 px-2 py-1 rounded-md text-black font-medium" style={{ backgroundColor: zoningColor }}>{zoningText}</span>}
+                    {lot.overlays === 'Flood' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">Flood</span>}
+                </div>
+            )}
+          </div>
+        )}
       </>
     );
 
+    // Show loading indicator if API data is being fetched
+    const showLoading = isLoadingApiData && !lot.apiDimensions;
+    
+    // Show error state if API call failed
+    const showError = apiError && !lot.apiDimensions;
+
+    // Handle retry
+    const handleRetry = () => {
+      if (lot.id) {
+        queryClient.invalidateQueries({ queryKey: ['lot-calculation', lot.id] });
+      }
+    };
+
     return (
       <>
-        <Sidebar 
-          open={open} 
-          onClose={onClose}
-          onBack={showBackArrow ? handleBackClick : undefined}
-          showBackButton={showBackArrow}
-          headerContent={headerContent}
-        >
-          {selectedHouseDesign ? ( // Render detailed house view if a design is selected
-            renderDetailedHouseDesign(selectedHouseDesign)
-          ) : showHouseDesigns ? ( // Render list of house designs
-            <HouseDesignList
-              filter={{ bedroom, bathroom, car }}
-              onShowFilter={() => {
-                setShowHouseDesigns(false);
-                setShowFilter(true);
-              }}
-              onDesignClick={handleDesignClick}
-              onEnquireNow={(design) => {
-                setShowQuoteSidebar(true);
-                setQuoteDesign(design);
-              }}
-            />
-          ) : showFilter ? ( 
-            <FilterSectionWithSingleLineSliders
-              bedroom={bedroom}
-              setBedroom={setBedroom}
-              bathroom={bathroom}
-              setBathroom={setBathroom}
-              car={car}
-              setCar={setCar}
-              design={design}
-              setDesign={setDesign}
-              min_size={min_size}
-              setMinSize={setMinSize}
-              max_size={max_size}
-              setMaxSize={setMaxSize}
-              onShowHouseDesign={handleShowHouseDesign}
-            />
-          ) : !showDetailedRules ? ( 
-            <SummaryView
-              lot={lot}
-              zoningColor={zoningColor}
-              zoningText={zoningText}
-              onShowDetailedRules={() => setShowDetailedRules(true)}
-            />
-          ) : ( 
-            <DetailedRulesView lot={lot} />
-          )}
+        {/* Main LotSidebar - Only show when quote sidebar is not open */}
+        {!showQuoteSidebar && (
+          <Sidebar 
+            open={open} 
+            onClose={onClose}
+            onBack={showBackArrow ? handleBackClick : undefined}
+            showBackButton={showBackArrow}
+            headerContent={headerContent}
+          >
+            {selectedHouseDesign ? ( // Render detailed house view if a design is selected
+              renderDetailedHouseDesign(selectedHouseDesign)
+            ) : showHouseDesigns ? ( // Render list of house designs
+              <HouseDesignList
+                filter={{ bedroom, bathroom, car }}
+                onShowFilter={() => {
+                  setShowHouseDesigns(false);
+                  setShowFilter(true);
+                }}
+                onDesignClick={handleDesignClick}
+                onEnquireNow={(design) => {
+                  setShowQuoteSidebar(true);
+                  setQuoteDesign(design);
+                }}
+              />
+            ) : showFilter ? ( 
+              <FilterSectionWithSingleLineSliders
+                bedroom={bedroom}
+                setBedroom={setBedroom}
+                bathroom={bathroom}
+                setBathroom={setBathroom}
+                car={car}
+                setCar={setCar}
+                design={design}
+                setDesign={setDesign}
+                min_size={min_size}
+                setMinSize={setMinSize}
+                max_size={max_size}
+                setMaxSize={setMaxSize}
+                onShowHouseDesign={handleShowHouseDesign}
+              />
+            ) : ( 
+              <SummaryView
+                lot={lot}
+                zoningColor={zoningColor}
+                zoningText={zoningText}
+                // onShowDetailedRules={() => setShowDetailedRules(true)}
+              />
+            )}
 
-          {/* Action Button - Conditional */}
-          {!showDetailedRules && !showFilter && !showHouseDesigns && !selectedHouseDesign && (
-            <div className="sticky bottom-0 p-6 border-t border-gray-200 bg-white rounded-b-2xl">
-              <Button
-                className="w-full text-lg py-3 rounded-lg"
-                onClick={() => setShowFilter(true)}
-              >
-                {lotSidebar.showMeWhatICanBuild}
-              </Button>
+            {/* Action Button - Conditional */}
+              {!showFilter && !showHouseDesigns && !selectedHouseDesign && (
+              <div className="sticky bottom-0 px-6 pt-0 pb-6">
+              <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
+                               <div className="text-left mb-4">
+                   <p className="text-gray-600 text-base font-medium">
+                     Get inspired with new house designs
+                   </p>
+                 </div>
+                <Button
+                  className="w-full text-base py-4 rounded-xl font-semibold animated-gradient-button transition-all duration-300 shadow-md cursor-pointer"
+                  onClick={() => setShowFilter(true)}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    {lotSidebar.showMeWhatICanBuild}
+
+                    <ArrowRight className='h-6 w-8'/>
+
+                  </span>
+                </Button>
+              </div>
             </div>
-          )}
-        </Sidebar>
+              )}
+          </Sidebar>
+        )}
         
-        {/* Quote Sidebar */}
+        {/* Quote Sidebar - Only show when main sidebar is not needed */}
         {showQuoteSidebar && quoteDesign && (
           <React.Suspense fallback={<div>Loading...</div>}>
             <GetYourQuoteSidebar

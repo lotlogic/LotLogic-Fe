@@ -140,3 +140,67 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0;
   }
 }
+
+
+/* Button animation with gradient */
+@keyframes gradient-animation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Creates the main animated gradient effect that flows continuously. */
+.animated-gradient-button {
+  background: linear-gradient(
+    to right,
+    #2F5D62, /* Dark Teal - From color from your design */
+    #2AA0AD, /* Lighter Teal - To color from your design */
+    #2F5D62  /* Dark Teal (repeat to make the loop smooth) */
+  );
+  background-size: 200% auto; 
+  color: white; 
+  animation: gradient-animation 3s ease-in-out infinite; 
+  transition: background-position 0.3s ease; 
+}
+/* hover over the button */
+.animated-gradient-button:hover {
+  background: linear-gradient(
+    to right,
+    #234a4d, 
+    #218590, 
+    #234a4d
+  ) !important; 
+  background-size: 200% auto !important; 
+  background-position: 100% 50% !important; 
+  animation: none !important; 
+}
+
+/* Overrides Tailwind's bg-[#2F5D62] class to ensure the gradient animation works even when Tailwind tries to set a solid background color*/
+.animated-gradient-button.bg-\[\#2F5D62\] { 
+    background: linear-gradient(
+      to right,
+      #2F5D62,
+      #2AA0AD,
+      #2F5D62
+    ) !important;
+    background-size: 200% auto !important;
+    animation: gradient-animation 3s ease-in-out infinite !important;
+}
+
+/* Overrides Tailwind's hover:bg-[#1a3d42] class to ensure the hover gradient works instead of a solid color. */
+.animated-gradient-button.hover\:bg-\[\#1a3d42\]:hover {
+    background: linear-gradient(
+        to right,
+        #234a4d,
+        #218590,
+        #234a4d
+    ) !important;
+    background-position: 100% 50% !important;
+    animation: none !important;
+}

@@ -25,7 +25,7 @@ export function Sidebar({
   return (
     <aside
       className={clsx(
-        "fixed top-[80px] left-[20px] h-[calc(100vh-100px)] z-50 bg-white shadow-2xl rounded-2xl border border-gray-200 flex flex-col font-serifpro transition-transform duration-300",
+        "fixed top-[80px] left-[20px] max-h-[calc(100vh-100px)] z-50 bg-white shadow-2xl rounded-2xl border border-gray-200 flex flex-col transition-transform duration-300",
         widthClass,
         className
       )}
@@ -51,7 +51,7 @@ export function Sidebar({
           <X className="h-6 w-6" />
         </button>
       </div>
-      <div className="flex-grow overflow-y-auto">{children}</div>
+      <div className="flex-grow overflow-y-auto min-h-0">{children}</div>
     </aside>
   );
 }

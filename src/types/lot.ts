@@ -6,6 +6,8 @@ export interface LotSidebarProps {
   lot: LotData;
   geometry?: GeoJSON.Geometry; 
   onSelectFloorPlan?: (data: { url: string; coordinates: [[number, number], [number, number], [number, number], [number, number]] }) => void;
+  isLoadingApiData?: boolean;
+  apiError?: Error | null;
 }
 
 export type CollapsibleSectionProps = {
@@ -38,4 +40,25 @@ export type LotData = {
   exampleArea?: string;
   exampleLotSize?: string;
   maxFSRUpper?: string;
+  // API response data
+  apiDimensions?: {
+    width: number;
+    depth: number;
+  };
+  apiZoning?: string;
+  apiMatches?: Array<{
+    houseDesignId: string;
+    floorplanUrl: string;
+    spacing: {
+      front: number;
+      rear: number;
+      side: number;
+    };
+    maxCoverageArea: number;
+    houseArea: number;
+    lotDimensions: {
+      width: number;
+      depth: number;
+    };
+  }>;
 };
