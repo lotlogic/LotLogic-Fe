@@ -274,12 +274,12 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
             {/* Action Button - Conditional */}
               {!showFilter && !showHouseDesigns && !selectedHouseDesign && (
               <div className="sticky bottom-0 px-6 pt-0 pb-6">
-              <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-                               <div className="text-left mb-4">
-                   <p className="text-gray-600 text-base font-medium">
-                     Get inspired with new house designs
-                   </p>
-                 </div>
+                <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
+                  <div className="text-left mb-4">
+                    <p className="text-gray-600 text-base font-medium">
+                      Get inspired with new house designs
+                    </p>
+                  </div>
                 <Button
                   className="w-full text-base py-4 rounded-xl font-semibold animated-gradient-button transition-all duration-300 shadow-md cursor-pointer"
                   onClick={() => setShowFilter(true)}
