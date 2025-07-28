@@ -34,6 +34,9 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
     });
     const [min_size, setMinSize] = React.useState<number>(NaN);
     const [max_size, setMaxSize] = React.useState<number>(NaN);
+    const [sizeErrors, setSizeErrors] = React.useState<{ min_size?: string; max_size?: string }>({});
+    const [designErrors, setdesignErrors] = React.useState<{ bedroom?: string; bathroom?: string; car?: string }>({});
+    const [showErrors, setShowErrors] = React.useState(false);
 
 
     const [selectedHouseDesign, setSelectedHouseDesign] = React.useState<HouseDesignItem | null>(null);
@@ -58,9 +61,47 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
         max_size
       };
       console.log("Filter Payload:", filterPayload);
-      setShowHouseDesigns(true);
-      setShowFilter(false);
-      setSelectedHouseDesign(null);
+
+      if(validateFilter()) {
+        setShowHouseDesigns(true);
+        setShowFilter(false);
+        setSelectedHouseDesign(null);
+      }
+    };
+
+    const validateFilter = () => {
+      const size_errors: { min_size?: string; max_size?: string } = {};
+      const design_errors: { bedroom?: string; bathroom?: string; car?: string } = {};
+
+      // House size validation
+      if (isNaN(min_size) || min_size < 150) {
+        size_errors.min_size = "Minimum size should be at least 150";
+      }
+
+      if (isNaN(max_size) || max_size > 300) {
+        size_errors.max_size = "Maximum size cannot exceed 300";
+      }
+
+      if (!isNaN(min_size) && !isNaN(max_size) && min_size > max_size) {
+        size_errors.min_size = "Min size cannot be greater than max size";
+        size_errors.max_size = "Max size must be greater than min size";
+      }
+
+      if (!bedroom.length) {
+        design_errors.bedroom = "Please choosen one";
+      }
+      if (!bathroom.length) {
+        design_errors.bathroom = "Please choosen one";
+      }
+      if (!car.length) {
+        design_errors.car = "Please choosen one";
+      }
+
+      setShowErrors(true);
+      setSizeErrors(size_errors);
+      setdesignErrors(design_errors);
+
+      return (Object.keys(sizeErrors).length === 0 && Object.keys(designErrors).length === 0);
     };
 
     const handleBackClick = () => {
@@ -261,6 +302,9 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
                 max_size={max_size}
                 setMaxSize={setMaxSize}
                 onShowHouseDesign={handleShowHouseDesign}
+                showErrors={showErrors}
+                sizeErrors={sizeErrors}
+                designErrors={designErrors}
               />
             ) : ( 
               <SummaryView

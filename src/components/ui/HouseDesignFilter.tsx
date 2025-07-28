@@ -11,16 +11,24 @@ const FilterRow = React.memo(({
   label,
   value,
   setValue,
-  initial
+  initial,
+  showErrors,
+  designErrors = {}
 }: FilterRowProps) => {
   return (
     <div className="mb-8 border-b border-gray-200 fix pb-4">
-      <div className="flex items-center mb-2">
-        {React.isValidElement(icon) ? React.cloneElement(icon) : icon}
-        <span className="ml-2 text-base font-semibold text-gray-800">{label}</span>
+      <div className="flex items-center justify-between mb-2 w-full">
+        <div className="flex items-center">
+          {React.isValidElement(icon) ? React.cloneElement(icon) : icon}
+          <span className="ml-2 text-base font-semibold text-gray-800">{label}</span>
+        </div>
+
+        {showErrors && designErrors[initial as keyof typeof designErrors] && (
+          <p className="text-sm text-red-600">{designErrors[initial as keyof typeof designErrors]}</p>
+        )}
       </div>
       <div className="flex items-center">
-        <div className="flex gap-8">  
+        <div className="flex gap-8 flex-wrap">  
           {INITIAL_FILTER_RANGES[initial as keyof typeof INITIAL_FILTER_RANGES].map((v: number, index:number) => (
             <div key={index} className="flex items-center space-x-2">
               <Checkbox
@@ -106,47 +114,56 @@ const HouseSizeInputRow = React.memo(({
   min_size,
   setMinSize,
   max_size,
-  setMaxSize
+  setMaxSize,
+  showErrors,
+  sizeErrors = {},
 }: HouseSizeInputRowProps) => {
   return (
     <div className="fix pb-4">
       <div className="flex items-center mb-2">
-        {React.isValidElement(<Building2 />) ? React.cloneElement(<Building2 />) : <Building2 />}
+        <Building2 />
         <span className="ml-2 text-base font-semibold text-gray-800">Enter House Size</span>
       </div>
+
       <div className="flex items-center">
         <div className="flex gap-8">  
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-col space-y-1">
             <Input 
               type="text"
               value={isNaN(min_size) ? "" : min_size}
               placeholder="Min: 150m²"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                const val = e.target.value;
-                const num = parseInt(val, 10);
-                if (!isNaN(num))
-                  setMinSize(num);
+              className={showErrors && sizeErrors.min_size ? "border-red-500" : ""}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                setMinSize(isNaN(val) ? NaN : val);
               }}
             />
+            {showErrors && sizeErrors.min_size && (
+              <p className="text-sm text-red-600">{sizeErrors.min_size}</p>
+            )}
           </div>
-          <div className="flex items-center space-x-3">
+
+          <div className="flex flex-col space-y-1">
             <Input
-            type="text"
-            value={isNaN(max_size) ? "" : max_size}
-            placeholder="Max: 300m²" 
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                const val = e.target.value;
-                const num = parseInt(val, 10);
-                if (!isNaN(num))
-                  setMaxSize(num);
+              type="text"
+              value={isNaN(max_size) ? "" : max_size}
+              placeholder="Max: 300m²"
+              className={showErrors && sizeErrors.max_size ? "border-red-500" : ""}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                setMaxSize(isNaN(val) ? NaN : val);
               }}
-          />
+            />
+            {showErrors && sizeErrors.max_size && (
+              <p className="text-sm text-red-600">{sizeErrors.max_size}</p>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
 });
+
 
 HouseSizeInputRow.displayName = 'HouseSizeInputRow';
 
@@ -165,6 +182,9 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
   max_size,
   setMaxSize,
   onShowHouseDesign,
+  showErrors,
+  sizeErrors,
+  designErrors
 }: FilterSectionProps) => {
 
   const stateMap = {
@@ -199,6 +219,8 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
               setValue={stateMap[key].setValue}
               label={label}
               initial={key}
+              showErrors={showErrors}
+              designErrors={designErrors}
             />
           );
         })}
@@ -214,6 +236,8 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
           setMinSize={setMinSize}
           max_size={max_size}
           setMaxSize={setMaxSize}
+          showErrors={showErrors}
+          sizeErrors={sizeErrors}
         />
       </div>
 

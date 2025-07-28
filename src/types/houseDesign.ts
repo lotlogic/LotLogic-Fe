@@ -53,6 +53,16 @@ export interface FilterSectionProps {
   max_size: number;
   setMaxSize: React.Dispatch<React.SetStateAction<number>>;
   onShowHouseDesign: () => void;
+  showErrors?: boolean;
+  sizeErrors?: {
+    min_size?: string;
+    max_size?: string;
+  };
+  designErrors?: {
+    bedroom?: string;
+    bathroom?: string;
+    car? : string;
+  };
 }
 
 export interface HouseSizeInputRowProps {
@@ -60,6 +70,7 @@ export interface HouseSizeInputRowProps {
   setMinSize: React.Dispatch<React.SetStateAction<number>>;
   max_size: number;
   setMaxSize: React.Dispatch<React.SetStateAction<number>>;
+  showErrors?: boolean;
   sizeErrors?: {
     min_size?: string;
     max_size?: string;
@@ -72,6 +83,12 @@ export interface FilterRowProps {
   value: number[];
   setValue: (value: number[]) => void;
   initial: string;
+  showErrors?: boolean;
+  designErrors?: {
+    bedroom?: string;
+    bathroom?: string;
+    car? : string;
+  };
 }
 
 export interface DesignState {
