@@ -2,7 +2,6 @@ import React from "react";
 import { BedDouble, Bath, Car, Building2 } from "lucide-react"; 
 import { Checkbox } from "./checkbox";
 import { Button } from "./Button";
-import { FilterSectionProps, FilterRowProps } from "@/types/houseDesign";
 import { Input } from "./input";
 import { DesignRowProps, FilterRowProps, FilterSectionProps, HouseSizeInputRowProps } from "@/types/houseDesign";
 import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "@/constants/houseDesigns";
@@ -35,7 +34,7 @@ const FilterRow = React.memo(({
               <Checkbox
                 id={`checkbox-${index}`}
                 checked={value.includes(v)}
-                onCheckedChange={(checked) => {
+                onCheckedChange={(checked: boolean) => {
                   checked
                     ? !value.includes(v)
                       ? setValue([...value, v])

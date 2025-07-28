@@ -51,9 +51,6 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
     const zoningText = lot.zoning || '--';
 
     const handleShowHouseDesign = () => {
-      setShowHouseDesigns(true); 
-      setShowFilter(false);
-      setSelectedHouseDesignForModals(null); 
 
       const filterPayload = { 
         bedroom,
@@ -70,7 +67,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
       if(validateFilter()) {
         setShowHouseDesigns(true);
         setShowFilter(false);
-        setSelectedHouseDesign(null);
+        setSelectedHouseDesignForModals(null);
       }
     };
 
@@ -217,7 +214,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
             {/* Conditional rendering for sidebar content */}
             {showHouseDesigns ? ( 
             <HouseDesignList
-              filter={{ bedroom, bathroom, cars, storeys }}
+              filter={{ bedroom, bathroom, car }}
               onShowFilter={() => {
                 setShowHouseDesigns(false);
                 setShowFilter(true);
@@ -228,59 +225,24 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
                 onViewFacades={handleViewFacadesClick} 
             />
             ) : showFilter ? ( 
-            <FilterSectionWithSingleLineSliders
-              bedroom={bedroom}
-              setBedroom={setBedroom}
-              bathroom={bathroom}
-              setBathroom={setBathroom}
-              cars={cars}
-              setCars={setCars}
-              storeys={storeys}
-              setStoreys={setStoreys}
-              onShowHouseDesign={handleShowHouseDesign}
-            />
-//           <Sidebar 
-//             open={open} 
-//             onClose={onClose}
-//             onBack={showBackArrow ? handleBackClick : undefined}
-//             showBackButton={showBackArrow}
-//             headerContent={headerContent}
-//           >
-//             {selectedHouseDesign ? ( // Render detailed house view if a design is selected
-//               renderDetailedHouseDesign(selectedHouseDesign)
-//             ) : showHouseDesigns ? ( // Render list of house designs
-//               <HouseDesignList
-//                 filter={{ bedroom, bathroom, car }}
-//                 onShowFilter={() => {
-//                   setShowHouseDesigns(false);
-//                   setShowFilter(true);
-//                 }}
-//                 onDesignClick={handleDesignClick}
-//                 onEnquireNow={(design) => {
-//                   setShowQuoteSidebar(true);
-//                   setQuoteDesign(design);
-//                 }}
-//               />
-//             ) : showFilter ? ( 
-//               <FilterSectionWithSingleLineSliders
-//                 bedroom={bedroom}
-//                 setBedroom={setBedroom}
-//                 bathroom={bathroom}
-//                 setBathroom={setBathroom}
-//                 car={car}
-//                 setCar={setCar}
-//                 design={design}
-//                 setDesign={setDesign}
-//                 min_size={min_size}
-//                 setMinSize={setMinSize}
-//                 max_size={max_size}
-//                 setMaxSize={setMaxSize}
-//                 onShowHouseDesign={handleShowHouseDesign}
-//                 showErrors={showErrors}
-//                 sizeErrors={sizeErrors}
-//                 designErrors={designErrors}
-//               />
-
+              <FilterSectionWithSingleLineSliders
+                bedroom={bedroom}
+                setBedroom={setBedroom}
+                bathroom={bathroom}
+                setBathroom={setBathroom}
+                car={car}
+                setCar={setCar}
+                design={design}
+                setDesign={setDesign}
+                min_size={min_size}
+                setMinSize={setMinSize}
+                max_size={max_size}
+                setMaxSize={setMaxSize}
+                onShowHouseDesign={handleShowHouseDesign}
+                showErrors={showErrors}
+                sizeErrors={sizeErrors}
+                designErrors={designErrors}
+              />
             ) : ( 
             <SummaryView
               lot={lot}
