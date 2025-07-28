@@ -39,8 +39,10 @@ export function SavedPropertiesSidebar({
             document.removeEventListener('mousedown', handleClickOutside);
             document.removeEventListener('keydown', handleEscapeKey);
         };
+
     }, [open, onClose]);
 
+    const [clicked, setClicked] = React.useState(false);
     return (
         <div
             ref={sidebarRef}
@@ -80,7 +82,11 @@ export function SavedPropertiesSidebar({
                                     <div className="text-xs text-black">
                                         Lot ID: {property.lotId}, {property.suburb}, {property.address}
                                     </div>
-                                    <Bookmark className="h-6 w-5 text-[#2F5D62] fill-[#2F5D62]" />
+                                        {/* <Bookmark className="bookmark-btn h-6 w-5 text-[#2F5D62] fill-[#2F5D62] cursor-pointer active:bg-white" /> */}
+                                        <Bookmark 
+                                            className={`bookmark-btn h-6 w-5 text-[#2F5D62] ${clicked ? 'fill-white' : 'fill-[#2F5D62]'}`} 
+                                            onClick={() => setClicked(!clicked)}
+                                        />
                                 </div>
 
                                 {/* Lot Details */}
