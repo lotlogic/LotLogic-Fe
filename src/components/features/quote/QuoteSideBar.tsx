@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/Button";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { MultiSelect } from "@/components/ui/MultiSelect";
+import { Checkbox } from "@/components/ui/checkbox";
 import { GetYourQuoteSidebarProps, quoteFormSchema, QuoteFormData } from "@/types/houseDesign";
 import { builderOptions } from "@/constants/houseDesigns";
 import { quote, formatContent } from "@/constants/content";
@@ -10,6 +11,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
     const [showThankYou, setShowThankYou] = useState(false);
     const [lotSecured, setLotSecured] = useState(false);
+    const [agreeToTerms, setAgreeToTerms] = useState(false);
     
     // Form state
     const [formData, setFormData] = useState<QuoteFormData>({
@@ -283,32 +285,48 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                     {selectedHouseDesign && (
                         <div className="mt-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">Your Selection</h3>
-                            <div className="rounded-2xl border border-gray-200 bg-[#eaf3f2] p-4 flex gap-4 items-center">
-                                <img src={selectedHouseDesign.image} alt="House" className="w-24 h-24 rounded-lg object-cover" />
-                                <div className="flex-1">
-                                    <div className="font-bold text-lg">{selectedHouseDesign.title}</div>
-                                    <div className="text-gray-600 text-sm">
-                                        Lot {lotDetails.id}, {lotDetails.suburb} ({lotDetails.size}m²)
-                                    </div>
-                                    <div className="text-gray-600 text-sm">
-                                        Floor Plan: {selectedHouseDesign.title}
-                                    </div>
-                                    <div className="text-gray-600 text-sm">
-                                        Faced: {facedOption}
+                            <div className="border-t border-gray-200 pt-2">
+                                <div className="rounded-2xl border border-gray-200 bg-[#eaf3f2] p-4 flex gap-4 items-center">
+                                    <img src={selectedHouseDesign.floorPlanImage || selectedHouseDesign.image} alt="Floor Plan" className="w-24 h-24 rounded-lg object-cover" />
+                                    <div className="flex-1">
+                                        <div className="text-gray-900 text-sm">Lot {lotDetails.id}, {lotDetails.suburb}</div>
+                                        <div className="text-gray-900 text-sm">Floor Plan: {selectedHouseDesign.title} ({selectedHouseDesign.area} ft²)</div>
+                                        <div className="text-gray-900 text-sm">Faced: {facedOption}</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
+                    {/* Terms & Conditions Checkbox */}
+                    <div className="flex items-start gap-3">
+                        <Checkbox
+                            id="agreeToTerms"
+                            checked={agreeToTerms}
+                            onCheckedChange={() => setAgreeToTerms(!agreeToTerms)}
+                        />
+                        <label htmlFor="agreeToTerms" className="text-sm text-gray-700">
+                            I agree to the{' '}
+                            <a 
+                                href="#" 
+                                className="text-[#2F5D62] underline hover:text-[#1a3d42] transition-colors"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                }}
+                            >
+                                Terms & Conditions
+                            </a>
+                        </label>
+                    </div>
+
                     {/* Submit Button */}
                     <div className="sticky bottom-0 pt-6 border-t border-gray-200 bg-white">
                         <Button
                             type="submit"
                             className="w-full text-lg py-3 rounded-lg bg-[#2F5D62] text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || !agreeToTerms}
                         >
-                            {isSubmitting ? quote.submitting : quote.submit}
+                            {isSubmitting ? quote.submitting : "Get Quote"}
                         </Button>
                     </div>
                 </form>
