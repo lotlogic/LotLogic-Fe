@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { boolean, z } from "zod";
 
 export interface HouseDesignItem {
   id: string;
@@ -17,10 +17,9 @@ export interface HouseDesignItem {
 
 export interface HouseDesignListProps {
   filter: {
-    bedroom: [number, number];
-    bathroom: [number, number];
-    cars: [number, number];
-    storeys: [number, number];
+    bedroom: number[];
+    bathroom: number[];
+    car: number[];
   };
   onShowFilter: () => void;
   onDesignClick: (design: HouseDesignItem | null) => void;
@@ -41,24 +40,68 @@ export interface GetYourQuoteSidebarProps {
 }
 
 export interface FilterSectionProps {
-  bedroom: [number, number];
-  setBedroom: React.Dispatch<React.SetStateAction<[number, number]>>;
-  bathroom: [number, number];
-  setBathroom: React.Dispatch<React.SetStateAction<[number, number]>>;
-  cars: [number, number];
-  setCars: React.Dispatch<React.SetStateAction<[number, number]>>;
-  storeys: [number, number];
-  setStoreys: React.Dispatch<React.SetStateAction<[number, number]>>;
+  bedroom: number[];
+  setBedroom: React.Dispatch<React.SetStateAction<number[]>>;
+  bathroom: number[];
+  setBathroom: React.Dispatch<React.SetStateAction<number[]>>;
+  car: number[];
+  setCar: React.Dispatch<React.SetStateAction<number[]>>;
+  design: DesignState;
+  setDesign: React.Dispatch<React.SetStateAction<DesignState>>;
+  min_size: number;
+  setMinSize: React.Dispatch<React.SetStateAction<number>>;
+  max_size: number;
+  setMaxSize: React.Dispatch<React.SetStateAction<number>>;
   onShowHouseDesign: () => void;
+  showErrors?: boolean;
+  sizeErrors?: {
+    min_size?: string;
+    max_size?: string;
+  };
+  designErrors?: {
+    bedroom?: string;
+    bathroom?: string;
+    car? : string;
+  };
+}
+
+export interface HouseSizeInputRowProps {
+  min_size: number;
+  setMinSize: React.Dispatch<React.SetStateAction<number>>;
+  max_size: number;
+  setMaxSize: React.Dispatch<React.SetStateAction<number>>;
+  showErrors?: boolean;
+  sizeErrors?: {
+    min_size?: string;
+    max_size?: string;
+  };
 }
 
 export interface FilterRowProps {
   icon: React.ReactNode;
   label: string;
-  value: [number, number];
-  setValue: (v: [number, number]) => void;
-  minRange: number;
-  maxRange: number;
+  value: number[];
+  setValue: (value: number[]) => void;
+  initial: string;
+  showErrors?: boolean;
+  designErrors?: {
+    bedroom?: string;
+    bathroom?: string;
+    car? : string;
+  };
+}
+
+export interface DesignState {
+  rumpus: boolean;
+  alfresco: boolean;
+  pergola: boolean;
+}
+
+export interface DesignRowProps {
+  rumpus: boolean;
+  alfresco: boolean;
+  pergola: boolean;
+  onChange: (key: 'rumpus' | 'alfresco' | 'pergola', value: boolean) => void;
 }
 
 export type RangeValue = [number, number];

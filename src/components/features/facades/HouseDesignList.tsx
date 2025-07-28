@@ -11,16 +11,12 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
   const [houseDesigns, setHouseDesigns] = useState<HouseDesignItem[]>(initialHouseData);
 
   const filteredHouses = houseDesigns.filter(house => {
-    const [minBed, maxBed] = filter.bedroom;
-    const [minBath, maxBath] = filter.bathroom;
-    const [minCar, maxCar] = filter.cars;
-    const [minStorey, maxStorey] = filter.storeys;
     return (
-      house.bedrooms >= minBed && house.bedrooms <= maxBed &&
-      house.bathrooms >= minBath && house.bathrooms <= maxBath &&
-      house.cars >= minCar && house.cars <= maxCar &&
-      house.storeys >= minStorey && house.storeys <= maxStorey
+      filter.bedroom.includes(house.bedrooms) &&
+      filter.bathroom.includes(house.bathrooms) &&
+      filter.car.includes(house.cars)
     );
+
   });
 
   const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
