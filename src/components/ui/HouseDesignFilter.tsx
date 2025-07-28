@@ -13,7 +13,7 @@ const FilterRow = React.memo(({
   setValue,
   initial,
   showErrors,
-  designErrors = {}
+  filterErrors = {}
 }: FilterRowProps) => {
   return (
     <div className="mb-8 border-b border-gray-200 fix pb-4">
@@ -22,10 +22,6 @@ const FilterRow = React.memo(({
           {React.isValidElement(icon) ? React.cloneElement(icon) : icon}
           <span className="ml-2 text-base font-semibold text-gray-800">{label}</span>
         </div>
-
-        {showErrors && designErrors[initial as keyof typeof designErrors] && (
-          <p className="text-sm text-red-600">{designErrors[initial as keyof typeof designErrors]}</p>
-        )}
       </div>
       <div className="flex items-center">
         <div className="flex gap-8 flex-wrap">  
@@ -52,6 +48,9 @@ const FilterRow = React.memo(({
           ))}
         </div>
       </div>
+      {showErrors && filterErrors[initial as keyof typeof filterErrors] && (
+        <p className="text-sm text-red-600 mt-2">{filterErrors[initial as keyof typeof filterErrors]}</p>
+      )}
     </div>
   );
 });
@@ -65,7 +64,7 @@ const DesignRow = React.memo(({
   onChange
 }: DesignRowProps) => {
   return (
-    <div className="mb-8 border-b border-gray-200 fix pb-4">
+    <div className="fix pb-4">
       <div className="flex items-center">
         <div className="flex gap-8">  
           <div className="flex items-center space-x-3">
@@ -116,10 +115,10 @@ const HouseSizeInputRow = React.memo(({
   max_size,
   setMaxSize,
   showErrors,
-  sizeErrors = {},
+  filterErrors = {},
 }: HouseSizeInputRowProps) => {
   return (
-    <div className="fix pb-4">
+    <div className="mb-8 border-b border-gray-200 fix pb-4">
       <div className="flex items-center mb-2">
         <Building2 />
         <span className="ml-2 text-base font-semibold text-gray-800">Enter House Size</span>
@@ -132,14 +131,14 @@ const HouseSizeInputRow = React.memo(({
               type="text"
               value={isNaN(min_size) ? "" : min_size}
               placeholder="Min: 150m²"
-              className={showErrors && sizeErrors.min_size ? "border-red-500" : ""}
+              className={showErrors && filterErrors.min_size ? "border-red-500" : ""}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
                 setMinSize(isNaN(val) ? NaN : val);
               }}
             />
-            {showErrors && sizeErrors.min_size && (
-              <p className="text-sm text-red-600">{sizeErrors.min_size}</p>
+            {showErrors && filterErrors.min_size && (
+              <p className="text-sm text-red-600">{filterErrors.min_size}</p>
             )}
           </div>
 
@@ -148,14 +147,14 @@ const HouseSizeInputRow = React.memo(({
               type="text"
               value={isNaN(max_size) ? "" : max_size}
               placeholder="Max: 300m²"
-              className={showErrors && sizeErrors.max_size ? "border-red-500" : ""}
+              className={showErrors && filterErrors.max_size ? "border-red-500" : ""}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10);
                 setMaxSize(isNaN(val) ? NaN : val);
               }}
             />
-            {showErrors && sizeErrors.max_size && (
-              <p className="text-sm text-red-600">{sizeErrors.max_size}</p>
+            {showErrors && filterErrors.max_size && (
+              <p className="text-sm text-red-600">{filterErrors.max_size}</p>
             )}
           </div>
         </div>
@@ -183,8 +182,7 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
   setMaxSize,
   onShowHouseDesign,
   showErrors,
-  sizeErrors,
-  designErrors
+  filterErrors
 }: FilterSectionProps) => {
 
   const stateMap = {
@@ -220,24 +218,24 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
               label={label}
               initial={key}
               showErrors={showErrors}
-              designErrors={designErrors}
+              filterErrors={filterErrors}
             />
           );
         })}
 
-        <DesignRow
-          rumpus={design.rumpus}
-          alfresco={design.alfresco}
-          pergola={design.pergola}
-          onChange={handleChange}
-        />
         <HouseSizeInputRow 
           min_size={min_size}
           setMinSize={setMinSize}
           max_size={max_size}
           setMaxSize={setMaxSize}
           showErrors={showErrors}
-          sizeErrors={sizeErrors}
+          filterErrors={filterErrors}
+        />
+        <DesignRow
+          rumpus={design.rumpus}
+          alfresco={design.alfresco}
+          pergola={design.pergola}
+          onChange={handleChange}
         />
       </div>
 
