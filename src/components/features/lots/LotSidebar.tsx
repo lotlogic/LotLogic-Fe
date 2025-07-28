@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import React from 'react';
 import { LotSidebarProps } from "@/types/lot";
-import { getZoningColor } from "@/lib/utils/zoning";
+import { getZoningColor, hexToRgba } from "@/lib/utils/zoning";
 import { SummaryView } from "./SummaryView";
 import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
 import { HouseDesignList } from "../facades/HouseDesignList";
@@ -107,27 +107,21 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
       if (showQuoteSidebar) {
         setShowQuoteSidebar(false);
         setQuoteDesign(null);
-        // If a design was selected for quote, go back to the list of designs
+
         setShowHouseDesigns(true);
       } else if (showHouseDesigns) {
-        // If the list of house designs is open, go back to the filter
         setShowHouseDesigns(false);
         setShowFilter(true);
       } else if (showFilter) {
-        // If the filter is open, go back to the summary view
         setShowFilter(false);
       }
-      // Also close any open modals
       setShowFloorPlanModal(false);
       setShowFacadeModal(false);
       setSelectedHouseDesignForModals(null); 
     };
 
-    // This is called when a house card is clicked (expanded or collapsed) within HouseDesignList
     const handleDesignSelectedInList = (design: HouseDesignItem | null) => {
-        // This is primarily to update the map or any other global state based on the *currently active* design in the list.
-        // It doesn't change the sidebar's main content view (which is always HouseDesignList when showHouseDesigns is true).
-        setSelectedHouseDesignForModals(design); // Store for potential modal use
+        setSelectedHouseDesignForModals(design); 
         
         if (design && onSelectFloorPlan && lot.apiMatches?.[0]?.floorplanUrl && geometry && geometry.type === 'Polygon') {
             const ring = geometry.coordinates[0];
@@ -173,16 +167,28 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
         <h2 className="text-2xl font-medium text-[#000000]">
         {headerTitle}
         </h2>
-        {/* Lot details always shown below the title, adjusted for spacing */}
-        <div className="text-gray-600 mt-1 text-base font-normal">
-          {`Lot ID: ${lot.id || '--'}, ${lot.suburb?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'} | ${lot.address?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'}`}
-          <div className="mt-2 flex flex-wrap items-center text-xs font-normal">
-              {lot.size && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md flex items-center text-gray-700"><Diamond className="h-3 w-3 mr-1" />{lot.size}m²</span>}
-              {lot.type && <span className="mr-2 px-2 py-1 bg-gray-100 rounded-md text-gray-700">{lot.type}</span>}
-              {lot.zoning && <span className="mr-2 px-2 py-1 rounded-md text-black font-medium" style={{ backgroundColor: zoningColor }}>{zoningText}</span>}
-              {lot.overlays === 'Flood' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md">Flood</span>}
+        {/* Lot details only shown when not in filter mode */}
+        {!showFilter && (
+          <div className="text-gray-600 mt-1 text-base font-normal">
+            {`Lot ID: ${lot.id || '--'}, ${lot.suburb?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'} | ${lot.address?.toLowerCase().replace(/\b\w/g, l => l.toUpperCase()) || '--'}`}
+            {/* Chips only shown in house design section */}
+            {showHouseDesigns && (
+              <div className="mt-2 flex flex-nowrap items-center gap-2 text-xs font-normal overflow-x-auto">
+                  {lot.size && <span className="px-2 py-1 bg-gray-100 rounded-md flex items-center text-gray-700 flex-shrink-0"><Diamond className="h-3 w-3 mr-1" />{lot.size}m²</span>}
+                  {lot.type && <span className="px-2 py-1 bg-gray-100 rounded-md text-gray-700 flex-shrink-0">{lot.type}</span>}
+                  {lot.zoning && (
+                    <span 
+                      className="px-2 py-1 rounded-full text-black font-medium flex-shrink-0"
+                      style={{ backgroundColor: hexToRgba(zoningColor, 0.3) }}
+                    >
+                      {zoningText}
+                    </span>
+                  )}
+                  {lot.overlays === 'Flood' && <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md flex-shrink-0">Flood</span>}
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </>
     );
 
@@ -350,7 +356,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
               <div className="p-6 flex-1 overflow-auto relative">
                 {selectedHouseDesignForModals.images && selectedHouseDesignForModals.images.length > 0 ? (
                     <>
-                        <div className="relative w-full h-[300px] mb-4 flex items-center justify-center">
+                        <div className="relative w-[900px] h-[430px] mb-4 flex items-center justify-center">
                             <img
                                 src={selectedHouseDesignForModals.images[currentModalFacadeIdx]?.src || ''}
                                 alt={`Facade ${currentModalFacadeIdx + 1}`}
