@@ -2,7 +2,7 @@ import React from "react";
 import { BedDouble, Bath, Car, Building2, RotateCcw } from "lucide-react"; 
 import { Slider } from "./slider";
 import { Button } from "./Button";
-import { FilterRowProps, FilterSectionProps } from "@/types/houseDesign";
+import { FilterSectionProps, FilterRowProps } from "@/types/houseDesign";
 import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "@/constants/houseDesigns";
 import { useContent } from "@/hooks/useContent";
 

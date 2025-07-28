@@ -1,18 +1,32 @@
 import { z } from "zod";
 
+export interface FilterRowProps {
+  icon: React.ReactNode;
+  label: string;
+  value: [number, number];
+  setValue: (v: [number, number]) => void;
+  minRange: number;
+  maxRange: number;
+}
+
+
+export interface HouseDesignImage {
+  src: string;
+  faced: string; 
+}
+
 export interface HouseDesignItem {
   id: string;
   title: string;
-  area: string;
-  image: string;
-  images: { src: string; faced: string; }[];
+  area: string; 
+  image: string; 
+  images: HouseDesignImage[]; 
   bedrooms: number;
   bathrooms: number;
   cars: number;
   storeys: number;
   isFavorite: boolean;
-  floorPlanImage?: string;
-  overlayOnly?: boolean;
+  floorPlanImage?: string; 
 }
 
 export interface HouseDesignListProps {
@@ -23,8 +37,10 @@ export interface HouseDesignListProps {
     storeys: [number, number];
   };
   onShowFilter: () => void;
-  onDesignClick: (design: HouseDesignItem | null) => void;
+  onDesignClick: (design: HouseDesignItem | null) => void; 
   onEnquireNow?: (design: HouseDesignItem) => void;
+  onViewFloorPlan?: (design: HouseDesignItem) => void; 
+  onViewFacades?: (design: HouseDesignItem) => void; 
 }
 
 export interface GetYourQuoteSidebarProps {
@@ -33,7 +49,7 @@ export interface GetYourQuoteSidebarProps {
   onBack?: () => void;
   selectedHouseDesign: HouseDesignItem | null;
   lotDetails: {
-    id: string | number; 
+    id: string | number;
     suburb: string;
     address: string;
     size?: number;
@@ -50,15 +66,6 @@ export interface FilterSectionProps {
   storeys: [number, number];
   setStoreys: React.Dispatch<React.SetStateAction<[number, number]>>;
   onShowHouseDesign: () => void;
-}
-
-export interface FilterRowProps {
-  icon: React.ReactNode;
-  label: string;
-  value: [number, number];
-  setValue: (v: [number, number]) => void;
-  minRange: number;
-  maxRange: number;
 }
 
 export type RangeValue = [number, number];
