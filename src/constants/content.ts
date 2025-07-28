@@ -80,7 +80,7 @@ export const APP_CONTENT = {
     reserveYourLot: "Reserve Your Lot Today",
     secureLotDescription: "Secure Lot {lotId} with a refundable deposit while you compare builder quotes",
     secureThisLot: "Secure this lot",
-    mayBeLater: "May be later",
+    mayBeLater: "Keep Exploring",
     deposit: "$1,000",
   },
 

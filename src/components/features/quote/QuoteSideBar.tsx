@@ -186,19 +186,20 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                             {formatContent(quote.secureLotDescription, { lotId: lotDetails.id })}
                         </p>
                         <div className="text-3xl font-bold text-[#2F5D62]">{quote.deposit}</div>
-                        <div className="flex gap-3 pt-2 justify-center">
-                            <button
+                        <div className="flex flex-col gap-3 pt-2">
+                            <Button
                                 onClick={() => setLotSecured(true)}
                                 className="bg-[#2F5D62] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors"
                             >
                                 {quote.secureThisLot}
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                            variant='outline'
                                 onClick={onClose}
-                                className="border border-[#2F5D62] text-[#2F5D62] py-3 px-6 rounded-lg font-medium hover:bg-[#2F5D62] hover:text-white transition-colors"
+                                className="border border-gray-300 bg-white text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                             >
                                 {quote.mayBeLater}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>
