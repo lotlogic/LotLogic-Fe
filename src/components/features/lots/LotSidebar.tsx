@@ -320,17 +320,18 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
               </div>
               
               {/* Floor Plan Image */}
-              <div className="p-6 flex-1 overflow-auto">
-                {selectedHouseDesignForModals.floorPlanImage ? (
-                    <img
-                        src={selectedHouseDesignForModals.floorPlanImage}
-                        alt="Floor Plan"
-                        className="w-full h-auto object-contain rounded-lg"
-                    />
+              <div className="flex-1 flex items-center justify-center overflow-hidden px-6 pb-6">
+                {lot.apiMatches?.[0]?.floorplanUrl ? (
+                  <img
+                    src={lot.apiMatches[0].floorplanUrl}
+                    alt="Floor Plan"
+                    className="max-w-full max-h-full object-contain"
+                  />
                 ) : (
-                    <p className="text-center text-gray-500">Floor plan not available for this design.</p>
+                  <p className="text-center text-gray-500">Floor plan not available for this design.</p>
                 )}
               </div>
+
             </div>
           </div>
         )}
