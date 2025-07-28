@@ -5,7 +5,7 @@ export interface LotSidebarProps {
   onClose: () => void;
   lot: LotData;
   geometry?: GeoJSON.Geometry; 
-  onSelectFloorPlan?: (data: { url: string; coordinates: [[number, number], [number, number], [number, number], [number, number]] }) => void;
+  onSelectFloorPlan?: (data: { url: string; coordinates: [[number, number], [number, number], [number, number], [number, number]] } | null) => void;
   isLoadingApiData?: boolean;
   apiError?: Error | null;
 }

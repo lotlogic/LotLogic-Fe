@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { BedDouble, Bath, Car, Building2, Star, Funnel } from "lucide-react";
+import { BedDouble, Bath, Car, Building2, Bookmark, Funnel, MailQuestionMark } from "lucide-react";
 import { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
 import { initialHouseData } from "@/constants/houseDesigns";
 import { houseDesign, filter as filterContent, lotSidebar, colors } from "@/constants/content";
 
-export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquireNow }: HouseDesignListProps) {
+export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [houseDesigns, setHouseDesigns] = useState<HouseDesignItem[]>(initialHouseData);
@@ -47,103 +47,15 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
       </div>
       <div className="space-y-6">
         {filteredHouses.map((house, idx) => {
-          if (expandedIdx === idx) {
-            const images = house.images;
-            const mainImage = images[selectedImageIdx].src;
-            const facedOption = images[selectedImageIdx].faced;
-            return (
-              <div
-                key={house.id}
-                className="rounded-2xl border border-gray-200 bg-[#eaf3f2] p-4"
-                style={{ cursor: 'pointer' }}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setExpandedIdx(null);
-                    onDesignClick(null);
-                }}
-              >
-                <div className="flex gap-4">
-                  <img src={images[0].src} alt="House" className="w-24 h-24 rounded-lg object-cover" />
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-bold text-lg">{house.title}</div>
-                        <div className="text-gray-600 text-sm">{lotSidebar.singleStorey} &nbsp; {houseDesign.area}: {house.area} {houseDesign.ft}</div>
-                      </div>
-                      {/* Collapse button */}
-                      {/* <button
-                        className="ml-2 p-1 rounded-full hover:bg-gray-200"
-                        onClick={e => {
-                          e.stopPropagation();
-                          setExpandedIdx(null);
-                          onDesignClick(null);
-                        }}
-                        aria-label="Collapse"
-                      >
-                        <ChevronUp className="h-5 w-5" />
-                      </button> */}
-                      <Star
-                        className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
-                          house.isFavorite ? 'fill-current' : 'text-gray-400'
-                        }`}
-                        style={{
-                          color: house.isFavorite ? colors.primary : undefined,
-                        }}
-                        onClick={(e) => handleStarClick(e, house.id)}
-                        data-star-icon
-                      />
-                    </div>
-                    <div className="flex gap-4 mt-2 text-gray-700">
-                      <span className="flex items-center gap-1"><BedDouble className="h-5 w-5" />{house.bedrooms}</span>
-                      <span className="flex items-center gap-1"><Bath className="h-5 w-5" />{house.bathrooms}</span>
-                      <span className="flex items-center gap-1"><Car className="h-5 w-5" />{house.cars}</span>
-                      <span className="flex items-center gap-1"><Building2 className="h-5 w-5" />{house.storeys}</span>
-                    </div>
-                    <div className="mt-2 text-gray-700 text-sm">
-                      {lotSidebar.facedOption}: <span className="font-semibold text-[#2F5D62]">{facedOption}</span>
-                    </div>
-                  </div>
-                </div>
-                <img src={mainImage} alt="Main" className="w-full h-56 rounded-xl object-cover mt-4" />
-                <div className="flex items-center justify-between gap-2 mt-2">
-                  <div className="flex gap-2" data-thumbnails>
-                    {images.map((img, imgIdx) => (
-                      <button
-                        key={img.src}
-                        onClick={e => {
-                          e.stopPropagation();
-                          setSelectedImageIdx(imgIdx);
-                        }}
-                        className={`w-14 h-14 rounded object-cover border-2 ${selectedImageIdx === imgIdx ? 'border-[#2F5D62]' : 'border-transparent'}`}
-                        style={{ padding: 0, background: 'none' }}
-                        tabIndex={0}
-                        aria-label={`Select image ${imgIdx + 1}`}
-                        data-ignore-collapse
-                      >
-                        <img src={img.src} className="w-14 h-14 rounded object-cover" alt={`Thumbnail ${imgIdx + 1}`} />
-                      </button>
-                    ))}
-                  </div>
-                  <Button
-                    className="bg-[#2F5D62] text-white px-9 py-3 rounded-lg font-medium"
-                    data-ignore-collapse
-                    onClick={e => {
-                      e.stopPropagation();
-                      if (onEnquireNow) {
-                        onEnquireNow(house);
-                      }
-                    }}
-                  >
-                    {houseDesign.enquireNow}
-                  </Button>
-                </div>
-              </div>
-            );
-          }
+          const isExpanded = expandedIdx === idx;
+          const images = house.images;
+          const mainImage = images[selectedImageIdx]?.src || house.image;
+          const facedOption = images[selectedImageIdx]?.faced;
+
           return (
             <div
               key={house.id}
-              className="rounded-2xl border border-gray-200 bg-white p-4 cursor-pointer hover:shadow flex gap-4 items-center"
+              className={`rounded-2xl border border-gray-200 p-4 transition-all duration-300 ${isExpanded ? 'bg-[#eaf3f2]' : 'bg-white hover:shadow-md'}`}
               onClick={() => {
                 if (expandedIdx === idx) {
                   setExpandedIdx(null);
@@ -156,31 +68,94 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                 }
               }}
             >
-              <img src={house.image} alt={house.title} className="w-24 h-24 rounded-lg object-cover" />
-              <div className="flex-1">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-bold text-lg">{house.title}</div>
-                    <div className="text-gray-600 text-sm">{lotSidebar.singleStorey} &nbsp; {houseDesign.area}: {house.area} {houseDesign.ft}</div>
+              <div className="flex gap-4 items-start">
+                {/* Floor Plan Thumbnail on the left */}
+                <img 
+                  src={house.floorPlanImage || images[0]?.src || house.image} 
+                  alt="Floor Plan" 
+                  className="w-24 h-24 rounded-lg object-cover flex-shrink-0" 
+                />
+                
+                {/* House Details and Buttons on the right */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start mb-1">
+                    <div className="min-w-0 pr-2">
+                      <div className="font-bold text-lg truncate">{house.title}</div>
+                      <div className="text-gray-600 text-sm whitespace-nowrap overflow-hidden text-ellipsis">
+                        {lotSidebar.singleStorey} {houseDesign.area}: {house.area} {houseDesign.ft}
+                      </div>
+                    </div>
+                    <Bookmark
+                      className={`h-6 w-6 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
+                        house.isFavorite ? 'fill-current' : 'text-gray-400'
+                      }`}
+                      style={{
+                        color: house.isFavorite ? colors.primary : undefined,
+                      }}
+                      onClick={(e) => handleStarClick(e, house.id)}
+                      data-star-icon
+                    />
                   </div>
-                  <Star
-                    className={`h-6 w-6 cursor-pointer transition-colors duration-200 ${
-                      house.isFavorite ? 'fill-current' : 'text-gray-400'
-                    }`}
-                    style={{
-                      color: house.isFavorite ? colors.primary : undefined,
-                    }}
-                    onClick={(e) => handleStarClick(e, house.id)}
-                    data-star-icon
-                  />
-                </div>
-                <div className="flex gap-4 mt-2 text-gray-900">
-                  <span className="flex items-center gap-1"><BedDouble className="h-5 w-5" />{house.bedrooms}</span>
-                  <span className="flex items-center gap-1"><Bath className="h-5 w-5" />{house.bathrooms}</span>
-                  <span className="flex items-center gap-1"><Car className="h-5 w-5" />{house.cars}</span>
-                  <span className="flex items-center gap-1"><Building2 className="h-5 w-5" />{house.storeys}</span>
+                  
+                  {/* Specifications Icons */}
+                  <div className="flex gap-4 mt-2 text-gray-700 text-sm flex-wrap">
+                    <span className="flex items-center gap-1"><BedDouble className="h-5 w-5 text-gray-500" />{house.bedrooms}</span>
+                    <span className="flex items-center gap-1"><Bath className="h-5 w-5 text-gray-500" />{house.bathrooms}</span>
+                    <span className="flex items-center gap-1"><Car className="h-5 w-5 text-gray-500" />{house.cars}</span>
+                    <span className="flex items-center gap-1"><Building2 className="h-5 w-5 text-gray-500" />{house.storeys}</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Expanded content for detailed view */}
+              {isExpanded && (
+                <div className="mt-4 pt-1">
+                  
+                  {/* Action Buttons for Expanded View */}
+                  <div className="space-y-3">
+                    {/* First Row: View Floor plan and View Facades */}
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={e => {
+                          e.stopPropagation();
+                          if (onViewFloorPlan) {
+                            onViewFloorPlan(house);
+                          }
+                        }}
+                        className="bg-[#2F5D62] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors flex-1"
+                      >
+                        View Floor plan
+                      </Button>
+                      <Button
+                        onClick={e => {
+                          e.stopPropagation();
+                          if (onViewFacades) {
+                            onViewFacades(house);
+                          }
+                        }}
+                        className="bg-[#2F5D62] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors flex-1"
+                      >
+                        View Facades
+                      </Button>
+                    </div>
+                    
+                    {/* Second Row: Enquire Now */}
+                    <Button
+                      variant="outline"
+                      onClick={e => {
+                        e.stopPropagation();
+                        if (onEnquireNow) {
+                          onEnquireNow(house);
+                        }
+                      }}
+                      className="border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-[#2F5D62] hover:text-white hover:border-[#2F5D62] transition-colors w-full flex items-center justify-center gap-2"
+                    >
+                      <MailQuestionMark className="h-4 w-4" />
+                      Enquire Now
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
