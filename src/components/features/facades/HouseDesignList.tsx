@@ -20,32 +20,34 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
 
   });
 
-  const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
-    // toast.success("Design saved to your Shortlist", {
-    //   icon: (
-    //     <div className="w-7 h-7 p-1 rounded-full border-5 border-[#2F5D62] flex items-center justify-center">
-    //       <Check strokeWidth={4} className="w-4 h-6 text-[#2F5D62]" />
-    //     </div>
-    //   ),
-    //   className: 'ml-2'
-    // });
+const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
+  event.stopPropagation();
+
+  // Determine if it will become favorite BEFORE updating state
+  const targetHouse = houseDesigns.find(h => h.id === clickedHouseId);
+  const willBeFavorite = targetHouse ? !targetHouse.isFavorite : false;
+
+  // Update state
+  setHouseDesigns(prevDesigns =>
+    prevDesigns.map(house =>
+      house.id === clickedHouseId
+        ? { ...house, isFavorite: !house.isFavorite }
+        : house
+    )
+  );
+
+  // Show toast based on new favorite state
+  if (willBeFavorite) {
     toast.success("Design saved to your Shortlist", {
       icon: (
         <div className="w-7 h-7 p-1 rounded-full border-4 border-[#2F5D62] flex items-center justify-center">
           <Check strokeWidth={4} className="w-4 h-6 text-[#2F5D62]" />
         </div>
       ),
-      className: 'ml-8'
+      className: 'ml-8',
     });
-    event.stopPropagation();
-    setHouseDesigns(prevDesigns =>
-      prevDesigns.map(house =>
-        house.id === clickedHouseId
-          ? { ...house, isFavorite: !house.isFavorite }
-          : house
-      )
-    );
-  };
+  }
+};
 
   return (
     <div className="p-6 overflow-y-auto h-full">
@@ -116,9 +118,7 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                       position="bottom-right"
                       autoClose={500}
                       hideProgressBar={true}
-                      closeOnClick
                       pauseOnHover
-                      transition={Bounce}
                     />
                   </div>
                   
