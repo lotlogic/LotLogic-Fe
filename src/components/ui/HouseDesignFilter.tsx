@@ -16,15 +16,15 @@ const FilterRow = React.memo(({
   filterErrors = {}
 }: FilterRowProps) => {
   return (
-    <div className="mb-8 border-b border-gray-200 fix pb-4">
-      <div className="flex items-center justify-between mb-2 w-full">
+    <div className="mb-6 border-b border-gray-200 pb-6">
+      <div className="flex items-center justify-between mb-4 w-full">
         <div className="flex items-center">
           {React.isValidElement(icon) ? React.cloneElement(icon) : icon}
           <span className="ml-2 text-base font-semibold text-gray-800">{label}</span>
         </div>
       </div>
       <div className="flex items-center">
-        <div className="flex gap-8 flex-wrap">  
+        <div className="flex gap-6 flex-wrap">  
           {INITIAL_FILTER_RANGES[initial as keyof typeof INITIAL_FILTER_RANGES].map((v: number, index:number) => (
             <div key={index} className="flex items-center space-x-2">
               <Checkbox
@@ -64,9 +64,9 @@ const DesignRow = React.memo(({
   onChange
 }: DesignRowProps) => {
   return (
-    <div className="fix pb-4">
-      <div className="flex items-center">
-        <div className="flex gap-8">  
+    <div className="mb-6 border-b border-gray-200 pb-6">
+      <div className="flex items-center mb-4">
+        <div className="flex gap-6">  
           <div className="flex items-center space-x-3">
             <Checkbox
               id="checkbox-rumpus"
@@ -118,14 +118,14 @@ const HouseSizeInputRow = React.memo(({
   filterErrors = {},
 }: HouseSizeInputRowProps) => {
   return (
-    <div className="mb-8 border-b border-gray-200 fix pb-4">
-      <div className="flex items-center mb-2">
+    <div className="mb-6 border-b border-gray-200 pb-6">
+      <div className="flex items-center mb-4">
         <Building2 />
         <span className="ml-2 text-base font-semibold text-gray-800">Enter House Size</span>
       </div>
 
       <div className="flex items-center">
-        <div className="flex gap-8">  
+        <div className="flex gap-6">  
           <div className="flex flex-col space-y-1">
             <Input 
               type="text"
