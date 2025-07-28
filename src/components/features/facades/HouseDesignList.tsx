@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { BedDouble, Bath, Car, Building2, Bookmark, Funnel, MailQuestionMark } from "lucide-react";
+import { BedDouble, Bath, Car, Building2, Bookmark, Funnel, MailQuestionMark, CheckCircle, Check } from "lucide-react";
 import { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
 import { initialHouseData } from "@/constants/houseDesigns";
 import { houseDesign, filter as filterContent, lotSidebar, colors } from "@/constants/content";
+import { Bounce, ToastContainer, toast } from 'react-toastify';
 
 export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
@@ -20,6 +21,22 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
   });
 
   const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
+    // toast.success("Design saved to your Shortlist", {
+    //   icon: (
+    //     <div className="w-7 h-7 p-1 rounded-full border-5 border-[#2F5D62] flex items-center justify-center">
+    //       <Check strokeWidth={4} className="w-4 h-6 text-[#2F5D62]" />
+    //     </div>
+    //   ),
+    //   className: 'ml-2'
+    // });
+    toast.success("Design saved to your Shortlist", {
+      icon: (
+        <div className="w-7 h-7 p-1 rounded-full border-4 border-[#2F5D62] flex items-center justify-center">
+          <Check strokeWidth={4} className="w-4 h-6 text-[#2F5D62]" />
+        </div>
+      ),
+      className: 'ml-8'
+    });
     event.stopPropagation();
     setHouseDesigns(prevDesigns =>
       prevDesigns.map(house =>
@@ -94,6 +111,14 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                       }}
                       onClick={(e) => handleStarClick(e, house.id)}
                       data-star-icon
+                    />
+                    <ToastContainer 
+                      position="bottom-right"
+                      autoClose={500}
+                      hideProgressBar={true}
+                      closeOnClick
+                      pauseOnHover
+                      transition={Bounce}
                     />
                   </div>
                   
