@@ -9,7 +9,7 @@ import { HouseDesignList } from "../facades/HouseDesignList";
 import { ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { GetYourQuoteSidebar } from "../quote/QuoteSideBar";
-import { HouseDesignItem } from "@/types/houseDesign";
+import { DesignState, HouseDesignItem } from "@/types/houseDesign";
 import { useContent } from "@/hooks/useContent";
 // import { colors } from "@/constants/content";
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,10 +24,19 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
     const [selectedHouseDesignForModals, setSelectedHouseDesignForModals] = React.useState<HouseDesignItem | null>(null); 
 
     // Filter states
-    const [bedroom, setBedroom] = React.useState<[number, number]>([2, 4]);
-    const [bathroom, setBathroom] = React.useState<[number, number]>([2, 4]);
-    const [cars, setCars] = React.useState<[number, number]>([2, 4]);
-    const [storeys, setStoreys] = React.useState<[number, number]>([2, 4]);
+    const [bedroom, setBedroom] = React.useState<number[]>([]);
+    const [bathroom, setBathroom] = React.useState<number[]>([]);
+    const [car, setCar] = React.useState<number[]>([]);
+    const [design, setDesign] = React.useState<DesignState>({
+      rumpus: false,
+      alfresco: false,
+      pergola: false,
+    });
+    const [min_size, setMinSize] = React.useState<number>(NaN);
+    const [max_size, setMaxSize] = React.useState<number>(NaN);
+    const [sizeErrors, setSizeErrors] = React.useState<{ min_size?: string; max_size?: string }>({});
+    const [designErrors, setdesignErrors] = React.useState<{ bedroom?: string; bathroom?: string; car?: string }>({});
+    const [showErrors, setShowErrors] = React.useState(false);
 
     const [showQuoteSidebar, setShowQuoteSidebar] = React.useState(false);
     const [quoteDesign, setQuoteDesign] = React.useState<HouseDesignItem | null>(null);
@@ -45,6 +54,60 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
       setShowHouseDesigns(true); 
       setShowFilter(false);
       setSelectedHouseDesignForModals(null); 
+
+      const filterPayload = { 
+        bedroom,
+        bathroom,
+        car,
+        rumpus: design.rumpus,
+        alfresco: design.alfresco,
+        pergola: design.pergola,
+        min_size,
+        max_size
+      };
+      console.log("Filter Payload:", filterPayload);
+
+      if(validateFilter()) {
+        setShowHouseDesigns(true);
+        setShowFilter(false);
+        setSelectedHouseDesign(null);
+      }
+    };
+
+    const validateFilter = () => {
+      const size_errors: { min_size?: string; max_size?: string } = {};
+      const design_errors: { bedroom?: string; bathroom?: string; car?: string } = {};
+
+      // House size validation
+      if (isNaN(min_size) || min_size < 150) {
+        size_errors.min_size = "Minimum size should be at least 150";
+      }
+
+      if (isNaN(max_size) || max_size > 300) {
+        size_errors.max_size = "Maximum size cannot exceed 300";
+      }
+
+      if (!isNaN(min_size) && !isNaN(max_size) && min_size > max_size) {
+        size_errors.min_size = "Min size cannot be greater than max size";
+        size_errors.max_size = "Max size must be greater than min size";
+      }
+
+      if (!bedroom.length) {
+        design_errors.bedroom = "Please choosen one";
+      }
+      if (!bathroom.length) {
+        design_errors.bathroom = "Please choosen one";
+      }
+      if (!car.length) {
+        design_errors.car = "Please choosen one";
+      }
+
+      setShowErrors(true);
+      setSizeErrors(size_errors);
+      setdesignErrors(design_errors);
+
+      return (Object.keys(sizeErrors).length === 0 && Object.keys(designErrors).length === 0);
+
     };
 
     const handleBackClick = () => {
@@ -176,6 +239,48 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
               setStoreys={setStoreys}
               onShowHouseDesign={handleShowHouseDesign}
             />
+//           <Sidebar 
+//             open={open} 
+//             onClose={onClose}
+//             onBack={showBackArrow ? handleBackClick : undefined}
+//             showBackButton={showBackArrow}
+//             headerContent={headerContent}
+//           >
+//             {selectedHouseDesign ? ( // Render detailed house view if a design is selected
+//               renderDetailedHouseDesign(selectedHouseDesign)
+//             ) : showHouseDesigns ? ( // Render list of house designs
+//               <HouseDesignList
+//                 filter={{ bedroom, bathroom, car }}
+//                 onShowFilter={() => {
+//                   setShowHouseDesigns(false);
+//                   setShowFilter(true);
+//                 }}
+//                 onDesignClick={handleDesignClick}
+//                 onEnquireNow={(design) => {
+//                   setShowQuoteSidebar(true);
+//                   setQuoteDesign(design);
+//                 }}
+//               />
+//             ) : showFilter ? ( 
+//               <FilterSectionWithSingleLineSliders
+//                 bedroom={bedroom}
+//                 setBedroom={setBedroom}
+//                 bathroom={bathroom}
+//                 setBathroom={setBathroom}
+//                 car={car}
+//                 setCar={setCar}
+//                 design={design}
+//                 setDesign={setDesign}
+//                 min_size={min_size}
+//                 setMinSize={setMinSize}
+//                 max_size={max_size}
+//                 setMaxSize={setMaxSize}
+//                 onShowHouseDesign={handleShowHouseDesign}
+//                 showErrors={showErrors}
+//                 sizeErrors={sizeErrors}
+//                 designErrors={designErrors}
+//               />
+
             ) : ( 
             <SummaryView
               lot={lot}
@@ -194,6 +299,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
                       Get inspired with new house designs
                     </p>
                   </div>
+
               <Button
                     className="w-full text-base py-4 rounded-xl font-semibold animated-gradient-button transition-all duration-300 shadow-md cursor-pointer"
                 onClick={() => setShowFilter(true)}
