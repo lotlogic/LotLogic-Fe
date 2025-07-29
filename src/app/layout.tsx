@@ -5,6 +5,7 @@ import { IBM_Plex_Serif } from 'next/font/google';
 import { DM_Sans } from 'next/font/google';
 import { app, brand } from "@/constants/content";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { ToastContainer } from "react-toastify";
 
 
 const ibmPlexSerif = IBM_Plex_Serif({
@@ -50,6 +51,20 @@ export default function RootLayout({
       >
         <QueryProvider>
           {children}
+          <ToastContainer
+            position="bottom-right"
+            autoClose={3000}
+            hideProgressBar={true}
+            newestOnTop={true}
+            closeOnClick={true}
+            rtl={false}
+            pauseOnFocusLoss={false}
+            draggable={true}
+            pauseOnHover={false}
+            limit={3}
+            theme="light"
+            style={{ zIndex: 9999 }}
+          />
         </QueryProvider>
       </body>
     </html>
