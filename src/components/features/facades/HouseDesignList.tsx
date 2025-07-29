@@ -4,7 +4,6 @@ import { BedDouble, Bath, Car, Building2, Bookmark, Funnel, MailQuestionMark, Ch
 import { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
 import { initialHouseData } from "@/constants/houseDesigns";
 import { houseDesign, filter as filterContent, lotSidebar, colors } from "@/constants/content";
-import { ToastContainer } from 'react-toastify';
 import { showToast } from "@/components/ui/Toast";
 
 export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
@@ -36,10 +35,9 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                         <Check strokeWidth={4} className="w-4 h-6 text-[#2F5D62]" />
                       </div>
                     ),
-                    autoClose:100,
+                    autoClose: 1000,
                     position:'bottom-right',
                     hideProgressBar:true,
-                    closeOnClick:false
                   }
                 })
           return { ...house, isFavorite: fav };
@@ -112,13 +110,6 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                         color: house.isFavorite ? colors.primary : undefined,
                       }}
                       onClick={(e) => handleStarClick(e, house.id)}
-                      data-star-icon
-                    />
-                    <ToastContainer 
-                      autoClose={100}
-                      position='bottom-right'
-                      hideProgressBar={true}
-                      closeOnClick={false}
                     />
                   </div>
                   
