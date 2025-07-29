@@ -115,7 +115,6 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                     <span className="flex items-center gap-1"><BedDouble className="h-5 w-5 text-gray-500" />{house.bedrooms}</span>
                     <span className="flex items-center gap-1"><Bath className="h-5 w-5 text-gray-500" />{house.bathrooms}</span>
                     <span className="flex items-center gap-1"><Car className="h-5 w-5 text-gray-500" />{house.cars}</span>
-                    <span className="flex items-center gap-1"><Building2 className="h-5 w-5 text-gray-500" />{house.storeys}</span>
                   </div>
                 </div>
               </div>

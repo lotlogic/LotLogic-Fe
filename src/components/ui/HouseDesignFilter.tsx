@@ -28,7 +28,7 @@ const FilterRow = React.memo(({
           {INITIAL_FILTER_RANGES[initial as keyof typeof INITIAL_FILTER_RANGES].map((v: number, index:number) => (
             <div key={index} className="flex items-center space-x-2">
               <Checkbox
-                id={`checkbox-${index}`}
+                id={`checkbox-${initial}-${index}`}
                 checked={value.includes(v)}
                 onCheckedChange={(checked: boolean) => {
                   checked
@@ -39,7 +39,7 @@ const FilterRow = React.memo(({
                 }}
               />
               <label
-                htmlFor={`checkbox-${index}`}
+                htmlFor={`checkbox-${initial}-${index}`}
                 className="text-sm font-sm"
               >
                 {v} {initial}
