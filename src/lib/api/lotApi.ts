@@ -27,7 +27,7 @@ export const lotApi = {
       const staticLotId = 'e2edae8b-988f-4a74-a584-c406222ee449';
       
       // Use Next.js API route to avoid CORS issues
-      const response = await fetch(`http://localhost:3000/design-on-lot/calculate?lotId=e2edae8b-988f-4a74-a584-c406222ee449`, {
+      const response = await fetch(`http://localhost:3000/design-on-lot/calculate?lotId=075a1931-6159-4622-88a2-be3a5a518486`, {
         // design-on-lot/calculate?lotId=e2edae8b-988f-4a74-a584-c406222ee449
         method: 'GET',
         headers: {

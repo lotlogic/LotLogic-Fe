@@ -167,8 +167,8 @@ export default function ZoneMap() {
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [149.1300, -35.2809],
-      zoom: 13,
+      center: [149.12821, -35.2710585], // coordinates for 14 Macleay Street, Turner ACT
+      zoom: 19.9,
       attributionControl: false,
     });
 
