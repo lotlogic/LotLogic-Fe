@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { BedDouble, Bath, Car, Building2, Bookmark, Funnel, MailQuestionMark } from "lucide-react";
+import { BedDouble, Bath, Car, Building2, Bookmark, Funnel, MailQuestionMark, Check } from "lucide-react";
 import { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
 import { initialHouseData } from "@/constants/houseDesigns";
 import { houseDesign, filter as filterContent, lotSidebar, colors } from "@/constants/content";
+import { ToastContainer } from 'react-toastify';
+import { showToast } from "@/components/ui/Toast";
 
 export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
@@ -16,17 +18,34 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
       filter.bathroom.includes(house.bathrooms) &&
       filter.car.includes(house.cars)
     );
-
   });
 
   const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
     event.stopPropagation();
     setHouseDesigns(prevDesigns =>
-      prevDesigns.map(house =>
-        house.id === clickedHouseId
-          ? { ...house, isFavorite: !house.isFavorite }
-          : house
-      )
+      prevDesigns.map(house => {
+        if (house.id === clickedHouseId) {
+          let fav = !house.isFavorite;
+              if(fav)
+                showToast({
+                  message: 'Design saved to your Shortlist',
+                  options: {
+                    className: 'ml-8',
+                    icon: (
+                      <div className="w-7 h-7 p-1 rounded-full border-4 border-[#2F5D62] flex items-center justify-center">
+                        <Check strokeWidth={4} className="w-4 h-6 text-[#2F5D62]" />
+                      </div>
+                    ),
+                    autoClose:100,
+                    position:'bottom-right',
+                    hideProgressBar:true,
+                    closeOnClick:false
+                  }
+                })
+          return { ...house, isFavorite: fav };
+        }
+        return house;
+      })
     );
   };
 
@@ -94,6 +113,12 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                       }}
                       onClick={(e) => handleStarClick(e, house.id)}
                       data-star-icon
+                    />
+                    <ToastContainer 
+                      autoClose={100}
+                      position='bottom-right'
+                      hideProgressBar={true}
+                      closeOnClick={false}
                     />
                   </div>
                   
