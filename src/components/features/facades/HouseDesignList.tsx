@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { BedDouble, Bath, Car, Building2, Bookmark, Funnel, MailQuestionMark, CheckCircle, Check } from "lucide-react";
+import { BedDouble, Bath, Car, Building2, Bookmark, Funnel, MailQuestionMark, Check } from "lucide-react";
 import { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
 import { initialHouseData } from "@/constants/houseDesigns";
 import { houseDesign, filter as filterContent, lotSidebar, colors } from "@/constants/content";
-import { Bounce, ToastContainer, toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
+import { showToast } from "@/components/ui/Toast";
 
 export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
@@ -17,37 +18,36 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
       filter.bathroom.includes(house.bathrooms) &&
       filter.car.includes(house.cars)
     );
-
   });
 
-const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
-  event.stopPropagation();
-
-  // Determine if it will become favorite BEFORE updating state
-  const targetHouse = houseDesigns.find(h => h.id === clickedHouseId);
-  const willBeFavorite = targetHouse ? !targetHouse.isFavorite : false;
-
-  // Update state
-  setHouseDesigns(prevDesigns =>
-    prevDesigns.map(house =>
-      house.id === clickedHouseId
-        ? { ...house, isFavorite: !house.isFavorite }
-        : house
-    )
-  );
-
-  // Show toast based on new favorite state
-  if (willBeFavorite) {
-    toast.success("Design saved to your Shortlist", {
-      icon: (
-        <div className="w-7 h-7 p-1 rounded-full border-4 border-[#2F5D62] flex items-center justify-center">
-          <Check strokeWidth={4} className="w-4 h-6 text-[#2F5D62]" />
-        </div>
-      ),
-      className: 'ml-8',
-    });
-  }
-};
+  const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
+    event.stopPropagation();
+    setHouseDesigns(prevDesigns =>
+      prevDesigns.map(house => {
+        if (house.id === clickedHouseId) {
+          let fav = !house.isFavorite;
+              if(fav)
+                showToast({
+                  message: 'Design saved to your Shortlist',
+                  options: {
+                    className: 'ml-8',
+                    icon: (
+                      <div className="w-7 h-7 p-1 rounded-full border-4 border-[#2F5D62] flex items-center justify-center">
+                        <Check strokeWidth={4} className="w-4 h-6 text-[#2F5D62]" />
+                      </div>
+                    ),
+                    autoClose:100,
+                    position:'bottom-right',
+                    hideProgressBar:true,
+                    closeOnClick:false
+                  }
+                })
+          return { ...house, isFavorite: fav };
+        }
+        return house;
+      })
+    );
+  };
 
   return (
     <div className="p-6 overflow-y-auto h-full">
@@ -115,10 +115,10 @@ const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
                       data-star-icon
                     />
                     <ToastContainer 
-                      position="bottom-right"
-                      autoClose={500}
+                      autoClose={100}
+                      position='bottom-right'
                       hideProgressBar={true}
-                      pauseOnHover
+                      closeOnClick={false}
                     />
                   </div>
                   
