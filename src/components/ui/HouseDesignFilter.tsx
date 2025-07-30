@@ -138,7 +138,7 @@ const HouseSizeInputRow = React.memo(({
               }}
             />
             {showErrors && filterErrors.min_size && (
-              <p className="text-sm text-red-600">{filterErrors.min_size}</p>
+              <p className="text-sm text-red-600 w-30">{filterErrors.min_size}</p>
             )}
           </div>
           <div className="text-xl items-center text-gray-500 p-1">-</div>
@@ -154,7 +154,7 @@ const HouseSizeInputRow = React.memo(({
               }}
             />
             {showErrors && filterErrors.max_size && (
-              <p className="text-sm text-red-600">{filterErrors.max_size}</p>
+              <p className="text-sm text-red-600 w-30">{filterErrors.max_size}</p>
             )}
           </div>
         </div>
