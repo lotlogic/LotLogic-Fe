@@ -82,7 +82,6 @@ export function SavedPropertiesSidebar({
                                     <div className="text-xs text-black">
                                         Lot ID: {property.lotId}, {property.suburb}, {property.address}
                                     </div>
-                                        {/* <Bookmark className="bookmark-btn h-6 w-5 text-[#2F5D62] fill-[#2F5D62] cursor-pointer active:bg-white" /> */}
                                         <Bookmark 
                                             className={`bookmark-btn h-6 w-5 text-[#2F5D62] ${clicked ? 'fill-white' : 'fill-[#2F5D62]'}`} 
                                             onClick={() => setClicked(!clicked)}

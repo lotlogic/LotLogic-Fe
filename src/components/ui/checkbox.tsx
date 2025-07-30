@@ -15,7 +15,7 @@ function Checkbox({
       data-slot="checkbox"
       className={cn(
         // ✅ increased size and added checked color
-        "peer border-input dark:bg-input/30 data-[state=checked]:bg-[#2F5D62] data-[state=checked]:text-white data-[state=checked]:border-blue-200 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive w-6 h-6 shrink-0 rounded-md border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
+        "peer border-input border-gray-400 dark:bg-input/30 data-[state=checked]:bg-[#2F5D62] data-[state=checked]:text-white data-[state=checked]:border-[#2F5D62] focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive w-6 h-6 shrink-0 rounded-md border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}
