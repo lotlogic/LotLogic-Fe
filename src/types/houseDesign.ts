@@ -35,6 +35,14 @@ export interface HouseDesignListProps {
     bathroom: number[];
     car: number[];
   };
+  lot: {
+    lotId: string | number;
+    suburb: string;
+    address: string;
+    size: string | number;
+    zoning: string;
+    overlays: string;
+  };
   onShowFilter: () => void;
   onDesignClick: (design: HouseDesignItem | null) => void; 
   onEnquireNow?: (design: HouseDesignItem) => void;

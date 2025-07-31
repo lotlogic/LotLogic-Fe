@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, BedDouble, Bath, Car, Building2, ExternalLink, Bookmark } from 'lucide-react';
 import { SavedPropertiesSidebarProps } from '@/types/ui';
 import { getZoningColor } from '@/lib/utils/zoning';
@@ -13,6 +13,11 @@ export function SavedPropertiesSidebar({
     onViewDetails 
 }: SavedPropertiesSidebarProps) {
     const sidebarRef = useRef<HTMLDivElement>(null);
+    const [properties, setProperties] = useState(savedProperties);
+
+    useEffect(() => {
+        setProperties(savedProperties);
+    }, [savedProperties]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -42,11 +47,10 @@ export function SavedPropertiesSidebar({
 
     }, [open, onClose]);
 
-    const [clicked, setClicked] = React.useState(false);
     return (
         <div
             ref={sidebarRef}
-            className={`absolute top-0 right-0 h-full w-[400px] bg-white shadow-lg z-30 transition-transform duration-300 ease-in-out
+            className={`absolute top-0 right-0 h-full w-[450px] bg-white shadow-lg z-30 transition-transform duration-300 ease-in-out
                 ${open ? 'translate-x-0' : 'translate-x-full'}`}
         >
             {/* Header */}
@@ -67,7 +71,7 @@ export function SavedPropertiesSidebar({
 
             {/* Content */}
             <div className="p-4 overflow-y-auto h-[calc(100%-80px)]">
-                {savedProperties.length === 0 ? (
+                {properties.length === 0 ? (
                     <div className="text-center py-8">
                         <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No saved properties</h3>
@@ -75,17 +79,41 @@ export function SavedPropertiesSidebar({
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {savedProperties.map((property) => (
+                        {properties.map((property) => {
+                            if (!property.houseDesign.isFavorite) return null;
+                            return (
                             <div key={property.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                                 {/* Lot Info Header */}
                                 <div className="flex items-center justify-between">
                                     <div className="text-xs text-black">
                                         Lot ID: {property.lotId}, {property.suburb}, {property.address}
                                     </div>
-                                        <Bookmark 
-                                            className={`bookmark-btn h-6 w-5 text-[#2F5D62] ${clicked ? 'fill-white' : 'fill-[#2F5D62]'}`} 
-                                            onClick={() => setClicked(!clicked)}
-                                        />
+                                    <Bookmark
+                                        className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 text-[#2F5D62] ${
+                                            property.houseDesign.isFavorite ? 'fill-[#2F5D62]' : "fill-white"
+                                        }`}
+                                        style={{
+                                        color: property.houseDesign.isFavorite ? "#2F5D62" : undefined,
+                                        }}
+                                        onClick={() => {
+                                            setProperties((prev) => {
+                                                const newFav = prev.map((p) =>
+                                                p.lotId === property.lotId && p.houseDesign.id === property.houseDesign.id
+                                                    ? {
+                                                        ...p,
+                                                        houseDesign: {
+                                                        ...p.houseDesign,
+                                                        isFavorite: !p.houseDesign.isFavorite,
+                                                        },
+                                                    }
+                                                    : p
+                                                );
+                                                localStorage.setItem('userFavorite', JSON.stringify(newFav));
+
+                                                return newFav;
+                                            });
+                                        }}
+                                    />
                                 </div>
 
                                 {/* Lot Details */}
@@ -95,12 +123,12 @@ export function SavedPropertiesSidebar({
                                         {property.size}m²
                                     </div>
                                     {property.zoning && 
-                                        <span className="text-xs m-2 px-2 py-1 rounded-full text-black font-small"
+                                        <span className="text-xs px-4 py-2 rounded-full text-black items-center justify-between"
                                             style={{ backgroundColor: getZoningColor(property.zoning) }}>{property.zoning}
                                         </span>
                                     }
                                     {property.overlays && (
-                                        <span className="px-2 py-1 bg-[#00FFFF] text-black text-xs rounded-full"
+                                        <span className="px-2 py-1 text-black text-xs rounded-full items-center justify-between"
                                             style={{ backgroundColor: getOverlaysColor(property.overlays) }}>
                                             {property.overlays}
                                         </span>
@@ -142,7 +170,7 @@ export function SavedPropertiesSidebar({
                                     </button>
                                 </div>
                             </div>
-                        ))}
+                        )})}
                     </div>
                 )}
             </div>

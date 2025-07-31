@@ -79,26 +79,28 @@ export default function ZoneMap() {
   const { data: lotApiData, isLoading: isLoadingLotData, error: lotApiError } = useLotCalculation(lotId);
 
   // Mock saved properties data
-  const savedProperties: SavedProperty[] = [
-    {
-      id: '1',
-      lotId: '205',
-      suburb: 'Rydalmere',
-      address: '15 Bowden Street',
-      size: 495,
-      zoning: 'RZ2: Low density residential',
-      overlays: 'Flood',
-      houseDesign: {
-        id: 'design1',
-        title: 'Allium Place, Orlando',
-        image: '/images/brick.jpg',
-        bedrooms: 4,
-        bathrooms: 2,
-        cars: 2,
-        storeys: 1,
-      }
-    }
-  ];
+  // const savedProperties: SavedProperty[] = [
+  //   {
+  //     id: '1',
+  //     lotId: '205',
+  //     suburb: 'Rydalmere',
+  //     address: '15 Bowden Street',
+  //     size: 495,
+  //     zoning: 'RZ2: Low density residential',
+  //     overlays: 'Flood',
+  //     houseDesign: {
+  //       id: 'design1',
+  //       title: 'Allium Place, Orlando',
+  //       image: '/images/brick.jpg',
+  //       bedrooms: 4,
+  //       bathrooms: 2,
+  //       cars: 2,
+  //       storeys: 1,
+  //     }
+  //   }
+  // ];
+  
+  const savedProperties: SavedProperty[] = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
 
   const handleViewDetails = (property: SavedProperty) => {
     // Handle viewing property details

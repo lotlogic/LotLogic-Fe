@@ -6,7 +6,7 @@ import { initialHouseData } from "@/constants/houseDesigns";
 import { houseDesign, filter as filterContent, lotSidebar, colors } from "@/constants/content";
 import { showToast } from "@/components/ui/Toast";
 
-export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
+export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [houseDesigns, setHouseDesigns] = useState<HouseDesignItem[]>(initialHouseData);
@@ -31,10 +31,25 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
           
           if (fav) {
             console.log('Showing toast...');
+
+            const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
+            savedData.push({
+              ...lot,
+              houseDesign: {...house, isFavorite: fav}
+            });
+            localStorage.setItem('userFavorite', JSON.stringify(savedData));
             showToast({
               message: 'Design saved to your Shortlist',
               type: 'success'
             });
+          } else {
+            const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
+            const newFav = savedData.filter((data: any)=> {
+              if((data.lotId == lot.lotId && data.houseDesign.id == house.id) == false) {
+                return data;
+              }
+            })
+            localStorage.setItem('userFavorite', JSON.stringify(newFav));
           }
           return { ...house, isFavorite: fav };
         }
