@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { BedDouble, Bath, Car, Building2, Bookmark, Funnel, MailQuestionMark } from "lucide-react";
 import { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
@@ -10,6 +10,15 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [houseDesigns, setHouseDesigns] = useState<HouseDesignItem[]>(initialHouseData);
+  const [showToastMessage, setShowToastMessage] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+
+  // Handle toast display with useEffect
+  useEffect(() => {
+    if (showToastMessage) {
+      showToast(showToastMessage);
+      setShowToastMessage(null);
+    }
+  }, [showToastMessage]);
 
   const filteredHouses = houseDesigns.filter(house => {
     return (
@@ -30,7 +39,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
           console.log('Setting favorite to:', fav);
           
           if (fav) {
-            console.log('Showing toast...');
+            console.log('Setting toast message...');
 
             const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
             savedData.push({
@@ -38,7 +47,8 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
               houseDesign: {...house, isFavorite: fav}
             });
             localStorage.setItem('userFavorite', JSON.stringify(savedData));
-            showToast({
+            
+            setShowToastMessage({
               message: 'Design saved to your Shortlist',
               type: 'success'
             });

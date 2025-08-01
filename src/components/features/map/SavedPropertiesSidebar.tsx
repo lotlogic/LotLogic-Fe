@@ -79,9 +79,9 @@ export function SavedPropertiesSidebar({
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {properties.map((property) => {
-                            if (!property.houseDesign.isFavorite) return null;
-                            return (
+                        {properties
+                            .filter((property) => property.houseDesign.isFavorite)
+                            .map((property) => (
                             <div key={property.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                                 {/* Lot Info Header */}
                                 <div className="flex items-center justify-between">
@@ -170,7 +170,7 @@ export function SavedPropertiesSidebar({
                                     </button>
                                 </div>
                             </div>
-                        )})}
+                        ))}
                     </div>
                 )}
             </div>
