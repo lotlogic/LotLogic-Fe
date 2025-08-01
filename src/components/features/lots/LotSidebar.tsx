@@ -217,6 +217,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
             {showHouseDesigns ? ( 
             <HouseDesignList
               filter={{ bedroom, bathroom, car }}
+              lot={{lotId: lot.id ?? '', suburb: lot.suburb ?? '', address: lot.address ?? '', size: lot.size ?? '', zoning: lot.zoning ?? '', overlays: lot.overlays ?? ''}}
               onShowFilter={() => {
                 setShowHouseDesigns(false);
                 setShowFilter(true);

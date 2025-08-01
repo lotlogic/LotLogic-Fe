@@ -6,7 +6,7 @@ import { initialHouseData } from "@/constants/houseDesigns";
 import { houseDesign, filter as filterContent, lotSidebar, colors } from "@/constants/content";
 import { showToast } from "@/components/ui/Toast";
 
-export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
+export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
   const [houseDesigns, setHouseDesigns] = useState<HouseDesignItem[]>(initialHouseData);
@@ -31,10 +31,25 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
           
           if (fav) {
             console.log('Showing toast...');
+
+            const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
+            savedData.push({
+              ...lot,
+              houseDesign: {...house, isFavorite: fav}
+            });
+            localStorage.setItem('userFavorite', JSON.stringify(savedData));
             showToast({
               message: 'Design saved to your Shortlist',
               type: 'success'
             });
+          } else {
+            const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
+            const newFav = savedData.filter((data: any)=> {
+              if((data.lotId == lot.lotId && data.houseDesign.id == house.id) == false) {
+                return data;
+              }
+            })
+            localStorage.setItem('userFavorite', JSON.stringify(newFav));
           }
           return { ...house, isFavorite: fav };
         }
@@ -93,13 +108,13 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-1">
                     <div className="min-w-0 pr-2">
-                      <div className="font-bold text-lg truncate">{house.title}</div>
-                      <div className="text-gray-600 text-sm whitespace-nowrap overflow-hidden text-ellipsis">
+                      <div className="font-bold text-lg mb-1 truncate">{house.title}</div>
+                      <div className="text-black text-sm whitespace-nowrap overflow-hidden text-ellipsis">
                         {lotSidebar.singleStorey} {houseDesign.area}: {house.area} {houseDesign.ft}
                       </div>
                     </div>
                     <Bookmark
-                      className={`h-6 w-6 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
+                      className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
                         house.isFavorite ? 'fill-current' : 'text-gray-400'
                       }`}
                       style={{
@@ -111,10 +126,10 @@ export function HouseDesignList({ filter, onShowFilter, onDesignClick, onEnquire
                   </div>
                   
                   {/* Specifications Icons */}
-                  <div className="flex gap-4 mt-2 text-gray-700 text-sm flex-wrap">
-                    <span className="flex items-center gap-1"><BedDouble className="h-5 w-5 text-gray-500" />{house.bedrooms}</span>
-                    <span className="flex items-center gap-1"><Bath className="h-5 w-5 text-gray-500" />{house.bathrooms}</span>
-                    <span className="flex items-center gap-1"><Car className="h-5 w-5 text-gray-500" />{house.cars}</span>
+                  <div className="flex gap-4 mt-2 text-black text-sm font-medium bold flex-wrap">
+                    <span className="flex items-center gap-1"><BedDouble className="h-5 w-5 text-black" />{house.bedrooms}</span>
+                    <span className="flex items-center gap-1"><Bath className="h-5 w-5 text-black" />{house.bathrooms}</span>
+                    <span className="flex items-center gap-1"><Car className="h-5 w-5 text-black" />{house.cars}</span>
                   </div>
                 </div>
               </div>

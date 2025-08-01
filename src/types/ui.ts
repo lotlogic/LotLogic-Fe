@@ -65,6 +65,7 @@ export interface SavedProperty {
     bathrooms: number;
     cars: number;
     storeys: number;
+    isFavorite: boolean;
   };
 }
 

@@ -67,7 +67,7 @@ const DesignRow = React.memo(({
     <div className="mb-6 border-b border-gray-200 pb-6">
       <div className="flex items-center mb-4">
         <div className="flex gap-6">  
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             <Checkbox
               id="checkbox-rumpus"
               checked={rumpus}
@@ -75,7 +75,7 @@ const DesignRow = React.memo(({
                 onChange('rumpus', checked);
               }}
             />
-            <label htmlFor="checkbox-rumpus" className="text-sm font-bold">
+            <label htmlFor="checkbox-rumpus" className="mr-5 text-sm font-bold">
               Rumpus
             </label>
 
@@ -86,7 +86,7 @@ const DesignRow = React.memo(({
                 onChange('alfresco', checked);
               }}
             />
-            <label htmlFor="checkbox-alfresco" className="text-sm font-bold">
+            <label htmlFor="checkbox-alfresco" className="mr-5 text-sm font-bold">
               Alfresco
             </label>
 
@@ -97,7 +97,7 @@ const DesignRow = React.memo(({
                 onChange('pergola', checked);
               }}
             />
-            <label htmlFor="checkbox-pergola" className="text-sm font-bold">
+            <label htmlFor="checkbox-pergola" className="mr-5 text-sm font-bold">
               Pergola
             </label>
           </div>
@@ -125,7 +125,7 @@ const HouseSizeInputRow = React.memo(({
       </div>
 
       <div className="flex items-center">
-        <div className="flex gap-6">  
+        <div className="flex">  
           <div className="flex flex-col space-y-1">
             <Input 
               type="text"
@@ -138,10 +138,10 @@ const HouseSizeInputRow = React.memo(({
               }}
             />
             {showErrors && filterErrors.min_size && (
-              <p className="text-sm text-red-600">{filterErrors.min_size}</p>
+              <p className="text-sm text-red-600 w-30">{filterErrors.min_size}</p>
             )}
           </div>
-
+          <div className="text-xl items-center text-gray-500 p-1">-</div>
           <div className="flex flex-col space-y-1">
             <Input
               type="text"
@@ -154,7 +154,7 @@ const HouseSizeInputRow = React.memo(({
               }}
             />
             {showErrors && filterErrors.max_size && (
-              <p className="text-sm text-red-600">{filterErrors.max_size}</p>
+              <p className="text-sm text-red-600 w-30">{filterErrors.max_size}</p>
             )}
           </div>
         </div>
