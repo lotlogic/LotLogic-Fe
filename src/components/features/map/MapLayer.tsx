@@ -100,10 +100,18 @@ export default function ZoneMap() {
   //   }
   // ];
   
-  const savedProperties: SavedProperty[] = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
+  let savedProperties: SavedProperty[] = [];
+
+  if (typeof window !== 'undefined') {
+    try {
+      savedProperties = JSON.parse(localStorage.getItem('userFavorite') ?? '[]');
+    } catch (e) {
+      console.error('Error parsing localStorage:', e);
+    }
+  }
+
 
   const handleViewDetails = (property: SavedProperty) => {
-    // Handle viewing property details
     console.log('View details for property:', property);
     setIsSavedSidebarOpen(false);
   };
