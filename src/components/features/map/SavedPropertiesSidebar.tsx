@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, BedDouble, Bath, Car, Building2, ExternalLink, Bookmark } from 'lucide-react';
+import { X, BedDouble, Bath, Car, ExternalLink, Bookmark } from 'lucide-react';
 import { SavedPropertiesSidebarProps, SavedProperty } from '@/types/ui';
 import { getZoningColor } from '@/lib/utils/zoning';
 import { getOverlaysColor } from '@/lib/utils/overlays';

@@ -353,7 +353,7 @@ export default function ZoneMap() {
  const currentLotsToRotate = estateLots.features.filter(f => lotsToRotateKeys.includes(f.properties.BLOCK_KEY));
 
 
- let rotatedEstateLots: typeof estateLots = JSON.parse(JSON.stringify(estateLots)); // Deep copy
+ const rotatedEstateLots: typeof estateLots = JSON.parse(JSON.stringify(estateLots)); // Deep copy
 
 
  if (currentLotsToRotate.length > 0) {

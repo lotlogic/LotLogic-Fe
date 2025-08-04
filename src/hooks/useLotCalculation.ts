@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { lotApi, LotCalculationResponse } from '@/lib/api/lotApi';
+import { lotApi } from '@/lib/api/lotApi';
 
 export function useLotCalculation(lotId: string | null) {
   return useQuery({

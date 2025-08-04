@@ -1,4 +1,4 @@
-import { boolean, z } from "zod";
+import { z } from "zod";
 
 // export interface FilterRowProps {
 //   icon: React.ReactNode;

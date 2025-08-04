@@ -31,11 +31,13 @@ const FilterRow = React.memo(({
                 id={`checkbox-${initial}-${index}`}
                 checked={value.includes(v)}
                 onCheckedChange={(checked: boolean) => {
-                  checked
-                    ? !value.includes(v)
-                      ? setValue([...value, v])
-                      : setValue([...value])
-                    : setValue(value.filter(item => item !== v))
+                  if (checked) {
+                    if (!value.includes(v)) {
+                      setValue([...value, v]);
+                    }
+                  } else {
+                    setValue(value.filter(item => item !== v));
+                  }
                 }}
               />
               <label

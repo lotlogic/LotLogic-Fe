@@ -1,7 +1,6 @@
-import { Diamond, Info, Home } from "lucide-react";
+import { Diamond, Home } from "lucide-react";
 import { LotData } from "@/types/lot";
 import { hexToRgba } from "@/lib/utils/zoning";
-import { faded } from "@/constants/zoningTag";
 
 interface SummaryViewProps {
   lot: LotData;
@@ -10,7 +9,7 @@ interface SummaryViewProps {
   onShowDetailedRules?: () => void;
 }
 
-export function SummaryView({ lot, zoningColor, zoningText, onShowDetailedRules }: SummaryViewProps) {
+export function SummaryView({ lot, zoningColor, zoningText }: SummaryViewProps) {
   return (
     <>
       <div className="mx-6 my-4">

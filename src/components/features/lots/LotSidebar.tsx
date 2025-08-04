@@ -12,12 +12,12 @@ import { GetYourQuoteSidebar } from "../quote/QuoteSideBar";
 import { DesignState, HouseDesignItem } from "@/types/houseDesign";
 import { useContent } from "@/hooks/useContent";
 // import { colors } from "@/constants/content";
-import { useQueryClient } from '@tanstack/react-query';
+// import { useQueryClient } from '@tanstack/react-query';
 import { Diamond } from "lucide-react"; 
 
-export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, isLoadingApiData = false, apiError = null }: LotSidebarProps) {
-    const { lotSidebar, houseDesign } = useContent();
-    const queryClient = useQueryClient();
+export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: LotSidebarProps) {
+    const { lotSidebar } = useContent();
+    // const queryClient = useQueryClient();
 
     const [showFilter, setShowFilter] = React.useState(false);
     const [showHouseDesigns, setShowHouseDesigns] = React.useState(false); 
@@ -192,15 +192,15 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, is
       </>
     );
 
-    const showLoading = isLoadingApiData && !lot.apiDimensions;
+    // const showLoading = isLoadingApiData && !lot.apiDimensions;
     
-    const showError = apiError && !lot.apiDimensions;
+    // const showError = apiError && !lot.apiDimensions;
 
-    const handleRetry = () => {
-      if (lot.id) {
-        queryClient.invalidateQueries({ queryKey: ['lot-calculation', lot.id] });
-      }
-    };
+    // const handleRetry = () => {
+    //   if (lot.id) {
+    //     queryClient.invalidateQueries({ queryKey: ['lot-calculation', lot.id] });
+    //   }
+    // };
 
     return (
       <>

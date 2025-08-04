@@ -1,14 +1,20 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
-import { BedDouble, Bath, Car, Building2, Bookmark, Funnel, MailQuestionMark } from "lucide-react";
+import { BedDouble, Bath, Car, Bookmark, Funnel, MailQuestionMark } from "lucide-react";
 import { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
 import { initialHouseData } from "@/constants/houseDesigns";
 import { houseDesign, filter as filterContent, lotSidebar, colors } from "@/constants/content";
 import { showToast } from "@/components/ui/Toast";
 
+// Define the type for saved data
+interface SavedHouseData {
+  lotId: string | number;
+  houseDesign: HouseDesignItem & { isFavorite: boolean };
+}
+
 export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
-  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+  const [, setSelectedImageIdx] = useState(0);
   const [houseDesigns, setHouseDesigns] = useState<HouseDesignItem[]>(initialHouseData);
   const [showToastMessage, setShowToastMessage] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
 
@@ -54,7 +60,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
             });
           } else {
             const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
-            const newFav = savedData.filter((data: any)=> {
+            const newFav = savedData.filter((data: SavedHouseData) => {
               if((data.lotId == lot.lotId && data.houseDesign.id == house.id) == false) {
                 return data;
               }
@@ -87,8 +93,8 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
         {filteredHouses.map((house, idx) => {
           const isExpanded = expandedIdx === idx;
           const images = house.images;
-          const mainImage = images[selectedImageIdx]?.src || house.image;
-          const facedOption = images[selectedImageIdx]?.faced;
+          // const mainImage = images[selectedImageIdx]?.src || house.image;
+          // const facedOption = images[selectedImageIdx]?.faced;
 
           return (
             <div
