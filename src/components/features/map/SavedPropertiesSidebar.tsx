@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { X, BedDouble, Bath, Car, Building2, ExternalLink, Bookmark } from 'lucide-react';
-import { SavedPropertiesSidebarProps } from '@/types/ui';
+import { SavedPropertiesSidebarProps, SavedProperty } from '@/types/ui';
 import { getZoningColor } from '@/lib/utils/zoning';
 import { getOverlaysColor } from '@/lib/utils/overlays';
 
@@ -13,11 +13,30 @@ export function SavedPropertiesSidebar({
     onViewDetails 
 }: SavedPropertiesSidebarProps) {
     const sidebarRef = useRef<HTMLDivElement>(null);
-    const [properties, setProperties] = useState(savedProperties);
+    const [properties, setProperties] = useState<SavedProperty[]>([]);
+    const [isClient, setIsClient] = useState(false);
 
+    // Handle client-side initialization
     useEffect(() => {
-        setProperties(savedProperties);
-    }, [savedProperties]);
+        setIsClient(true);
+        // Load from localStorage only on client
+        if (typeof window !== 'undefined') {
+            try {
+                const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? '[]');
+                setProperties(savedData);
+            } catch (e) {
+                console.error('Error parsing localStorage:', e);
+                setProperties([]);
+            }
+        }
+    }, []);
+
+    // Update properties when savedProperties prop changes
+    useEffect(() => {
+        if (isClient) {
+            setProperties(savedProperties);
+        }
+    }, [savedProperties, isClient]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -71,7 +90,15 @@ export function SavedPropertiesSidebar({
 
             {/* Content */}
             <div className="p-4 overflow-y-auto h-[calc(100%-80px)]">
-                {properties.length === 0 ? (
+                {!isClient ? (
+                    // Show loading state during SSR to prevent hydration mismatch
+                    <div className="text-center py-8">
+                        <div className="animate-pulse">
+                            <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">Loading...</h3>
+                        </div>
+                    </div>
+                ) : properties.length === 0 ? (
                     <div className="text-center py-8">
                         <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No saved properties</h3>
@@ -81,8 +108,8 @@ export function SavedPropertiesSidebar({
                     <div className="space-y-4">
                         {properties
                             .filter((property) => property.houseDesign.isFavorite)
-                            .map((property) => (
-                            <div key={property.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                            .map((property, index) => (
+                            <div key={`${property.lotId}-${property.houseDesign.id}-${index}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                                 {/* Lot Info Header */}
                                 <div className="flex items-center justify-between">
                                     <div className="text-xs text-black">
