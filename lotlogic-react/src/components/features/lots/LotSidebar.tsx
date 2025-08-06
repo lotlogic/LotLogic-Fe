@@ -5,7 +5,8 @@ import type { LotSidebarProps } from "../../../types/lot";
 import { getZoningColor, hexToRgba } from "../../../lib/utils/zoning";
 import { FilterSectionWithSingleLineSliders } from "../../ui/HouseDesignFilter";
 import { Sidebar } from "../../ui/Sidebar";
-import { HouseDesignDetailOverlay } from "../facades/HouseDesignOverlay";
+// import { HouseDesignDetailOverlay } from "../facades/HouseDesignOverlay";
+import { GetYourQuoteSidebar } from '../quote/QuoteSideBar';
 import type { DesignState, HouseDesignItem } from "../../../types/houseDesign";
 import { useContent } from "../../../hooks/useContent";
 import { SummaryView } from "./SummaryView";
@@ -49,16 +50,16 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: L
 
     const handleShowHouseDesign = () => {
 
-      const filterPayload = { 
-        bedroom,
-        bathroom,
-        car,
-        rumpus: design.rumpus,
-        alfresco: design.alfresco,
-        pergola: design.pergola,
-        min_size,
-        max_size
-      };
+      // const filterPayload = { 
+      //   bedroom,
+      //   bathroom,
+      //   car,
+      //   rumpus: design.rumpus,
+      //   alfresco: design.alfresco,
+      //   pergola: design.pergola,
+      //   min_size,
+      //   max_size
+      // };
 
       if(validateFilter()) {
         setShowHouseDesigns(true);
@@ -279,15 +280,22 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: L
         {/* Quote Sidebar - Render this as an overlay */}
         {showQuoteSidebar && quoteDesign && (
           <React.Suspense fallback={<div>Loading...</div>}>
-            <HouseDesignDetailOverlay
-              house={quoteDesign}
+            <GetYourQuoteSidebar
+              open={showQuoteSidebar}
               onClose={() => {
                 setShowQuoteSidebar(false);
                 setQuoteDesign(null);
               }}
-              onEnquireNow={(house) => {
-                // Handle enquire now action
-                console.log('Enquire now for:', house);
+              onBack={() => {
+                setShowQuoteSidebar(false);
+                setQuoteDesign(null);
+                setShowHouseDesigns(true); 
+              }}
+              selectedHouseDesign={quoteDesign}
+              lotDetails={{
+                id: String(lot.id || ''),
+                suburb: lot.suburb || '',
+                address: lot.address || '',
               }}
             />
           </React.Suspense>

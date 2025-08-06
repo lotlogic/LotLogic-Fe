@@ -48,16 +48,25 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
             console.log('Setting toast message...');
 
             const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
-            savedData.push({
-              ...lot,
-              houseDesign: {...house, isFavorite: fav}
-            });
-            localStorage.setItem('userFavorite', JSON.stringify(savedData));
             
-            setShowToastMessage({
-              message: 'Design saved to your Shortlist',
-              type: 'success'
-            });
+            // Check if this lot and house design combination already exists
+            const existingIndex = savedData.findIndex((data: SavedHouseData) => 
+              data.lotId === lot.lotId && data.houseDesign.id === house.id
+            );
+            
+            if (existingIndex === -1) {
+              // Only add if it doesn't already exist
+              savedData.push({
+                ...lot,
+                houseDesign: {...house, isFavorite: fav}
+              });
+              localStorage.setItem('userFavorite', JSON.stringify(savedData));
+              
+              setShowToastMessage({
+                message: 'Design saved to your Shortlist',
+                type: 'success'
+              });
+            }
           } else {
             const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
             const newFav = savedData.filter((data: SavedHouseData) => {

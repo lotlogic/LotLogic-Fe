@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X } from 'lucide-react';
-import Image from 'next/image';
 import type { MultiSelectProps } from '../../types/ui';
 import { colors } from '../../constants/content';
 
@@ -81,7 +80,7 @@ export function MultiSelect({
                 {/* Logo/Icon */}
                 <div className="flex-shrink-0 mr-3">
                   {option.logo ? (
-                    <Image 
+                    <img 
                       src={option.logo} 
                       alt={`${option.label} logo`} 
                       width={24}

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import  { useState, useRef, useEffect } from 'react';
 import { X, BedDouble, Bath, Car, ExternalLink, Bookmark } from 'lucide-react';
 import type { SavedPropertiesSidebarProps, SavedProperty } from '../../../types/ui';
 import { getZoningColor } from '../../../lib/utils/zoning';
