@@ -1,4 +1,4 @@
-import { zoningColorMap } from "@/constants/zoningTag";
+import { zoningColorMap } from "../../constants/zoningTag";
 export function getZoningColor(zoning: string | undefined): string {
     if (!zoning) return "#F3F4F6";
     const normalizedZoning = zoning.toLowerCase();

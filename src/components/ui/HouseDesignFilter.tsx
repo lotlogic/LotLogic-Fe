@@ -1,10 +1,10 @@
-import React from "react";
-import { BedDouble, Bath, Car, Building2 } from "lucide-react"; 
-import { Checkbox } from "./checkbox";
-import { Button } from "./Button";
-import { Input } from "./input";
-import { DesignRowProps, FilterRowProps, FilterSectionProps, HouseSizeInputRowProps } from "@/types/houseDesign";
-import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "@/constants/houseDesigns";
+import React from 'react';
+import { BedDouble, Bath, Car, Building2 } from 'lucide-react';
+import { Checkbox } from './checkbox';
+import { Input } from './input';
+import { Button } from './Button';
+import type { DesignRowProps, FilterRowProps, FilterSectionProps, HouseSizeInputRowProps } from "../../types/houseDesign";
+import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "../../constants/houseDesigns";
 
 const FilterRow = React.memo(({
   icon,

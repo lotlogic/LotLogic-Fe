@@ -1,6 +1,7 @@
+import React from 'react';
 import { X, ChevronLeft } from "lucide-react";
 import clsx from "clsx";
-import { sidebar } from "@/constants/content";
+import { sidebar } from "../../constants/content";
 
 export function Sidebar({
   open,

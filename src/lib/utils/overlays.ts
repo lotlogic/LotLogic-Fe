@@ -1,4 +1,4 @@
-import { overlaysColorMap } from "@/constants/overlaysTag";
+import { overlaysColorMap } from "../../constants/overlaysTag";
 
 export function getOverlaysColor(overlay: string | undefined): string {
     if (!overlay) return "#F3F4F6";

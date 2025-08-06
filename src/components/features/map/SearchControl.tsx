@@ -1,8 +1,6 @@
-'use client';
-
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, X } from 'lucide-react'; 
-import { SearchControlProps, SearchResult } from '@/types/ui';
+import type { SearchControlProps, SearchResult } from '../../../types/ui';
 
 export function SearchControl({ onResultSelect }: SearchControlProps) {
   const [query, setQuery] = useState('');
@@ -39,7 +37,7 @@ export function SearchControl({ onResultSelect }: SearchControlProps) {
 
     setIsLoading(true);
     try {
-      const accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
       const response = await fetch(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?` +
         `access_token=${accessToken}&` +

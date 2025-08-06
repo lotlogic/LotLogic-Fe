@@ -1,8 +1,8 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { X, ChevronLeft, ChevronRight, BedDouble, Bath, Car, Building2, Bookmark } from "lucide-react";
-import { Button } from "@/components/ui/Button"; 
-import { HouseDesignItem } from "@/types/houseDesign"; 
-import { houseDesign, lotSidebar, colors } from "@/constants/content"; 
+import { Button } from "../../ui/Button";
+import type { HouseDesignItem } from "../../../types/houseDesign";
+import { houseDesign, lotSidebar, colors } from "../../../constants/content";
 
 export function HouseDesignDetailOverlay({
   house,
@@ -17,7 +17,7 @@ export function HouseDesignDetailOverlay({
   const [currentFacadeIdx, setCurrentFacadeIdx] = useState(0);
   const [isFavorite, setIsFavorite] = useState(house?.isFavorite || false);
 
-  if (!house) return null; 
+  if (!house) return null;
 
   const images = house.images || [];
   const mainImage = images.length > 0 ? images[0].src : '';

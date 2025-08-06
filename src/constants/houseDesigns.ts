@@ -1,9 +1,9 @@
-import { HouseDesignItem } from "@/types/houseDesign";
+import type { HouseDesignItem } from "../types/houseDesign";
 
 export const initialHouseData: HouseDesignItem[] = [
   {
     id: "design1",
-    title: "Allium Place, Orlando",
+    title: "Macnamara Modern 4-Bedroom",
     area: "2,096.00",
     image: "/images/brick.jpg",
     images: [
@@ -14,13 +14,13 @@ export const initialHouseData: HouseDesignItem[] = [
     bedrooms: 4,
     bathrooms: 2,
     cars: 2,
-    storeys: 2,
+    storeys: 1,
     isFavorite: false,
     floorPlanImage: "/images/floorplan.jpg",
   },
   {
     id: "design2",
-    title: "Example Design B",
+    title: "Belconnen Family Home",
     area: "1,800.00",
     image: "/images/timmerland.jpg",
     images: [
@@ -30,7 +30,23 @@ export const initialHouseData: HouseDesignItem[] = [
     bedrooms: 4,
     bathrooms: 2,
     cars: 2,
-    storeys: 2,
+    storeys: 1,
+    isFavorite: false,
+    floorPlanImage: "/images/floorplan.jpg",
+  },
+  {
+    id: "design3",
+    title: "ACT Contemporary 3-Bedroom",
+    area: "1,650.00",
+    image: "/images/weatherboard.jpg",
+    images: [
+      { src: "/images/weatherboard.jpg", faced: "Weatherboard" },
+      { src: "/images/brick.jpg", faced: "Brick" },
+    ],
+    bedrooms: 3,
+    bathrooms: 2,
+    cars: 1,
+    storeys: 1,
     isFavorite: false,
     floorPlanImage: "/images/floorplan.jpg",
   },

@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/Button";
-import { BedDouble, Bath, Car, Bookmark, Funnel, MailQuestionMark } from "lucide-react";
-import { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
-import { initialHouseData } from "@/constants/houseDesigns";
-import { houseDesign, filter as filterContent, lotSidebar, colors } from "@/constants/content";
-import { showToast } from "@/components/ui/Toast";
+import React, { useState, useEffect } from "react";
+import { Button } from "../../ui/Button";
+import {  MailQuestionMark, Bookmark, BedDouble, Bath, Car, Funnel} from "lucide-react";
+import type { HouseDesignItem, HouseDesignListProps } from "../../../types/houseDesign";
+import { initialHouseData } from "../../../constants/houseDesigns";
+import { houseDesign, filter as filterContent, lotSidebar, colors } from "../../../constants/content";
+import { showToast } from "../../ui/Toast";
 
 // Define the type for saved data
 interface SavedHouseData {
@@ -48,16 +48,25 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
             console.log('Setting toast message...');
 
             const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
-            savedData.push({
-              ...lot,
-              houseDesign: {...house, isFavorite: fav}
-            });
-            localStorage.setItem('userFavorite', JSON.stringify(savedData));
             
-            setShowToastMessage({
-              message: 'Design saved to your Shortlist',
-              type: 'success'
-            });
+            // Check if this lot and house design combination already exists
+            const existingIndex = savedData.findIndex((data: SavedHouseData) => 
+              data.lotId === lot.lotId && data.houseDesign.id === house.id
+            );
+            
+            if (existingIndex === -1) {
+              // Only add if it doesn't already exist
+              savedData.push({
+                ...lot,
+                houseDesign: {...house, isFavorite: fav}
+              });
+              localStorage.setItem('userFavorite', JSON.stringify(savedData));
+              
+              setShowToastMessage({
+                message: 'Design saved to your Shortlist',
+                type: 'success'
+              });
+            }
           } else {
             const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
             const newFav = savedData.filter((data: SavedHouseData) => {

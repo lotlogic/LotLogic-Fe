@@ -1,9 +1,9 @@
+import { useState } from 'react';
+import type { CollapsibleSectionProps } from "../../types/lot";
 import { ChevronUp, ChevronDown } from "lucide-react";
-import { CollapsibleSectionProps } from "@/types/lot";
-import React from "react";
 
 export function CollapsibleSection({ title, children, initialOpen = true }: CollapsibleSectionProps) {
-  const [isOpen, setIsOpen] = React.useState(initialOpen);
+  const [isOpen, setIsOpen] = useState(initialOpen);
   return (
     <div className="border-b border-gray-100 py-4 mx-6">
       <button

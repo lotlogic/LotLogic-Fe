@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/Button";
-import { Sidebar } from "@/components/ui/Sidebar";
-import { MultiSelect } from "@/components/ui/MultiSelect";
-import { Checkbox } from "@/components/ui/checkbox";
-import Image from 'next/image';
-import { GetYourQuoteSidebarProps, quoteFormSchema, QuoteFormData } from "@/types/houseDesign";
-import { builderOptions } from "@/constants/houseDesigns";
-import { quote, formatContent } from "@/constants/content";
+import { Button } from "../../ui/Button";
+import { Sidebar } from "../../ui/Sidebar";
+import { MultiSelect } from "../../ui/MultiSelect";
+import { Checkbox } from "../../ui/checkbox";
+import type { GetYourQuoteSidebarProps, QuoteFormData } from "../../../types/houseDesign";
+import { quoteFormSchema } from "../../../types/houseDesign";
+import { builderOptions } from "../../../constants/houseDesigns";
+import { quote, formatContent } from "../../../constants/content";
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
@@ -116,7 +116,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                     {selectedHouseDesign && (
                         <div >
                             <div className="p-1 flex gap-4 items-center">
-                                <Image 
+                                <img 
                                     src={selectedHouseDesign.image} 
                                     alt="House" 
                                     width={96}
@@ -295,7 +295,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                             <h3 className="text-lg font-semibold text-gray-900 mb-2">Your Selection</h3>
                             <div className="border-t border-gray-200 pt-2">
                                 <div className="rounded-2xl border border-gray-200 bg-[#eaf3f2] p-4 flex gap-4 items-center">
-                                    <Image 
+                                    <img 
                                         src={selectedHouseDesign.floorPlanImage || selectedHouseDesign.image} 
                                         alt="Floor Plan" 
                                         width={96}

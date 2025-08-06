@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { APP_CONTENT, getContent, formatContent } from '@/constants/content';
+import { APP_CONTENT, getContent, formatContent } from '../constants/content';
 
 export function useContent() {
   const content = useMemo(() => {
@@ -23,7 +23,8 @@ export function useContent() {
       spacing: APP_CONTENT.spacing,
       shadows: APP_CONTENT.shadows,
       transitions: APP_CONTENT.transitions,
-
+      brand: APP_CONTENT.brand,
+      
       // Helper functions
       get: getContent,
       format: formatContent,
@@ -49,7 +50,7 @@ export function useContent() {
       getSuccess: (type: keyof typeof APP_CONTENT.success) => {
         return APP_CONTENT.success[type];
       },
-
+      
       // Loading helpers
       getLoading: (type: keyof typeof APP_CONTENT.loading) => {
         return APP_CONTENT.loading[type];

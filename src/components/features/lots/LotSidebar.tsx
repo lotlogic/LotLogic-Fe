@@ -1,21 +1,20 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import React from 'react';
-import { LotSidebarProps } from "@/types/lot";
-import { getZoningColor, hexToRgba } from "@/lib/utils/zoning";
+import React, { useState } from 'react';
+import { Button } from "../../ui/Button";
+import { X, ChevronLeft, ArrowRight, ChevronRight } from 'lucide-react';
+import type { LotSidebarProps } from "../../../types/lot";
+import { getZoningColor, hexToRgba } from "../../../lib/utils/zoning";
+import { FilterSectionWithSingleLineSliders } from "../../ui/HouseDesignFilter";
+import { Sidebar } from "../../ui/Sidebar";
+// import { HouseDesignDetailOverlay } from "../facades/HouseDesignOverlay";
+import { GetYourQuoteSidebar } from '../quote/QuoteSideBar';
+import type { DesignState, HouseDesignItem } from "../../../types/houseDesign";
+import { useContent } from "../../../hooks/useContent";
 import { SummaryView } from "./SummaryView";
-import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
 import { HouseDesignList } from "../facades/HouseDesignList";
-import { ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { Sidebar } from "@/components/ui/Sidebar";
-import { GetYourQuoteSidebar } from "../quote/QuoteSideBar";
-import { DesignState, HouseDesignItem } from "@/types/houseDesign";
-import { useContent } from "@/hooks/useContent";
-// import { colors } from "@/constants/content";
-// import { useQueryClient } from '@tanstack/react-query';
 import { Diamond } from "lucide-react"; 
 
 export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: LotSidebarProps) {
+    
     const { lotSidebar } = useContent();
     // const queryClient = useQueryClient();
 
@@ -24,9 +23,9 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: L
     const [selectedHouseDesignForModals, setSelectedHouseDesignForModals] = React.useState<HouseDesignItem | null>(null); 
 
     // Filter states
-    const [bedroom, setBedroom] = React.useState<number[]>([]);
-    const [bathroom, setBathroom] = React.useState<number[]>([]);
-    const [car, setCar] = React.useState<number[]>([]);
+    const [bedroom, setBedroom] = React.useState<number[]>([3, 4]); // Default to show 3-4 bedroom designs
+    const [bathroom, setBathroom] = React.useState<number[]>([1, 2]); // Default to show 1-2 bathroom designs
+    const [car, setCar] = React.useState<number[]>([1, 2]); // Default to show 1-2 car designs
     const [design, setDesign] = React.useState<DesignState>({
       rumpus: false,
       alfresco: false,
@@ -51,17 +50,16 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: L
 
     const handleShowHouseDesign = () => {
 
-      const filterPayload = { 
-        bedroom,
-        bathroom,
-        car,
-        rumpus: design.rumpus,
-        alfresco: design.alfresco,
-        pergola: design.pergola,
-        min_size,
-        max_size
-      };
-      console.log("Filter Payload:", filterPayload);
+      // const filterPayload = { 
+      //   bedroom,
+      //   bathroom,
+      //   car,
+      //   rumpus: design.rumpus,
+      //   alfresco: design.alfresco,
+      //   pergola: design.pergola,
+      //   min_size,
+      //   max_size
+      // };
 
       if(validateFilter()) {
         setShowHouseDesigns(true);
@@ -213,7 +211,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: L
           showBackButton={showBackArrow}
           headerContent={headerContent}
         >
-            {/* Conditional rendering for sidebar content */}
+          {/* Conditional rendering for sidebar content */}
             {showHouseDesigns ? ( 
             <HouseDesignList
               filter={{ bedroom, bathroom, car }}

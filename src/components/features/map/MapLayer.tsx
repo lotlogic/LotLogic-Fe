@@ -1,9 +1,6 @@
-'use client';
-
-
-import React from "react";
 import { useEffect, useRef, useState, useCallback } from 'react';
-import mapboxgl, { Map, MapMouseEvent, MapboxGeoJSONFeature } from 'mapbox-gl';
+import mapboxgl, { Map, MapMouseEvent } from 'mapbox-gl';
+import type { MapboxGeoJSONFeature } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { LotSidebar } from "../lots/LotSidebar";
 import { SearchControl } from "./SearchControl";
@@ -12,8 +9,8 @@ import { SavedButton } from "./SavedButton";
 import '../map/MapControls.css';
 import { ZoningLayersSidebar } from "./ZoningLayerSidebar";
 import { SavedPropertiesSidebar } from "./SavedPropertiesSidebar";
-import { useLotCalculation } from "@/hooks/useLotCalculation";
-import { SavedProperty } from "@/types/ui";
+import { useLotCalculation } from "../../../hooks/useLotCalculation";
+import type { SavedProperty } from "../../../types/ui";
 
 
 type LotProperties = {
@@ -41,12 +38,11 @@ type FloorPlan = {
 };
 
 
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN!;
-
+mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || '';
 
 // Debounce utility function
 const debounce = (func: (...args: unknown[]) => void, wait: number) => {
- let timeout: NodeJS.Timeout;
+ let timeout: ReturnType<typeof setTimeout>;
  return (...args: unknown[]) => {
    clearTimeout(timeout);
    timeout = setTimeout(() => func(...args), wait);
@@ -120,23 +116,23 @@ function rotatePolygon(polygonCoordinates: number[][][], origin: [number, number
 
 
 export default function ZoneMap() {
- const mapContainer = useRef<HTMLDivElement>(null);
- const mapRef = useRef<Map | null>(null);
- const [selectedLot, setSelectedLot] = useState<MapboxGeoJSONFeature & { properties: LotProperties } | null>(null);
- const [isLoading, setIsLoading] = useState(true);
- const [selectedFloorPlan, setSelectedFloorPlan] = useState<FloorPlan | null>(null);
- const [isZoningSidebarOpen, setIsZoningSidebarOpen] = useState(false);
- const [isSavedSidebarOpen, setIsSavedSidebarOpen] = useState(false);
- const [edgeMarkers, setEdgeMarkers] = useState<mapboxgl.Marker[]>([]);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<Map | null>(null);
+  const [selectedLot, setSelectedLot] = useState<MapboxGeoJSONFeature & { properties: LotProperties } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedFloorPlan, setSelectedFloorPlan] = useState<FloorPlan | null>(null);
+  const [isZoningSidebarOpen, setIsZoningSidebarOpen] = useState(false);
+  const [isSavedSidebarOpen, setIsSavedSidebarOpen] = useState(false);
+  const [edgeMarkers, setEdgeMarkers] = useState<mapboxgl.Marker[]>([]);
 
 
- // Get the lot ID for the API call
- const lotId = selectedLot?.properties?.BLOCK_KEY || null;
-  // Use TanStack Query for lot calculation
- const { data: lotApiData, isLoading: isLoadingLotData, error: lotApiError } = useLotCalculation(lotId);
+  // Get the lot ID for the API call
+  const lotId = selectedLot?.properties?.BLOCK_KEY || null;
+   // Use TanStack Query for lot calculation
+  const { data: lotApiData, isLoading: isLoadingLotData, error: lotApiError } = useLotCalculation(lotId);
 
 
- // Mock saved properties data
+  // Mock saved properties data
 //  const savedProperties: SavedProperty[] = [
 //    {
 //      id: '1',
@@ -466,7 +462,6 @@ export default function ZoneMap() {
  useEffect(() => {
    if (!mapContainer.current || mapRef.current) return;
 
-
    const map = new mapboxgl.Map({
      container: mapContainer.current,
      style: 'mapbox://styles/mapbox/streets-v12',
@@ -475,14 +470,11 @@ export default function ZoneMap() {
      attributionControl: false,
    });
 
-
    mapRef.current = map;
-
 
    // Debounced resize handler
    const handleResize = debounce(() => map.resize(), 250);
    window.addEventListener('resize', handleResize);
-
 
    map.on('load', () => {
      setIsLoading(true);
@@ -494,7 +486,6 @@ export default function ZoneMap() {
        setIsLoading(false);
      }
    });
-
 
    return () => {
      window.removeEventListener('resize', handleResize);
@@ -751,7 +742,6 @@ export default function ZoneMap() {
        ref={mapContainer}
        className="h-full w-full"
      />
-
 
      {/* Lot Sidebar */}
      {selectedLot && (

@@ -1,9 +1,7 @@
-'use client';
-
 import React from 'react';
 import { Layers } from 'lucide-react';
-import { LayersButtonProps } from '@/types/ui';
-import { colors } from '@/constants/content';
+import type { LayersButtonProps } from '../../../types/ui';
+import { colors } from '../../../constants/content';
 
 export function LayersButton({ onClick, isActive = false }: LayersButtonProps) {
     return (

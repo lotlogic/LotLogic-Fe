@@ -1,4 +1,4 @@
-import mapboxgl from 'mapbox-gl';
+// UI component types and interfaces
 
 export interface Option {
   id: string;
@@ -61,6 +61,7 @@ export interface SavedProperty {
     id: string;
     title: string;
     image: string;
+    floorPlanImage?: string;
     bedrooms: number;
     bathrooms: number;
     cars: number;

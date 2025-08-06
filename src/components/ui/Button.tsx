@@ -1,6 +1,6 @@
-import { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 import clsx from "clsx";
-import { colors } from "@/constants/content";
+import { colors } from "../../constants/content";
 
 const PRIMARY_COLOR = colors.primary;
 const PRIMARY_COLOR_HOVER = colors.accent;

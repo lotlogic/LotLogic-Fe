@@ -1,4 +1,5 @@
-import { toast, ToastOptions } from 'react-toastify';
+import { toast } from 'react-toastify';
+import type { ToastOptions } from 'react-toastify';
 import { Check, X, AlertTriangle } from 'lucide-react';
 import 'react-toastify/dist/ReactToastify.css';
 
