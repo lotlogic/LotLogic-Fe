@@ -2,7 +2,8 @@ name: Deploy to S3 and CloudFront
 
 on:
   push:
-    branches: [ develop ]
+    branches:
+      - stage
   workflow_dispatch:
 
 env:
@@ -47,6 +48,3 @@ jobs:
 
     - name: Invalidate CloudFront
       run: aws cloudfront create-invalidation --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
-
-    - name: Deploy preview (PR)
-      run: aws s3 sync ./dist s3://${{ env.S3_BUCKET }}/preview/${{ github.event.number }} --delete
