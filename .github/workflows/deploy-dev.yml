@@ -2,7 +2,8 @@ name: Deploy to S3 and CloudFront
 
 on:
   push:
-    branches: [ develop ]
+    branches:
+      - stage
   workflow_dispatch:
 
 env:
