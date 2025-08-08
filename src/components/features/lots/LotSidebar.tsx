@@ -23,9 +23,9 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: L
     const [selectedHouseDesignForModals, setSelectedHouseDesignForModals] = React.useState<HouseDesignItem | null>(null); 
 
     // Filter states
-    const [bedroom, setBedroom] = React.useState<number[]>([3, 4]); // Default to show 3-4 bedroom designs
-    const [bathroom, setBathroom] = React.useState<number[]>([1, 2]); // Default to show 1-2 bathroom designs
-    const [car, setCar] = React.useState<number[]>([1, 2]); // Default to show 1-2 car designs
+    const [bedroom, setBedroom] = React.useState<number[]>([]);
+    const [bathroom, setBathroom] = React.useState<number[]>([]);
+    const [car, setCar] = React.useState<number[]>([]);
     const [design, setDesign] = React.useState<DesignState>({
       rumpus: false,
       alfresco: false,
