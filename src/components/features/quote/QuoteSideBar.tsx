@@ -7,6 +7,7 @@ import type { GetYourQuoteSidebarProps, QuoteFormData } from "../../../types/hou
 import { quoteFormSchema } from "../../../types/houseDesign";
 import { builderOptions } from "../../../constants/houseDesigns";
 import { quote, formatContent } from "../../../constants/content";
+import { Input } from '../../ui/input';
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
@@ -216,12 +217,12 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                     <div className='space-y-4 p-6'>
                         <div>
                             <label htmlFor="yourName" className="block text-sm font-medium text-gray-700 mb-1">{quote.yourName}</label>
-                            <input
+                            <Input
                                 type="text"
                                 id="yourName"
                                 value={formData.yourName}
                                 onChange={(e) => handleInputChange('yourName', e.target.value)}
-                                className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                className={`block w-full h-15 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
                                     errors.yourName ? 'border-red-500' : 'border-gray-300'
                                 }`}
                                 placeholder="Your name"
@@ -232,12 +233,12 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                         </div>
                         <div>
                             <label htmlFor="emailAddress" className="block text-sm font-medium text-gray-700 mb-1">{quote.emailAddress}</label>
-                            <input
+                            <Input
                                 type="email"
                                 id="emailAddress"
                                 value={formData.emailAddress}
                                 onChange={(e) => handleInputChange('emailAddress', e.target.value)}
-                                className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                className={`block w-full h-15 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
                                     errors.emailAddress ? 'border-red-500' : 'border-gray-300'
                                 }`}
                                 placeholder="you@company.com"
@@ -248,12 +249,12 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                         </div>
                         <div>
                             <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">{quote.phoneNumber}</label>
-                            <input
+                            <Input
                                 type="tel"
                                 id="phoneNumber"
                                 value={formData.phoneNumber}
                                 onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                                className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                className={`block w-full h-15 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
                                     errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
                                 }`}
                                 placeholder="+1 (555) 000-0000"
