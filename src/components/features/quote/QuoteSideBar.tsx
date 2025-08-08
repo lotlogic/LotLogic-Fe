@@ -222,7 +222,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 id="yourName"
                                 value={formData.yourName}
                                 onChange={(e) => handleInputChange('yourName', e.target.value)}
-                                className={`block w-full h-15 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
                                     errors.yourName ? 'border-red-500' : 'border-gray-300'
                                 }`}
                                 placeholder="Your name"
@@ -238,10 +238,10 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 id="emailAddress"
                                 value={formData.emailAddress}
                                 onChange={(e) => handleInputChange('emailAddress', e.target.value)}
-                                className={`block w-full h-15 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
                                     errors.emailAddress ? 'border-red-500' : 'border-gray-300'
                                 }`}
-                                placeholder="you@company.com"
+                                placeholder="mail@company.com"
                             />
                             {errors.emailAddress && (
                                 <p className="mt-1 text-sm text-red-600">{errors.emailAddress}</p>
@@ -254,7 +254,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 id="phoneNumber"
                                 value={formData.phoneNumber}
                                 onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                                className={`block w-full h-15 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
                                     errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
                                 }`}
                                 placeholder="+1 (555) 000-0000"
