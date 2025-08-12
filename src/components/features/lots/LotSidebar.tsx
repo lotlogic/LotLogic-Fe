@@ -11,7 +11,8 @@ import type { DesignState, HouseDesignItem } from "../../../types/houseDesign";
 import { useContent } from "../../../hooks/useContent";
 import { SummaryView } from "./SummaryView";
 import { HouseDesignList } from "../facades/HouseDesignList";
-import { Diamond } from "lucide-react"; 
+import { Diamond } from "lucide-react";
+import { getImageUrl } from "../../../lib/api/lotApi"; 
 
 export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: LotSidebarProps) {
     
@@ -72,12 +73,12 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: L
       const errors: { min_size?: string; max_size?: string; bedroom?: string; bathroom?: string; car?: string } = {};
 
       // House size validation
-      if (isNaN(min_size) || min_size < 150) {
-        errors.min_size = "Minimum size should be at least 150";
+      if (isNaN(min_size) || min_size < 0) {
+        errors.min_size = "Minimum size should be at greater than 0";
       }
 
-      if (isNaN(max_size) || max_size > 300) {
-        errors.max_size = "Maximum size cannot exceed 300";
+      if (isNaN(max_size) ) {
+        errors.max_size = "Maximum size cannot exceed 10000";
       }
 
       if (!isNaN(min_size) && !isNaN(max_size) && min_size > max_size) {
@@ -121,13 +122,39 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: L
     const handleDesignSelectedInList = (design: HouseDesignItem | null) => {
         setSelectedHouseDesignForModals(design); 
         
-        if (design && onSelectFloorPlan && lot.apiMatches?.[0]?.floorplanUrl && geometry && geometry.type === 'Polygon') {
+        if (design && onSelectFloorPlan && design.floorPlanImage && geometry && geometry.type === 'Polygon') {
             const ring = geometry.coordinates[0];
             if (ring && ring.length >= 4) {
-                const coordinates = [ring[0], ring[1], ring[2], ring[3]] as [[number, number], [number, number], [number, number], [number, number]];
+                // Calculate lot area
+                const lotArea = lot.size ? parseFloat(lot.size.toString()) : 0;
+                const houseArea = design.area ? parseFloat(design.area.toString()) : 0;
+                
+                // Calculate scaling factor based on area ratio
+                const scaleFactor = lotArea > 0 && houseArea > 0 ? Math.sqrt(houseArea / lotArea) : 1;
+                
+                // Calculate center of the lot
+                const centerLng = ring.reduce((sum, coord) => sum + coord[0], 0) / ring.length;
+                const centerLat = ring.reduce((sum, coord) => sum + coord[1], 0) / ring.length;
+                
+                // Calculate scaled coordinates (smaller area within the lot)
+                const scaledCoordinates = ring.map(coord => {
+                    const deltaLng = (coord[0] - centerLng) * scaleFactor;
+                    const deltaLat = (coord[1] - centerLat) * scaleFactor;
+                    return [centerLng + deltaLng, centerLat + deltaLat] as [number, number];
+                });
+                
+                const coordinates = [
+                    scaledCoordinates[0],
+                    scaledCoordinates[1], 
+                    scaledCoordinates[2],
+                    scaledCoordinates[3]
+                ] as [[number, number], [number, number], [number, number], [number, number]];
+                
+                const floorPlanUrl = getImageUrl(design.floorPlanImage);
                 onSelectFloorPlan({
-                    url: lot.apiMatches?.[0]?.floorplanUrl,
+                    url: floorPlanUrl,
                     coordinates,
+                    houseArea: houseArea
                 });
             }
         } else if (!design && onSelectFloorPlan) {
@@ -320,9 +347,9 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan}: L
               
               {/* Floor Plan Image */}
               <div className="flex-1 flex items-center justify-center overflow-hidden px-6 pb-6">
-                {lot.apiMatches?.[0]?.floorplanUrl ? (
+                {selectedHouseDesignForModals.floorPlanImage ? (
                   <img
-                    src={lot.apiMatches[0].floorplanUrl}
+                    src={getImageUrl(selectedHouseDesignForModals.floorPlanImage)}
                     alt="Floor Plan"
                     className="max-w-full max-h-full object-contain"
                   />

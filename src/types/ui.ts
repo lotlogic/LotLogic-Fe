@@ -62,6 +62,7 @@ export interface SavedProperty {
     title: string;
     image: string;
     floorPlanImage?: string;
+    area?: string;
     bedrooms: number;
     bathrooms: number;
     cars: number;

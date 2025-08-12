@@ -8,6 +8,7 @@ import { quoteFormSchema } from "../../../types/houseDesign";
 import { builderOptions } from "../../../constants/houseDesigns";
 import { quote, formatContent } from "../../../constants/content";
 import { Input } from '../../ui/input';
+import { getImageUrl } from '../../../lib/api/lotApi';
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
@@ -83,7 +84,8 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
             // Handle Zod validation errors
             if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
                 const fieldErrors: Partial<Record<keyof QuoteFormData, string>> = {};
-                const errors = JSON.parse(error.message);
+                const errorMessage = (error as any).message;
+                const errors = JSON.parse(errorMessage);
                 if (errors.length) {
                     errors.forEach((err: unknown) => {
                         if (err && typeof err === 'object' && 'path' in err && Array.isArray(err.path)) {
@@ -298,7 +300,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 <div className="border-t border-gray-200 pt-2">
                                     <div className="rounded-2xl border border-gray-200 bg-[#eaf3f2] p-4 flex gap-4 items-center">
                                         <img 
-                                            src={selectedHouseDesign.floorPlanImage || selectedHouseDesign.image} 
+                                            src={getImageUrl(selectedHouseDesign.floorPlanImage) || selectedHouseDesign.image} 
                                             alt="Floor Plan" 
                                             width={96}
                                             height={96}
