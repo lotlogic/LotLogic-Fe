@@ -3,6 +3,7 @@ import { X, BedDouble, Bath, Car, ExternalLink, Bookmark } from 'lucide-react';
 import type { SavedPropertiesSidebarProps, SavedProperty } from '../../../types/ui';
 import { getZoningColor } from '../../../lib/utils/zoning';
 import { getOverlaysColor } from '../../../lib/utils/overlays';
+import { getImageUrl } from '../../../lib/api/lotApi';
 
 export function SavedPropertiesSidebar({ 
     open, 
@@ -156,7 +157,7 @@ export function SavedPropertiesSidebar({
                                 {/* House Design */}
                                 <div className="flex gap-4">
                                     <img 
-                                        src={property.houseDesign.image} 
+                                        src={getImageUrl(property.houseDesign.floorPlanImage) || property.houseDesign.image} 
                                         alt={property.houseDesign.title}
                                         className="w-16 h-16 rounded-lg object-cover"
                                     />

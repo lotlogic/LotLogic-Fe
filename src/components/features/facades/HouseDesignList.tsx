@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { Button } from "../../ui/Button";
 import {  MailQuestionMark, Bookmark, BedDouble, Bath, Car, Funnel} from "lucide-react";
 import type { HouseDesignItem, HouseDesignListProps } from "../../../types/houseDesign";
-import { initialHouseData } from "../../../constants/houseDesigns";
 import { houseDesign, filter as filterContent, lotSidebar, colors } from "../../../constants/content";
 import { showToast } from "../../ui/Toast";
+import { useHouseDesigns } from "../../../hooks/useHouseDesigns";
+import type { HouseDesignFilterRequest } from "../../../lib/api/lotApi";
+import { getImageUrl } from "../../../lib/api/lotApi";
 
 // Define the type for saved data
 interface SavedHouseData {
@@ -15,8 +17,8 @@ interface SavedHouseData {
 export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [, setSelectedImageIdx] = useState(0);
-  const [houseDesigns, setHouseDesigns] = useState<HouseDesignItem[]>(initialHouseData);
   const [showToastMessage, setShowToastMessage] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+  const [favoriteStates, setFavoriteStates] = useState<Record<string, boolean>>({});
 
   // Handle toast display with useEffect
   useEffect(() => {
@@ -26,69 +28,114 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
     }
   }, [showToastMessage]);
 
-  const filteredHouses = houseDesigns.filter(house => {
-    return (
-      filter.bedroom.includes(house.bedrooms) &&
-      filter.bathroom.includes(house.bathrooms) &&
-      filter.car.includes(house.cars)
-    );
-  });
+
+  const apiFilters: HouseDesignFilterRequest = {
+    bedroom: filter.bedroom,
+    bathroom: filter.bathroom,
+    car: filter.car,
+  };
+
+  // Fetch house designs from API
+  const { data: apiHouseDesigns = [], isLoading, error } = useHouseDesigns(
+    lot.lotId?.toString() || null,
+    apiFilters,
+    true
+  );
+
+
+  const houseDesigns = (apiHouseDesigns as HouseDesignItem[]) || [];
+
+  const filteredHouses = houseDesigns;
 
   const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
     event.stopPropagation();
     console.log('Star clicked for house:', clickedHouseId);
     
-    setHouseDesigns(prevDesigns =>
-      prevDesigns.map(house => {
-        if (house.id === clickedHouseId) {
-          const fav = !house.isFavorite;
-          console.log('Setting favorite to:', fav);
-          
-          if (fav) {
-            console.log('Setting toast message...');
+    const clickedHouse = (houseDesigns as HouseDesignItem[]).find(house => house.id === clickedHouseId);
+    if (!clickedHouse) return;
+    
+    const currentFavorite = favoriteStates[clickedHouseId] ?? clickedHouse.isFavorite;
+    const newFavorite = !currentFavorite;
+    console.log('Setting favorite to:', newFavorite);
+    
+    // Update the favorite states
+    setFavoriteStates(prev => ({
+      ...prev,
+      [clickedHouseId]: newFavorite
+    }));
+    
+    if (newFavorite) {
+      console.log('Setting toast message...');
 
-            const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
-            
-            // Check if this lot and house design combination already exists
-            const existingIndex = savedData.findIndex((data: SavedHouseData) => 
-              data.lotId === lot.lotId && data.houseDesign.id === house.id
-            );
-            
-            if (existingIndex === -1) {
-              // Only add if it doesn't already exist
-              savedData.push({
-                ...lot,
-                houseDesign: {...house, isFavorite: fav}
-              });
-              localStorage.setItem('userFavorite', JSON.stringify(savedData));
-              
-              setShowToastMessage({
-                message: 'Design saved to your Shortlist',
-                type: 'success'
-              });
-            }
-          } else {
-            const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
-            const newFav = savedData.filter((data: SavedHouseData) => {
-              if((data.lotId == lot.lotId && data.houseDesign.id == house.id) == false) {
-                return data;
-              }
-            })
-            localStorage.setItem('userFavorite', JSON.stringify(newFav));
-          }
-          return { ...house, isFavorite: fav };
+      const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
+      
+      // Check if this lot and house design combination already exists
+      const existingIndex = savedData.findIndex((data: SavedHouseData) => 
+        data.lotId === lot.lotId && data.houseDesign.id === clickedHouse.id
+      );
+      
+      if (existingIndex === -1) {
+        // Only add if it doesn't already exist
+        savedData.push({
+          ...lot,
+          houseDesign: {...clickedHouse, isFavorite: newFavorite}
+        });
+        localStorage.setItem('userFavorite', JSON.stringify(savedData));
+        
+        setShowToastMessage({
+          message: 'Design saved to your Shortlist',
+          type: 'success'
+        });
+      }
+    } else {
+      const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
+      const newFav = savedData.filter((data: SavedHouseData) => {
+        if((data.lotId == lot.lotId && data.houseDesign.id == clickedHouse.id) == false) {
+          return data;
         }
-        return house;
       })
-    );
+      localStorage.setItem('userFavorite', JSON.stringify(newFav));
+    }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="p-6 overflow-y-auto h-full">
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="p-6 overflow-y-auto h-full">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-red-500 text-center">
+            <p>Error loading house designs</p>
+            <p className="text-sm text-gray-500">Please try again later</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 overflow-y-auto h-full">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-xl font-bold">
-          <span className="text-[#2F5D62]">{filteredHouses.length}</span> {houseDesign.title}
-        </span>
+        <div>
+          <span className="text-xl font-bold">
+            <span className="text-[#2F5D62]">{filteredHouses.length}</span> {houseDesign.title}
+          </span>
+          {/* {(apiHouseDesigns as HouseDesignItem[])?.length > 0 && (
+            <div className="text-xs text-green-600 mt-1">
+              ✓ Loaded from database
+            </div>
+          )} */}
+        </div>
         <Button
           variant="outline"
           className="border border-gray-300 rounded-lg px-3 py-1 flex items-center gap-2"
@@ -124,7 +171,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
               <div className="flex gap-4 items-start">
                 {/* Floor Plan Thumbnail on the left */}
                 <img 
-                  src={house.floorPlanImage || images[0]?.src || house.image} 
+                  src={getImageUrl(house.floorPlanImage) || images[0]?.src || house.image} 
                   alt="Floor Plan" 
                   className="w-24 h-24 rounded-lg object-cover flex-shrink-0" 
                 />
@@ -140,10 +187,10 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                     </div>
                     <Bookmark
                       className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
-                        house.isFavorite ? 'fill-current' : 'text-gray-400'
+                        (favoriteStates[house.id] ?? house.isFavorite) ? 'fill-current' : 'text-gray-400'
                       }`}
                       style={{
-                        color: house.isFavorite ? colors.primary : undefined,
+                        color: (favoriteStates[house.id] ?? house.isFavorite) ? colors.primary : undefined,
                       }}
                       onClick={(e) => handleStarClick(e, house.id)}
                       data-star-icon

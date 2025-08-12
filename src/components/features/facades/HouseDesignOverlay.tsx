@@ -3,6 +3,7 @@ import { X, ChevronLeft, ChevronRight, BedDouble, Bath, Car, Building2, Bookmark
 import { Button } from "../../ui/Button";
 import type { HouseDesignItem } from "../../../types/houseDesign";
 import { houseDesign, lotSidebar, colors } from "../../../constants/content";
+import { getImageUrl } from "../../../lib/api/lotApi";
 
 export function HouseDesignDetailOverlay({
   house,
@@ -79,7 +80,7 @@ export function HouseDesignDetailOverlay({
 
             {currentView === 'floorPlan' && (
               floorPlanImage ? (
-                <img src={floorPlanImage} alt="Floor Plan" className="w-full h-full object-contain rounded-xl p-4" />
+                <img src={getImageUrl(floorPlanImage)} alt="Floor Plan" className="w-full h-full object-contain rounded-xl p-4" />
               ) : (
                 <p className="text-gray-500">Floor plan not available.</p>
               )
