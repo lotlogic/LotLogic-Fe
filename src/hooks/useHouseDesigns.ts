@@ -32,7 +32,7 @@ export const useHouseDesigns = (
       }
       
       const apiDesigns = await lotApi.filterHouseDesigns(lotId, filters);
-      return apiDesigns.map(convertApiResponseToHouseDesign);
+      return apiDesigns.houseDesigns.map(convertApiResponseToHouseDesign);
     },
     enabled: enabled && !!lotId && !!filters,
     staleTime: 5 * 60 * 1000, // 5 minutes

@@ -54,19 +54,27 @@ export interface HouseDesignFilterRequest {
 }
 
 export interface HouseDesignFilterResponse {
-  id: string;
-  title: string;
-  area: number;
-  image: string;
-  images: Array<{
-    src: string;
-    faced: string;
-  }>;
-  bedrooms: number;
-  bathrooms: number;
-  cars: number;
-  isFavorite: boolean;
-  floorPlanImage: string | null;
+  houseDesigns: {
+    id: string;
+    title: string;
+    area: number;
+    image: string;
+    images: Array<{
+      src: string;
+      faced: string;
+    }>;
+    bedrooms: number;
+    bathrooms: number;
+    cars: number;
+    isFavorite: boolean;
+    floorPlanImage: string | null;
+  }[],
+  zoning: {
+    fsr: number,
+    frontSetback: number,
+    rearSetback: number,
+    sideSetback: number
+  }
 }
 
 // Get the API base URL based on environment
