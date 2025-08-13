@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { lotApi, type HouseDesignFilterRequest, type HouseDesignFilterResponse } from '../lib/api/lotApi';
+import { lotApi, type HouseDesignFilterRequest, type HouseDesignItemResponse } from '../lib/api/lotApi';
 import type { HouseDesignItem } from '../types/houseDesign';
 
 // Convert API response to frontend format
-const convertApiResponseToHouseDesign = (apiDesign: HouseDesignFilterResponse): HouseDesignItem => {
+const convertApiResponseToHouseDesign = (apiDesign: HouseDesignItemResponse): HouseDesignItem => {
   return {
     id: apiDesign.id,
     title: apiDesign.title,
@@ -30,9 +30,8 @@ export const useHouseDesigns = (
       if (!lotId || !filters) {
         return [];
       }
-      
-      const apiDesigns = await lotApi.filterHouseDesigns(lotId, filters);
-      return apiDesigns.houseDesigns.map(convertApiResponseToHouseDesign);
+      const apiResponse = await lotApi.filterHouseDesigns(lotId, filters);
+      return apiResponse.houseDesigns.map(convertApiResponseToHouseDesign);
     },
     enabled: enabled && !!lotId && !!filters,
     staleTime: 5 * 60 * 1000, // 5 minutes

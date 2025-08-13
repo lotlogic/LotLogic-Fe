@@ -53,6 +53,22 @@ export interface HouseDesignFilterRequest {
   pergola?: boolean;
 }
 
+export interface HouseDesignItemResponse {
+  id: string;
+  title: string;
+  area: number;
+  image: string;
+  images: Array<{
+    src: string;
+    faced: string;
+  }>;
+  bedrooms: number;
+  bathrooms: number;
+  cars: number;
+  isFavorite: boolean;
+  floorPlanImage: string | null;
+}
+
 export interface HouseDesignFilterResponse {
   houseDesigns: {
     id: string;
@@ -196,7 +212,7 @@ export const lotApi = {
   },
 
   // Filter house designs for a specific lot with user preferences
-  async filterHouseDesigns(lotId: string, filters: HouseDesignFilterRequest): Promise<HouseDesignFilterResponse[]> {
+  async filterHouseDesigns(lotId: string, filters: HouseDesignFilterRequest): Promise<HouseDesignFilterResponse> {
     try {
       // Convert filters to URL parameters for GET request
       const params = new URLSearchParams();
