@@ -70,21 +70,7 @@ export interface HouseDesignItemResponse {
 }
 
 export interface HouseDesignFilterResponse {
-  houseDesigns: {
-    id: string;
-    title: string;
-    area: number;
-    image: string;
-    images: Array<{
-      src: string;
-      faced: string;
-    }>;
-    bedrooms: number;
-    bathrooms: number;
-    cars: number;
-    isFavorite: boolean;
-    floorPlanImage: string | null;
-  }[],
+  houseDesigns: HouseDesignItemResponse[],
   zoning: {
     fsr: number,
     frontSetback: number,
