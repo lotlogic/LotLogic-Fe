@@ -33,30 +33,31 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
     bedroom: filter.bedroom,
     bathroom: filter.bathroom,
     car: filter.car,
+    min_size: filter.min_size && !isNaN(filter.min_size) ? filter.min_size : undefined,
+    max_size: filter.max_size && !isNaN(filter.max_size) ? filter.max_size : undefined,
   };
 
   // Fetch house designs from API
-  const { data: apiHouseDesigns = [], isLoading, error } = useHouseDesigns(
+  const { data: apiResponse, isLoading, error } = useHouseDesigns(
     lot.lotId?.toString() || null,
     apiFilters,
     true
   );
 
+  const houseDesigns = (apiResponse?.houseDesigns as HouseDesignItem[]) || [];
 
-  const houseDesigns = (apiHouseDesigns as HouseDesignItem[]) || [];
+
 
   const filteredHouses = houseDesigns;
 
   const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
     event.stopPropagation();
-    console.log('Star clicked for house:', clickedHouseId);
     
     const clickedHouse = (houseDesigns as HouseDesignItem[]).find(house => house.id === clickedHouseId);
     if (!clickedHouse) return;
     
     const currentFavorite = favoriteStates[clickedHouseId] ?? clickedHouse.isFavorite;
     const newFavorite = !currentFavorite;
-    console.log('Setting favorite to:', newFavorite);
     
     // Update the favorite states
     setFavoriteStates(prev => ({
@@ -65,8 +66,6 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
     }));
     
     if (newFavorite) {
-      console.log('Setting toast message...');
-
       const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
       
       // Check if this lot and house design combination already exists
@@ -149,8 +148,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
         {filteredHouses.map((house, idx) => {
           const isExpanded = expandedIdx === idx;
           const images = house.images;
-          // const mainImage = images[selectedImageIdx]?.src || house.image;
-          // const facedOption = images[selectedImageIdx]?.faced;
+          
 
           return (
             <div

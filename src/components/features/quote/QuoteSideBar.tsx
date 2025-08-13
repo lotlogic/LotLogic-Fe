@@ -70,10 +70,9 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
         
         try {
             // Validate form data
-            const validatedData = quoteFormSchema.parse(formData);
+            quoteFormSchema.parse(formData);
             
             // Here you would typically send the data to your API
-            console.log('Form data validated:', validatedData);
             
             // Simulate API call
             await new Promise(resolve => setTimeout(resolve, 1000));

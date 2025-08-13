@@ -5,15 +5,7 @@ export const useLotDetails = (lotId: string | null) => {
   return useQuery({
     queryKey: ['lot-details', lotId],
     queryFn: async () => {
-      console.log('Fetching lot details for ID:', lotId);
-      try {
-        const data = await lotApi.getLotById(lotId!);
-        console.log('Lot details received:', data);
-        return data;
-      } catch (error) {
-        console.error('Error fetching lot details:', error);
-        throw error;
-      }
+      return await lotApi.getLotById(lotId!);
     },
     enabled: !!lotId, // Only run query if lotId is provided
     staleTime: 5 * 60 * 1000, // 5 minutes

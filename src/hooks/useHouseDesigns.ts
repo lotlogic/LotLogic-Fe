@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { lotApi, type HouseDesignFilterRequest, type HouseDesignFilterResponse } from '../lib/api/lotApi';
+import { lotApi, type HouseDesignFilterRequest, type HouseDesignItemResponse } from '../lib/api/lotApi';
 import type { HouseDesignItem } from '../types/houseDesign';
 
 // Convert API response to frontend format
-const convertApiResponseToHouseDesign = (apiDesign: HouseDesignFilterResponse): HouseDesignItem => {
+const convertApiResponseToHouseDesign = (apiDesign: HouseDesignItemResponse): HouseDesignItem => {
   return {
     id: apiDesign.id,
     title: apiDesign.title,
@@ -26,13 +26,16 @@ export const useHouseDesigns = (
 ) => {
   return useQuery({
     queryKey: ['house-designs', lotId, filters],
-    queryFn: async (): Promise<HouseDesignItem[]> => {
+    queryFn: async (): Promise<{ houseDesigns: HouseDesignItem[]; zoning: { fsr: number; frontSetback: number; rearSetback: number; sideSetback: number } }> => {
       if (!lotId || !filters) {
-        return [];
+        return { houseDesigns: [], zoning: { fsr: 300, frontSetback: 4, rearSetback: 3, sideSetback: 3 } };
       }
       
-      const apiDesigns = await lotApi.filterHouseDesigns(lotId, filters);
-      return apiDesigns.map(convertApiResponseToHouseDesign);
+      const apiResponse = await lotApi.filterHouseDesigns(lotId, filters);
+      return {
+        houseDesigns: apiResponse.houseDesigns.map(convertApiResponseToHouseDesign),
+        zoning: apiResponse.zoning
+      };
     },
     enabled: enabled && !!lotId && !!filters,
     staleTime: 5 * 60 * 1000, // 5 minutes
