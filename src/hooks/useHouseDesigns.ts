@@ -25,19 +25,31 @@ export const useHouseDesigns = (
   enabled: boolean = true
 ) => {
   return useQuery({
-    queryKey: ['house-designs', lotId, filters],
+    queryKey: ['house-designs', lotId, JSON.stringify(filters)],
     queryFn: async (): Promise<{ houseDesigns: HouseDesignItem[]; zoning: { fsr: number; frontSetback: number; rearSetback: number; sideSetback: number } }> => {
-      if (!lotId || !filters) {
+      if (!lotId) {
         return { houseDesigns: [], zoning: { fsr: 300, frontSetback: 4, rearSetback: 3, sideSetback: 3 } };
       }
       
-      const apiResponse = await lotApi.filterHouseDesigns(lotId, filters);
+      // If no filters, create empty filter object for API
+      const filtersToSend = filters || {
+        bedroom: [],
+        bathroom: [],
+        car: [],
+      };
+      
+      const apiResponse = await lotApi.filterHouseDesigns(lotId, filtersToSend);
+      
+      // Handle case where apiResponse or houseDesigns might be undefined
+      const houseDesigns = apiResponse?.houseDesigns || [];
+      const zoning = apiResponse?.zoning || { fsr: 300, frontSetback: 4, rearSetback: 3, sideSetback: 3 };
+      
       return {
-        houseDesigns: apiResponse.houseDesigns.map(convertApiResponseToHouseDesign),
-        zoning: apiResponse.zoning
+        houseDesigns: houseDesigns.map(convertApiResponseToHouseDesign),
+        zoning: zoning
       };
     },
-    enabled: enabled && !!lotId && !!filters,
+    enabled: enabled && !!lotId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (replaces cacheTime in newer versions)
   });

@@ -239,9 +239,17 @@ export const lotApi = {
     try {
       // Convert filters to URL parameters for GET request
       const params = new URLSearchParams();
-      params.append('bedroom', JSON.stringify(filters.bedroom));
-      params.append('bathroom', JSON.stringify(filters.bathroom));
-      params.append('car', JSON.stringify(filters.car));
+      
+      // Only add array parameters if they have values
+      if (filters.bedroom && filters.bedroom.length > 0) {
+        params.append('bedroom', JSON.stringify(filters.bedroom));
+      }
+      if (filters.bathroom && filters.bathroom.length > 0) {
+        params.append('bathroom', JSON.stringify(filters.bathroom));
+      }
+      if (filters.car && filters.car.length > 0) {
+        params.append('car', JSON.stringify(filters.car));
+      }
       
       // Only add optional filters if they are provided
       if (filters.min_size !== undefined) {
@@ -266,6 +274,14 @@ export const lotApi = {
           'Content-Type': 'application/json',
         },
       });
+      
+      // Handle 204 No Content as a successful response with no results
+      if (response.status === 204) {
+        return {
+          houseDesigns: [],
+          zoning: { fsr: 300, frontSetback: 3, rearSetback: 3, sideSetback: 3 }
+        };
+      }
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

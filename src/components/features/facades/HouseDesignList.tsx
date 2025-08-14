@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "../../ui/Button";
-import {  MailQuestionMark, Bookmark, BedDouble, Bath, Car, Funnel} from "lucide-react";
-import type { HouseDesignItem, HouseDesignListProps } from "../../../types/houseDesign";
-import { houseDesign, filter as filterContent, lotSidebar, colors } from "../../../constants/content";
-import { showToast } from "../../ui/Toast";
+import { Bath, BedDouble, Bookmark, Car, Funnel, MailQuestionMark } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { colors, filter as filterContent, houseDesign, lotSidebar } from "../../../constants/content";
 import { useHouseDesigns } from "../../../hooks/useHouseDesigns";
 import type { HouseDesignFilterRequest } from "../../../lib/api/lotApi";
 import { getImageUrl } from "../../../lib/api/lotApi";
+import type { HouseDesignItem, HouseDesignListProps } from "../../../types/houseDesign";
+import { Button } from "../../ui/Button";
+import { showToast } from "../../ui/Toast";
 
 // Define the type for saved data
 interface SavedHouseData {
@@ -44,9 +44,11 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
     true
   );
 
+  console.log("api response", apiResponse)  
+  console.log("error", error)
+
+  // Safely extract house designs with fallback
   const houseDesigns = (apiResponse?.houseDesigns as HouseDesignItem[]) || [];
-
-
 
   const filteredHouses = houseDesigns;
 
@@ -113,9 +115,71 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
     return (
       <div className="p-6 overflow-y-auto h-full">
         <div className="flex items-center justify-center h-full">
-          <div className="text-red-500 text-center">
-            <p>Error loading house designs</p>
-            <p className="text-sm text-gray-500">Please try again later</p>
+          <div className="text-center max-w-md">
+            <div className="mb-4">
+              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to Load House Designs</h3>
+              <p className="text-gray-600 mb-4">We encountered an issue while loading the house designs for this lot.</p>
+            </div>
+            <div className="space-y-3">
+              <Button
+                onClick={() => window.location.reload()}
+                className="w-full bg-[#2F5D62] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors"
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onShowFilter}
+                className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
+                Adjust Filters
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show no results state - simplified condition
+  if (!isLoading && filteredHouses.length === 0) {
+    return (
+      <div className="p-6 overflow-y-auto h-full">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center max-w-md">
+            <div className="mb-4">
+              <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No House Designs Found</h3>
+              <p className="text-gray-600 mb-4">
+                We couldn't find any house designs matching your current criteria. Try adjusting your filters to see more options.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <Button
+                onClick={onShowFilter}
+                className="w-full bg-[#2F5D62] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors"
+              >
+                Adjust Filters
+              </Button>
+              <div className="text-sm text-gray-500">
+                <p className="mb-2">Try these suggestions:</p>
+                <ul className="text-left space-y-1">
+                  <li>• Increase the number of bedrooms or bathrooms</li>
+                  <li>• Adjust the size range</li>
+                  <li>• Change the number of car spaces</li>
+                  <li>• Clear some filters to see all available designs</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
