@@ -267,6 +267,14 @@ export const lotApi = {
         },
       });
       
+      // Handle 204 No Content as a successful response with no results
+      if (response.status === 204) {
+        return {
+          houseDesigns: [],
+          zoning: { fsr: 300, frontSetback: 3, rearSetback: 3, sideSetback: 3 }
+        };
+      }
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

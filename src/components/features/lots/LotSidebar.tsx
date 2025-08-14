@@ -40,8 +40,23 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
 
   // Get house designs and zoning data for dynamic FSR - only when user clicks "Show House Designs"
   const lotId = lot.id?.toString() || null;
-  const userFilters = { bedroom, bathroom, car, min_size, max_size };
-  const { data: houseDesignsData } = useHouseDesigns(lotId, userFilters, showHouseDesigns);
+  
+  // Create filters object - use empty arrays for required fields when no filters are set
+  const userFilters = React.useMemo(() => {
+    return {
+      bedroom: bedroom.length > 0 ? bedroom : [],
+      bathroom: bathroom.length > 0 ? bathroom : [],
+      car: car.length > 0 ? car : [],
+      min_size: !isNaN(min_size) && min_size > 0 ? min_size : undefined,
+      max_size: !isNaN(max_size) && max_size > 0 ? max_size : undefined,
+    };
+  }, [bedroom, bathroom, car, min_size, max_size]);
+  
+  // Only pass filters if any are actually set, otherwise pass null to get all designs
+  const hasAnyFilters = bedroom.length > 0 || bathroom.length > 0 || car.length > 0 || 
+                       (!isNaN(min_size) && min_size > 0) || (!isNaN(max_size) && max_size > 0);
+  const filtersToPass = hasAnyFilters ? userFilters : null;
+  const { data: houseDesignsData } = useHouseDesigns(lotId, filtersToPass, showHouseDesigns);
 
   // Update MapLayer with zoning data when received from API
   useEffect(() => {

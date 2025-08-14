@@ -191,12 +191,14 @@ export default function ZoneMap() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFloorPlan, setSelectedFloorPlan] = useState<FloorPlan | null>(null);
   const [sValuesMarkers, setSValuesMarkers] = useState<mapboxgl.Marker[]>([]);
+  const [initialView, setInitialView] = useState<{ center: [number, number]; zoom: number } | null>(null);
 
   // Setbacks (m). Change front to 9 to see the front edge move 9m inward.
   const [setbackValues, setSetbackValues] = useState({ front: 4, side: 3, rear: 3 });
 
   // FSR buildable area (m²) requested; will be capped by setbacks buildable area
   const [fsrBuildableArea, setFsrBuildableArea] = useState(300);
+
 
   // Modal state from Zustand
   const { showFloorPlanModal, showFacadeModal } = useModalStore();
@@ -313,10 +315,10 @@ export default function ZoneMap() {
       zoom: 16,
       attributionControl: false,
     });
-    mapRef.current = map;
+          mapRef.current = map;
 
-    // Add navigation controls (zoom in/out and compass)
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      // Add standard navigation controls
+      map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
     const handleResize = debounce(() => map.resize(), 250);
     window.addEventListener('resize', handleResize);
@@ -393,15 +395,33 @@ export default function ZoneMap() {
       });
       map.on('mouseleave', 'demo-lot-layer', () => (map.getCanvas().style.cursor = ''));
 
+
+
       map.on('click', 'demo-lot-layer', (e: MapMouseEvent) => {
+        console.log('Lot clicked!', e.point);
         const f = map.queryRenderedFeatures(e.point, { layers: ['demo-lot-layer'] })[0] as MapboxGeoJSONFeature | undefined;
-        if (!f) return;
+        console.log('Clicked feature:', f);
+        if (!f) {
+          console.log('No feature found at click point');
+          return;
+        }
         const isRed = !!(f.properties as any)?.isRed;
-        if (!isRed) return;
-        if (sidebarOpenRef.current) return;
+        console.log('Is red lot:', isRed, 'Properties:', f.properties);
+        if (!isRed) {
+          console.log('Lot is not red (not available or missing s1-s4 data)');
+          return;
+        }
+        if (sidebarOpenRef.current) {
+          console.log('Sidebar is open, ignoring click');
+          return;
+        }
 
         const id = (f.properties as any)?.BLOCK_KEY;
-        if (!id) return;
+        console.log('Lot ID:', id);
+        if (!id) {
+          console.log('No lot ID found');
+          return;
+        }
 
         if (selectedIdRef.current) {
           map.setFeatureState({ source: 'demo-lot-source', id: selectedIdRef.current }, { selected: false });
@@ -410,7 +430,59 @@ export default function ZoneMap() {
         selectedIdRef.current = id;
 
         setSelectedLot(f as any);
-        map.flyTo({ center: e.lngLat, zoom: Math.max(map.getZoom() || 15, 15) });
+        console.log('Selected lot set, now zooming...');
+        
+        // Improved zoom to lot: fit the entire lot boundary with padding
+        try {
+          const geometry = f.geometry as GeoJSON.Polygon;
+          console.log('Lot geometry:', geometry);
+          if (geometry && geometry.coordinates && geometry.coordinates[0]) {
+            const coordinates = geometry.coordinates[0] as [number, number][];
+            console.log('Lot coordinates:', coordinates);
+            if (coordinates.length >= 3) {
+              // Calculate the bounding box of the lot
+              const lngs = coordinates.map(coord => coord[0]);
+              const lats = coordinates.map(coord => coord[1]);
+              const bounds = [
+                [Math.min(...lngs), Math.min(...lats)],
+                [Math.max(...lngs), Math.max(...lats)]
+              ] as [[number, number], [number, number]];
+              
+              console.log('Calculated bounds:', bounds);
+              // Fit the map to the lot bounds with padding
+              map.fitBounds(bounds, {
+                padding: 50, // Add 50px padding around the lot
+                maxZoom: 25, // Maximum zoom level
+                duration: 1000 // Smooth animation duration
+              });
+              console.log('fitBounds called successfully');
+            } else {
+              console.log('Geometry has insufficient coordinates, using fallback zoom');
+              // Fallback to center point zoom if geometry is invalid
+              map.flyTo({ 
+                center: e.lngLat, 
+                zoom: Math.max(map.getZoom() || 16, 16),
+                duration: 1000
+              });
+            }
+          } else {
+            console.log('No geometry found, using fallback zoom');
+            // Fallback to center point zoom if no geometry
+            map.flyTo({ 
+              center: e.lngLat, 
+              zoom: Math.max(map.getZoom() || 16, 16),
+              duration: 1000
+            });
+          }
+        } catch (error) {
+          console.error('Error fitting bounds to lot:', error);
+          // Fallback to center point zoom on error
+          map.flyTo({ 
+            center: e.lngLat, 
+            zoom: Math.max(map.getZoom() || 16, 16),
+            duration: 1000
+          });
+        }
       });
 
       setIsLoading(false);
@@ -440,8 +512,39 @@ export default function ZoneMap() {
     if (!coords?.length) return;
     const avgLng = coords.reduce((s: number, c: number[]) => s + c[0], 0) / coords.length;
     const avgLat = coords.reduce((s: number, c: number[]) => s + c[1], 0) / coords.length;
-    map.jumpTo({ center: [avgLng, avgLat], zoom: 16 });
+    const initialCenter: [number, number] = [avgLng, avgLat];
+    const initialZoom = 16;
+    
+    // Store initial view for compass reset
+    setInitialView({ center: initialCenter, zoom: initialZoom });
+    map.jumpTo({ center: initialCenter, zoom: initialZoom });
   }, [lotsData]);
+
+  // Add compass reset functionality when initial view is available
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !initialView) return;
+
+    // Find the compass button and add click handler
+    const compassButton = map.getContainer().querySelector('.mapboxgl-ctrl-compass');
+    if (compassButton) {
+      const handleCompassClick = () => {
+        map.flyTo({
+          center: initialView.center,
+          zoom: initialView.zoom,
+          bearing: 0,
+          duration: 1000
+        });
+      };
+      
+      compassButton.addEventListener('click', handleCompassClick);
+      
+      // Cleanup
+      return () => {
+        compassButton.removeEventListener('click', handleCompassClick);
+      };
+    }
+  }, [initialView]);
 
   // Floorplan overlay - now uses house area boundary coordinates
   useEffect(() => {
