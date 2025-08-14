@@ -315,6 +315,9 @@ export default function ZoneMap() {
     });
     mapRef.current = map;
 
+    // Add navigation controls (zoom in/out and compass)
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
     const handleResize = debounce(() => map.resize(), 250);
     window.addEventListener('resize', handleResize);
 

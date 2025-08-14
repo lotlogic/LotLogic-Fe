@@ -324,8 +324,8 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                         <img 
                                             src={getImageUrl(selectedHouseDesign.floorPlanImage) || selectedHouseDesign.image} 
                                             alt="Floor Plan" 
-                                            width={96}
-                                            height={96}
+                                            width={56}
+                                            height={56}
                                             className="rounded-lg object-cover" 
                                         />
                                         <div className="flex-1">
