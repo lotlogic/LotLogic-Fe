@@ -628,7 +628,7 @@ export default function ZoneMap() {
     if (innerLL && innerLL.length >= 5) {
       const innerPoly = turf.polygon([innerLL]);
 
-      // Draw setback boundary (blue dashed)
+      // Draw setback boundary (red dashed)
       if (map.getLayer('setback-boundary-layer')) map.removeLayer('setback-boundary-layer');
       if (map.getSource('setback-boundary-source')) map.removeSource('setback-boundary-source');
       map.addSource('setback-boundary-source', { type: 'geojson', data: innerPoly });
@@ -636,7 +636,7 @@ export default function ZoneMap() {
         id: 'setback-boundary-layer',
         type: 'line',
         source: 'setback-boundary-source',
-        paint: { 'line-color': '#2196F3', 'line-width': 2, 'line-dasharray': [2, 2] }
+        paint: { 'line-color': '#FF0000', 'line-width': 2, 'line-dasharray': [2, 2] }
       });
 
             // Shade the setback area (lot minus inner) - temporarily disabled due to turf.difference issues
@@ -698,7 +698,7 @@ export default function ZoneMap() {
           id: 'house-area-boundary-layer',
           type: 'line',
           source: 'house-area-boundary-source',
-          paint: { 'line-color': '#FF0000', 'line-width': 2, 'line-dasharray': [4, 4] }
+          paint: { 'line-color': '#15cf04', 'line-width': 2, 'line-dasharray': [4, 4] }
         });
 
         // Center label for House Area m² - only show when no floor plan is displayed and no modals are open
