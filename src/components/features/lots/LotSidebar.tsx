@@ -41,8 +41,15 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
   // Get house designs and zoning data for dynamic FSR - only when user clicks "Show House Designs"
   const lotId = lot.id?.toString() || null;
   
-  // Create filters object - use empty arrays for required fields when no filters are set
-  const userFilters = React.useMemo(() => {
+  // Only create filters object if any filters are actually set
+  const hasAnyFilters = bedroom.length > 0 || bathroom.length > 0 || car.length > 0 || 
+                       (!isNaN(min_size) && min_size > 0) || (!isNaN(max_size) && max_size > 0);
+  
+  const filtersToPass = React.useMemo(() => {
+    if (!hasAnyFilters) {
+      return null; // No filters set, API will return all designs
+    }
+    
     return {
       bedroom: bedroom.length > 0 ? bedroom : [],
       bathroom: bathroom.length > 0 ? bathroom : [],
@@ -50,12 +57,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
       min_size: !isNaN(min_size) && min_size > 0 ? min_size : undefined,
       max_size: !isNaN(max_size) && max_size > 0 ? max_size : undefined,
     };
-  }, [bedroom, bathroom, car, min_size, max_size]);
-  
-  // Only pass filters if any are actually set, otherwise pass null to get all designs
-  const hasAnyFilters = bedroom.length > 0 || bathroom.length > 0 || car.length > 0 || 
-                       (!isNaN(min_size) && min_size > 0) || (!isNaN(max_size) && max_size > 0);
-  const filtersToPass = hasAnyFilters ? userFilters : null;
+  }, [hasAnyFilters, bedroom, bathroom, car, min_size, max_size]);
   const { data: houseDesignsData } = useHouseDesigns(lotId, filtersToPass, showHouseDesigns);
 
   // Update MapLayer with zoning data when received from API
@@ -64,8 +66,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
       onZoningDataUpdate(houseDesignsData.zoning);
     }
   }, [houseDesignsData?.zoning, onZoningDataUpdate]);
-  const [filterErrors, setFilterErrors] = React.useState<{ min_size?: string; max_size?: string; bedroom?: string; bathroom?: string; car?: string }>({});
-  const [showErrors, setShowErrors] = React.useState(false);
+
 
   const [showQuoteSidebar, setShowQuoteSidebar] = React.useState(false);
   const [quoteDesign, setQuoteDesign] = React.useState<HouseDesignItem | null>(null);
@@ -78,48 +79,44 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
   const zoningText = lot.zoning || '--';
 
   const handleShowHouseDesign = () => {
-
-
-
-    if (validateFilter()) {
-      setShowHouseDesigns(true);
-      setShowFilter(false);
-      setSelectedHouseDesignForModals(null);
-    }
+    // Remove validation - allow API call with just lot ID since backend supports optional parameters
+    setShowHouseDesigns(true);
+    setShowFilter(false);
+    setSelectedHouseDesignForModals(null);
   };
 
-  const validateFilter = () => {
-    const errors: { min_size?: string; max_size?: string; bedroom?: string; bathroom?: string; car?: string } = {};
+  // const validateFilter = () => {
+  //   const errors: { min_size?: string; max_size?: string; bedroom?: string; bathroom?: string; car?: string } = {};
 
-    // House size validation
-    if (isNaN(min_size) || min_size < 0) {
-      errors.min_size = "Minimum size should be at greater than 0";
-    }
+  //   // House size validation
+  //   if (isNaN(min_size) || min_size < 0) {
+  //     errors.min_size = "Minimum size should be at greater than 0";
+  //   }
 
-    if (isNaN(max_size)) {
-      errors.max_size = "Maximum size cannot exceed 10000";
-    }
+  //   if (isNaN(max_size)) {
+  //     errors.max_size = "Maximum size cannot exceed 10000";
+  //   }
 
-    if (!isNaN(min_size) && !isNaN(max_size) && min_size > max_size) {
-      errors.min_size = "Min size cannot be greater than max size";
-      errors.max_size = "Max size must be greater than min size";
-    }
+  //   if (!isNaN(min_size) && !isNaN(max_size) && min_size > max_size) {
+  //     errors.min_size = "Min size cannot be greater than max size";
+  //     errors.max_size = "Max size must be greater than min size";
+  //   }
 
-    if (!bedroom.length) {
-      errors.bedroom = "Please choose one";
-    }
-    if (!bathroom.length) {
-      errors.bathroom = "Please choose one";
-    }
-    if (!car.length) {
-      errors.car = "Please choose one";
-    }
+  //   if (!bedroom.length) {
+  //     errors.bedroom = "Please choose one";
+  //   }
+  //   if (!bathroom.length) {
+  //     errors.bathroom = "Please choose one";
+  //   }
+  //   if (!car.length) {
+  //     errors.car = "Please choose one";
+  //   }
 
-    setShowErrors(true);
-    setFilterErrors(errors);
+  //   setShowErrors(true);
+  //   setFilterErrors(errors);
 
-    return Object.keys(errors).length === 0;
-  };
+  //   return Object.keys(errors).length === 0;
+  // };
 
   const handleBackClick = () => {
     if (showQuoteSidebar) {
@@ -277,8 +274,6 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
               max_size={max_size}
               setMaxSize={setMaxSize}
               onShowHouseDesign={handleShowHouseDesign}
-              showErrors={showErrors}
-              filterErrors={filterErrors}
             />
           ) : (
             <SummaryView

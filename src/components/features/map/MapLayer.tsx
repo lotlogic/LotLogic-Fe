@@ -338,20 +338,20 @@ export default function ZoneMap() {
           'fill-color': [
             'case',
             ['boolean', ['feature-state', 'selected'], false], '#FFFFFF',
-            ['==', ['get', 'isRed'], true], '#A52A2A',
-            '#2E5A1C'
+            ['==', ['get', 'isRed'], true], '#2E5A1C',
+            '#A52A2A'
           ],
           'fill-opacity': [
             'case',
             ['boolean', ['feature-state', 'selected'], false], 0.9,
-            ['==', ['get', 'isRed'], true], 0.4,
-            0.3
+            ['==', ['get', 'isRed'], true], 0.3,
+            0.4
           ],
           'fill-outline-color': [
             'case',
             ['boolean', ['feature-state', 'selected'], false], '#2F5D62',
-            ['==', ['get', 'lifecycleStage'], 'unavailable'], '#1B4D1B',
-            '#8B0000'
+            ['==', ['get', 'lifecycleStage'], 'unavailable'], '#8B0000',
+            '#1B4D1B'
           ]
         }
       });
