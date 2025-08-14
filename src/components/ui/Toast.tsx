@@ -43,11 +43,7 @@ export function showToast({
   type = 'success',
   options = {},
 }: ShowToastProps) {
-  console.log('showToast called with:', { message, type, options });
-  
   const toastFn = toast[type] ?? toast.success;
-
-  console.log('Showing toast:', message, 'with autoClose:', 3000);
 
   toastFn(
     <div className="flex items-center gap-3">

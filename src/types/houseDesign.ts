@@ -34,6 +34,8 @@ export interface HouseDesignListProps {
     bedroom: number[];
     bathroom: number[];
     car: number[];
+    min_size?: number;
+    max_size?: number;
   };
   lot: {
     lotId: string | number;

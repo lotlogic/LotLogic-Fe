@@ -5,14 +5,19 @@ import { MultiSelect } from "../../ui/MultiSelect";
 import { Checkbox } from "../../ui/checkbox";
 import type { GetYourQuoteSidebarProps, QuoteFormData } from "../../../types/houseDesign";
 import { quoteFormSchema } from "../../../types/houseDesign";
-import { builderOptions } from "../../../constants/houseDesigns";
 import { quote, formatContent } from "../../../constants/content";
+import { Input } from '../../ui/input';
+import { getImageUrl, submitEnquiry } from '../../../lib/api/lotApi';
+import { useBuilders, convertBuildersToOptions } from '../../../hooks/useBuilders';
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
     const [showThankYou, setShowThankYou] = useState(false);
     const [lotSecured, setLotSecured] = useState(false);
     const [agreeToTerms, setAgreeToTerms] = useState(false);
+    // Fetch builders from backend
+    const { data: builders, isLoading: buildersLoading, error: buildersError } = useBuilders();
+    const builderOptions = builders ? convertBuildersToOptions(builders) : [];
     
     // Form state
     const [formData, setFormData] = useState<QuoteFormData>({
@@ -68,13 +73,22 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
         
         try {
             // Validate form data
-            const validatedData = quoteFormSchema.parse(formData);
+            quoteFormSchema.parse(formData);
             
-            // Here you would typically send the data to your API
-            console.log('Form data validated:', validatedData);
+            // Prepare enquiry data for API
+            const enquiryData = {
+                name: formData.yourName,
+                email: formData.emailAddress,
+                number: formData.phoneNumber,
+                builders: formData.selectedBuilders,
+                comments: formData.additionalComments || '',
+                lot_id: parseInt(lotDetails.id.toString()),
+                house_design_id: selectedHouseDesign?.id || '',
+                facade_id: selectedHouseDesign?.images[0]?.src || ''
+            };
             
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Submit enquiry to API
+            await submitEnquiry(enquiryData);
             
             setShowThankYou(true);
             setErrors({});
@@ -82,9 +96,10 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
             // Handle Zod validation errors
             if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
                 const fieldErrors: Partial<Record<keyof QuoteFormData, string>> = {};
-                
-                if ('errors' in error && Array.isArray(error.errors)) {
-                    error.errors.forEach((err: unknown) => {
+                const errorMessage = (error as Record<string, unknown>).message as string;
+                const errors = JSON.parse(errorMessage);
+                if (errors.length) {
+                    errors.forEach((err: unknown) => {
                         if (err && typeof err === 'object' && 'path' in err && Array.isArray(err.path)) {
                             const field = err.path[0] as keyof QuoteFormData;
                             if ('message' in err && typeof err.message === 'string') {
@@ -97,6 +112,10 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 setErrors(fieldErrors);
             } else {
                 console.error('Form submission error:', error);
+                // Show user-friendly error message
+                setErrors({
+                    additionalComments: 'Failed to submit enquiry. Please try again.'
+                });
             }
         } finally {
             setIsSubmitting(false);
@@ -117,10 +136,10 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                         <div >
                             <div className="p-1 flex gap-4 items-center">
                                 <img 
-                                    src={selectedHouseDesign.image} 
-                                    alt="House" 
-                                    width={96}
-                                    height={96}
+                                    src={selectedHouseDesign.floorPlanImage ? getImageUrl(selectedHouseDesign.floorPlanImage) : selectedHouseDesign.image} 
+                                    alt="Floor Plan" 
+                                    width={56}
+                                    height={56}
                                     className="rounded-lg object-cover" 
                                 />
                                 <div className="flex-1">
@@ -212,129 +231,136 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 </div>
             ) : (
                 // Initial form screen
-                <form onSubmit={handleSubmit} className="space-y-4 p-6">
-                    <div>
-                        <label htmlFor="yourName" className="block text-sm font-medium text-gray-700 mb-1">{quote.yourName}</label>
-                        <input
-                            type="text"
-                            id="yourName"
-                            value={formData.yourName}
-                            onChange={(e) => handleInputChange('yourName', e.target.value)}
-                            className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
-                                errors.yourName ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            placeholder="Your name"
-                        />
-                        {errors.yourName && (
-                            <p className="mt-1 text-sm text-red-600">{errors.yourName}</p>
-                        )}
-                    </div>
-                    <div>
-                        <label htmlFor="emailAddress" className="block text-sm font-medium text-gray-700 mb-1">{quote.emailAddress}</label>
-                        <input
-                            type="email"
-                            id="emailAddress"
-                            value={formData.emailAddress}
-                            onChange={(e) => handleInputChange('emailAddress', e.target.value)}
-                            className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
-                                errors.emailAddress ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            placeholder="you@company.com"
-                        />
-                        {errors.emailAddress && (
-                            <p className="mt-1 text-sm text-red-600">{errors.emailAddress}</p>
-                        )}
-                    </div>
-                    <div>
-                        <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">{quote.phoneNumber}</label>
-                        <input
-                            type="tel"
-                            id="phoneNumber"
-                            value={formData.phoneNumber}
-                            onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                            className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
-                                errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            placeholder="+1 (555) 000-0000"
-                        />
-                        {errors.phoneNumber && (
-                            <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
-                        )}
-                    </div>
-                    <div>
-                        <MultiSelect
-                            options={builderOptions}
-                            selectedOptions={selectedBuilders}
-                            onSelectionChange={setSelectedBuilders}
-                            placeholder={quote.chooseBuilders}
-                            label={quote.selectBuilders}
-                        />
-                        {errors.selectedBuilders && (
-                            <p className="mt-1 text-sm text-red-600">{errors.selectedBuilders}</p>
-                        )}
-                    </div>
-                    <div>
-                        <label htmlFor="additionalComments" className="block text-sm font-medium text-gray-700 mb-1">{quote.additionalComments}</label>
-                        <textarea
-                            id="additionalComments"
-                            rows={3}
-                            value={formData.additionalComments}
-                            onChange={(e) => handleInputChange('additionalComments', e.target.value)}
-                            className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
-                                errors.additionalComments ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            placeholder="Any specific requirements or questions?"
-                        ></textarea>
-                        {errors.additionalComments && (
-                            <p className="mt-1 text-sm text-red-600">{errors.additionalComments}</p>
-                        )}
-                    </div>
+                <form onSubmit={handleSubmit}>
+                    <div className='space-y-4 p-6'>
+                        <div>
+                            <label htmlFor="yourName" className="block text-sm font-medium text-gray-700 mb-1">{quote.yourName}</label>
+                            <Input
+                                type="text"
+                                id="yourName"
+                                value={formData.yourName}
+                                onChange={(e) => handleInputChange('yourName', e.target.value)}
+                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                    errors.yourName ? 'border-red-500' : 'border-gray-300'
+                                }`}
+                                placeholder="Your name"
+                            />
+                            {errors.yourName && (
+                                <p className="mt-1 text-sm text-red-600">{errors.yourName}</p>
+                            )}
+                        </div>
+                        <div>
+                            <label htmlFor="emailAddress" className="block text-sm font-medium text-gray-700 mb-1">{quote.emailAddress}</label>
+                            <Input
+                                type="email"
+                                id="emailAddress"
+                                value={formData.emailAddress}
+                                onChange={(e) => handleInputChange('emailAddress', e.target.value)}
+                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                    errors.emailAddress ? 'border-red-500' : 'border-gray-300'
+                                }`}
+                                placeholder="mail@company.com"
+                            />
+                            {errors.emailAddress && (
+                                <p className="mt-1 text-sm text-red-600">{errors.emailAddress}</p>
+                            )}
+                        </div>
+                        <div>
+                            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">{quote.phoneNumber}</label>
+                            <Input
+                                type="tel"
+                                id="phoneNumber"
+                                value={formData.phoneNumber}
+                                onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                    errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+                                }`}
+                                placeholder="+1 (555) 000-0000"
+                            />
+                            {errors.phoneNumber && (
+                                <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>
+                            )}
+                        </div>
+                        <div>
+                            {buildersLoading ? (
+                                <div className="text-sm text-gray-500">Loading builders...</div>
+                            ) : buildersError ? (
+                                <div className="text-sm text-red-500">Error loading builders. Please try again.</div>
+                            ) : (
+                                <MultiSelect
+                                    options={builderOptions}
+                                    selectedOptions={selectedBuilders}
+                                    onSelectionChange={setSelectedBuilders}
+                                    placeholder={quote.chooseBuilders}
+                                    label={quote.selectBuilders}
+                                />
+                            )}
+                            {errors.selectedBuilders && (
+                                <p className="mt-1 text-sm text-red-600">{errors.selectedBuilders}</p>
+                            )}
+                        </div>
+                        <div>
+                            <label htmlFor="additionalComments" className="block text-sm font-medium text-gray-700 mb-1">{quote.additionalComments}</label>
+                            <textarea
+                                id="additionalComments"
+                                rows={3}
+                                value={formData.additionalComments}
+                                onChange={(e) => handleInputChange('additionalComments', e.target.value)}
+                                className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                    errors.additionalComments ? 'border-red-500' : 'border-gray-300'
+                                }`}
+                                placeholder="Any specific requirements or questions?"
+                            ></textarea>
+                            {errors.additionalComments && (
+                                <p className="mt-1 text-sm text-red-600">{errors.additionalComments}</p>
+                            )}
+                        </div>
 
-                    {selectedHouseDesign && (
-                        <div className="mt-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Your Selection</h3>
-                            <div className="border-t border-gray-200 pt-2">
-                                <div className="rounded-2xl border border-gray-200 bg-[#eaf3f2] p-4 flex gap-4 items-center">
-                                    <img 
-                                        src={selectedHouseDesign.floorPlanImage || selectedHouseDesign.image} 
-                                        alt="Floor Plan" 
-                                        width={96}
-                                        height={96}
-                                        className="rounded-lg object-cover" 
-                                    />
-                                    <div className="flex-1">
-                                        <div className="text-gray-900 text-sm">Lot {lotDetails.id}, {lotDetails.suburb}</div>
-                                        <div className="text-gray-900 text-sm">Floor Plan: {selectedHouseDesign.title} ({selectedHouseDesign.area} ft²)</div>
-                                        <div className="text-gray-900 text-sm">Faced: {facedOption}</div>
+                        {selectedHouseDesign && (
+                            <div className="mt-6">
+                                <h3 className="text-lg font-semibold text-gray-900 mb-2">Your Selection</h3>
+                                <div className="border-t border-gray-200 pt-2">
+                                    <div className="rounded-2xl border border-gray-200 bg-[#eaf3f2] p-4 flex gap-4 items-center">
+                                        <img 
+                                            src={getImageUrl(selectedHouseDesign.floorPlanImage) || selectedHouseDesign.image} 
+                                            alt="Floor Plan" 
+                                            width={56}
+                                            height={56}
+                                            className="rounded-lg object-cover" 
+                                        />
+                                        <div className="flex-1">
+                                            <div className="text-gray-900 text-sm">Lot {lotDetails.id}, {lotDetails.suburb}</div>
+                                            <div className="text-gray-900 text-sm">Floor Plan: {selectedHouseDesign.title} ({selectedHouseDesign.area} ft²)</div>
+                                            <div className="text-gray-900 text-sm">Faced: {facedOption}</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        )}
+
+                        {/* Terms & Conditions Checkbox */}
+                        <div className="flex items-start gap-3">
+                            <Checkbox
+                                id="agreeToTerms"
+                                checked={agreeToTerms}
+                                onCheckedChange={() => setAgreeToTerms(!agreeToTerms)}
+                            />
+                            <label htmlFor="agreeToTerms" className="text-sm text-gray-700">
+                                I agree to the{' '}
+                                <a 
+                                    href="#" 
+                                    className="text-[#2F5D62] underline hover:text-[#1a3d42] transition-colors"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                    }}
+                                >
+                                    Terms & Conditions
+                                </a>
+                            </label>
                         </div>
-                    )}
-
-                    {/* Terms & Conditions Checkbox */}
-                    <div className="flex items-start gap-3">
-                        <Checkbox
-                            id="agreeToTerms"
-                            checked={agreeToTerms}
-                            onCheckedChange={() => setAgreeToTerms(!agreeToTerms)}
-                        />
-                        <label htmlFor="agreeToTerms" className="text-sm text-gray-700">
-                            I agree to the{' '}
-                            <a 
-                                href="#" 
-                                className="text-[#2F5D62] underline hover:text-[#1a3d42] transition-colors"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                }}
-                            >
-                                Terms & Conditions
-                            </a>
-                        </label>
                     </div>
-
                     {/* Submit Button */}
-                    <div className="sticky bottom-0 pt-6 border-t border-gray-200 bg-white">
+                    <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6">
                         <Button
                             type="submit"
                             className="w-full text-lg py-3 rounded-lg bg-[#2F5D62] text-white disabled:opacity-50 disabled:cursor-not-allowed"

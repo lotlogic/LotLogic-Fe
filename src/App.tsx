@@ -3,14 +3,13 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import './index.css'
 
-// Import your components here
+
 import Header from './components/layouts/Header'
 import ZoneMap from './components/features/map/MapLayer'
 
 const queryClient = new QueryClient()
 
 function App() {
-  console.log('App component rendering');
   
   return (
     <QueryClientProvider client={queryClient}>
