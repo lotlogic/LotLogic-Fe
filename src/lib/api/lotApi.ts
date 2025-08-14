@@ -91,8 +91,8 @@ export interface Builder {
 // Get the API base URL based on environment
 const getApiBaseUrl = () => {
   // Check for environment variable first
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
   }
   
   // If running in Docker, use the service name
