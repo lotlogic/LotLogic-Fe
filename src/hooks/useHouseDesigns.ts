@@ -32,9 +32,14 @@ export const useHouseDesigns = (
       }
       
       const apiResponse = await lotApi.filterHouseDesigns(lotId, filters);
+      
+      // Handle case where apiResponse or houseDesigns might be undefined
+      const houseDesigns = apiResponse?.houseDesigns || [];
+      const zoning = apiResponse?.zoning || { fsr: 300, frontSetback: 4, rearSetback: 3, sideSetback: 3 };
+      
       return {
-        houseDesigns: apiResponse.houseDesigns.map(convertApiResponseToHouseDesign),
-        zoning: apiResponse.zoning
+        houseDesigns: houseDesigns.map(convertApiResponseToHouseDesign),
+        zoning: zoning
       };
     },
     enabled: enabled && !!lotId && !!filters,
