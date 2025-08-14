@@ -184,7 +184,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
 
   const handleViewFacadesClick = (design: HouseDesignItem) => {
     setSelectedHouseDesignForModals(design);
-    setCurrentModalFacadeIdx(0);
+    setCurrentModalFacadeIdx(0); // Reset to first facade
     setShowFacadeModal(true);
   };
 
@@ -386,27 +386,35 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
 
             {/* Facade Images */}
             <div className="p-6 flex-1 overflow-auto relative">
-              {selectedHouseDesignForModals.images && selectedHouseDesignForModals.images.length > 0 ? (
+              {/* Use S3 facade images for all house designs */}
+              {(() => {
+                const facadeImages = [
+                  { src: "https://loglogic-assets.s3.ap-southeast-2.amazonaws.com/images/brick.jpg", faced: "Brick" },
+                  { src: "https://loglogic-assets.s3.ap-southeast-2.amazonaws.com/images/timmerland.jpg", faced: "Render" },
+                  { src: "https://loglogic-assets.s3.ap-southeast-2.amazonaws.com/images/weatherboard.jpg", faced: "Weatherboard" },
+                ];
+                
+                return facadeImages.length > 0 ? (
                 <>
                   <div className="relative w-[900px] h-[430px] mb-4 flex items-center justify-center">
                     <img
-                      src={selectedHouseDesignForModals.images[currentModalFacadeIdx]?.src || ''}
+                      src={facadeImages[currentModalFacadeIdx]?.src || ''}
                       alt={`Facade ${currentModalFacadeIdx + 1}`}
                       className="w-full h-full object-cover rounded-lg"
                     />
                     <div className="absolute top-0 left-0 right-0 bg-black/30 text-white text-center py-2 rounded-t-lg">
-                      {lotSidebar.facedOption}: {selectedHouseDesignForModals.images[currentModalFacadeIdx]?.faced || 'N/A'}
+                      {lotSidebar.facedOption}: {facadeImages[currentModalFacadeIdx]?.faced || 'N/A'}
                     </div>
-                    {selectedHouseDesignForModals.images.length > 1 && (
+                    {facadeImages.length > 1 && (
                       <>
                         <button
-                          onClick={() => setCurrentModalFacadeIdx(prev => (prev - 1 + selectedHouseDesignForModals.images.length) % selectedHouseDesignForModals.images.length)}
+                          onClick={() => setCurrentModalFacadeIdx(prev => (prev - 1 + facadeImages.length) % facadeImages.length)}
                           className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
                         >
                           <ChevronLeft className="h-6 w-6" />
                         </button>
                         <button
-                          onClick={() => setCurrentModalFacadeIdx(prev => (prev + 1) % selectedHouseDesignForModals.images.length)}
+                          onClick={() => setCurrentModalFacadeIdx(prev => (prev + 1) % facadeImages.length)}
                           className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
                         >
                           <ChevronRight className="h-6 w-6" />
@@ -417,7 +425,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
 
                   {/* Thumbnails below the main facade image */}
                   <div className="flex justify-center gap-2 overflow-x-auto pb-2">
-                    {selectedHouseDesignForModals.images.map((img, idx) => (
+                    {facadeImages.map((img, idx) => (
                       <button
                         key={idx}
                         onClick={() => setCurrentModalFacadeIdx(idx)}
@@ -437,7 +445,8 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
                 </>
               ) : (
                 <p className="text-center text-gray-500">Facades not available for this design.</p>
-              )}
+              );
+              })()}
             </div>
           </div>
         </div>
