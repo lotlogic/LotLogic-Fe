@@ -5,16 +5,19 @@ import { MultiSelect } from "../../ui/MultiSelect";
 import { Checkbox } from "../../ui/checkbox";
 import type { GetYourQuoteSidebarProps, QuoteFormData } from "../../../types/houseDesign";
 import { quoteFormSchema } from "../../../types/houseDesign";
-import { builderOptions } from "../../../constants/houseDesigns";
 import { quote, formatContent } from "../../../constants/content";
 import { Input } from '../../ui/input';
-import { getImageUrl } from '../../../lib/api/lotApi';
+import { getImageUrl, submitEnquiry } from '../../../lib/api/lotApi';
+import { useBuilders, convertBuildersToOptions } from '../../../hooks/useBuilders';
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
     const [showThankYou, setShowThankYou] = useState(false);
     const [lotSecured, setLotSecured] = useState(false);
     const [agreeToTerms, setAgreeToTerms] = useState(false);
+    // Fetch builders from backend
+    const { data: builders, isLoading: buildersLoading, error: buildersError } = useBuilders();
+    const builderOptions = builders ? convertBuildersToOptions(builders) : [];
     
     // Form state
     const [formData, setFormData] = useState<QuoteFormData>({
@@ -72,10 +75,20 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
             // Validate form data
             quoteFormSchema.parse(formData);
             
-            // Here you would typically send the data to your API
+            // Prepare enquiry data for API
+            const enquiryData = {
+                name: formData.yourName,
+                email: formData.emailAddress,
+                number: formData.phoneNumber,
+                builders: formData.selectedBuilders,
+                comments: formData.additionalComments || '',
+                lot_id: parseInt(lotDetails.id.toString()),
+                house_design_id: selectedHouseDesign?.id || '',
+                facade_id: selectedHouseDesign?.images[0]?.src || ''
+            };
             
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // Submit enquiry to API
+            await submitEnquiry(enquiryData);
             
             setShowThankYou(true);
             setErrors({});
@@ -83,7 +96,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
             // Handle Zod validation errors
             if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
                 const fieldErrors: Partial<Record<keyof QuoteFormData, string>> = {};
-                const errorMessage = (error as any).message;
+                const errorMessage = (error as Record<string, unknown>).message as string;
                 const errors = JSON.parse(errorMessage);
                 if (errors.length) {
                     errors.forEach((err: unknown) => {
@@ -99,6 +112,10 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 setErrors(fieldErrors);
             } else {
                 console.error('Form submission error:', error);
+                // Show user-friendly error message
+                setErrors({
+                    additionalComments: 'Failed to submit enquiry. Please try again.'
+                });
             }
         } finally {
             setIsSubmitting(false);
@@ -119,10 +136,10 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                         <div >
                             <div className="p-1 flex gap-4 items-center">
                                 <img 
-                                    src={selectedHouseDesign.image} 
-                                    alt="House" 
-                                    width={96}
-                                    height={96}
+                                    src={selectedHouseDesign.floorPlanImage ? getImageUrl(selectedHouseDesign.floorPlanImage) : selectedHouseDesign.image} 
+                                    alt="Floor Plan" 
+                                    width={56}
+                                    height={56}
                                     className="rounded-lg object-cover" 
                                 />
                                 <div className="flex-1">
@@ -265,13 +282,19 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                             )}
                         </div>
                         <div>
-                            <MultiSelect
-                                options={builderOptions}
-                                selectedOptions={selectedBuilders}
-                                onSelectionChange={setSelectedBuilders}
-                                placeholder={quote.chooseBuilders}
-                                label={quote.selectBuilders}
-                            />
+                            {buildersLoading ? (
+                                <div className="text-sm text-gray-500">Loading builders...</div>
+                            ) : buildersError ? (
+                                <div className="text-sm text-red-500">Error loading builders. Please try again.</div>
+                            ) : (
+                                <MultiSelect
+                                    options={builderOptions}
+                                    selectedOptions={selectedBuilders}
+                                    onSelectionChange={setSelectedBuilders}
+                                    placeholder={quote.chooseBuilders}
+                                    label={quote.selectBuilders}
+                                />
+                            )}
                             {errors.selectedBuilders && (
                                 <p className="mt-1 text-sm text-red-600">{errors.selectedBuilders}</p>
                             )}

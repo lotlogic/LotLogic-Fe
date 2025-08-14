@@ -79,6 +79,15 @@ export interface HouseDesignFilterResponse {
   }
 }
 
+export interface Builder {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Get the API base URL based on environment
 const getApiBaseUrl = () => {
   // Check for environment variable first
@@ -111,6 +120,34 @@ export const getImageUrl = (imagePath: string | null | undefined): string => {
   
   // Otherwise, assume it's a relative path and prepend the API base URL with /
   return `${getApiBaseUrl()}/${imagePath}`;
+};
+
+// Enquiry API
+export interface EnquiryRequest {
+  name: string;
+  email: string;
+  number: string;
+  builders: string[];
+  comments: string;
+  lot_id: number;
+  house_design_id: string;
+  facade_id: string;
+}
+
+export const submitEnquiry = async (enquiryData: EnquiryRequest): Promise<{ message: string }> => {
+  const response = await fetch(`${getApiBaseUrl()}/enquiry`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(enquiryData),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Enquiry submission failed: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 export const lotApi = {
@@ -206,15 +243,13 @@ export const lotApi = {
       params.append('bathroom', JSON.stringify(filters.bathroom));
       params.append('car', JSON.stringify(filters.car));
       
-      // Only add size filters if they are provided
+      // Only add optional filters if they are provided
       if (filters.min_size !== undefined) {
         params.append('min_size', filters.min_size.toString());
       }
       if (filters.max_size !== undefined) {
         params.append('max_size', filters.max_size.toString());
       }
-      
-      // Only add boolean filters if they are provided
       if (filters.rumpus !== undefined) {
         params.append('rumpus', filters.rumpus.toString());
       }
@@ -240,6 +275,28 @@ export const lotApi = {
       return data;
     } catch (error) {
       console.error('Error filtering house designs:', error);
+      throw error;
+    }
+  },
+
+  // Fetch all builders from the backend
+  async getBuilders(): Promise<Builder[]> {
+    try {
+      const response = await fetch(`${getApiBaseUrl()}/builders`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching builders:', error);
       throw error;
     }
   }
