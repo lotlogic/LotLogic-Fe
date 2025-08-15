@@ -61,6 +61,8 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
           s1, s2, s3, s4,
           hasExactS1S2S3S4,
           isRed,
+          width: lot.geojson.width,
+          depth: lot.geojson.depth
         }
       };
     })
