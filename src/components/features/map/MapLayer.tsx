@@ -1,16 +1,18 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, Suspense, lazy } from 'react';
 import mapboxgl, { Map, MapMouseEvent } from 'mapbox-gl';
 import type { MapboxGeoJSONFeature } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import * as turf from '@turf/turf';
 
-import { LotSidebar } from "../lots/LotSidebar";
-import { SearchControl } from "./SearchControl";
-import { LayersButton } from "./LayersButton";
-import { SavedButton } from "./SavedButton";
+// Lazy load sidebar components
+const LotSidebar = lazy(() => import("../lots/LotSidebar").then(module => ({ default: module.LotSidebar })));
+const SearchControl = lazy(() => import("./SearchControl").then(module => ({ default: module.SearchControl })));
+const LayersButton = lazy(() => import("./LayersButton").then(module => ({ default: module.LayersButton })));
+const SavedButton = lazy(() => import("./SavedButton").then(module => ({ default: module.SavedButton })));
+const ZoningLayersSidebar = lazy(() => import("./ZoningLayerSidebar").then(module => ({ default: module.ZoningLayersSidebar })));
+const SavedPropertiesSidebar = lazy(() => import("./SavedPropertiesSidebar").then(module => ({ default: module.SavedPropertiesSidebar })));
+
 import '../map/MapControls.css';
-import { ZoningLayersSidebar } from "./ZoningLayerSidebar";
-import { SavedPropertiesSidebar } from "./SavedPropertiesSidebar";
 import { useLotDetails } from "../../../hooks/useLotDetails";
 import type { SavedProperty } from "../../../types/ui";
 import { useLots, convertLotsToGeoJSON } from "../../../hooks/useLots";
@@ -782,57 +784,76 @@ export default function ZoneMap() {
       )}
 
       <div className="absolute top-4 right-5 z-10">
-        <SearchControl onResultSelect={handleSearchResult} />
+        <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>}>
+          <SearchControl onResultSelect={handleSearchResult} />
+        </Suspense>
       </div>
 
       <div className="absolute top-45 right-5 z-10">
-        <LayersButton onClick={() => setIsZoningSidebarOpen(true)} isActive={isZoningSidebarOpen} />
+        <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>}>
+          <LayersButton onClick={() => setIsZoningSidebarOpen(true)} isActive={isZoningSidebarOpen} />
+        </Suspense>
       </div>
 
       <div className="absolute top-57 right-5 z-10">
-        <SavedButton onClick={() => setIsSavedSidebarOpen(true)} isActive={isSavedSidebarOpen} />
+        <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>}>
+          <SavedButton onClick={() => setIsSavedSidebarOpen(true)} isActive={isSavedSidebarOpen} />
+        </Suspense>
       </div>
 
-      <ZoningLayersSidebar
-        open={isZoningSidebarOpen}
-        onClose={() => setIsZoningSidebarOpen(false)}
-        mapInstance={mapRef.current}
-      />
+      <Suspense fallback={<div className="hidden"></div>}>
+        <ZoningLayersSidebar
+          open={isZoningSidebarOpen}
+          onClose={() => setIsZoningSidebarOpen(false)}
+          mapInstance={mapRef.current}
+        />
+      </Suspense>
 
-      <SavedPropertiesSidebar
-        open={isSavedSidebarOpen}
-        onClose={() => setIsSavedSidebarOpen(false)}
-        savedProperties={savedProperties}
-        onViewDetails={handleViewDetails}
-      />
+      <Suspense fallback={<div className="hidden"></div>}>
+        <SavedPropertiesSidebar
+          open={isSavedSidebarOpen}
+          onClose={() => setIsSavedSidebarOpen(false)}
+          savedProperties={savedProperties}
+          onViewDetails={handleViewDetails}
+        />
+      </Suspense>
 
       <div ref={mapContainer} className="h-full w-full" />
 
       {selectedLot && (
-        <LotSidebar
-          open={!!selectedLot}
-          onClose={handleCloseSidebar}
-          isLoadingApiData={isLoadingLotData}
-          apiError={lotApiError}
-          lot={{
-            id: selectedLot.properties.databaseId || selectedLot.properties.ID,
-            suburb: selectedLot.properties.DISTRICT_NAME || '',
-            address: selectedLot.properties.ADDRESSES || '',
-            size: selectedLot.properties.BLOCK_DERIVED_AREA,
-            type: selectedLot.properties.TYPE,
-            zoning: selectedLot.properties.LAND_USE_POLICY_ZONES,
-            overlays: selectedLot.properties.OVERLAY_PROVISION_ZONES,
-            apiDimensions: {
-              width: selectedLot.properties.width,
-              depth: selectedLot.properties.depth,
-            },
-            apiZoning: lotApiData?.zoning,
-            apiMatches: [],
-          }}
-          geometry={selectedLot.geometry}
-          onSelectFloorPlan={setSelectedFloorPlan}
-          onZoningDataUpdate={handleZoningDataUpdate}
-        />
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="text-gray-600 mt-2">Loading sidebar...</p>
+            </div>
+          </div>
+        }>
+          <LotSidebar
+            open={!!selectedLot}
+            onClose={handleCloseSidebar}
+            isLoadingApiData={isLoadingLotData}
+            apiError={lotApiError}
+            lot={{
+              id: selectedLot.properties.databaseId || selectedLot.properties.ID,
+              suburb: selectedLot.properties.DISTRICT_NAME || '',
+              address: selectedLot.properties.ADDRESSES || '',
+              size: selectedLot.properties.BLOCK_DERIVED_AREA,
+              type: selectedLot.properties.TYPE,
+              zoning: selectedLot.properties.LAND_USE_POLICY_ZONES,
+              overlays: selectedLot.properties.OVERLAY_PROVISION_ZONES,
+              apiDimensions: {
+                width: selectedLot.properties.width,
+                depth: selectedLot.properties.depth,
+              },
+              apiZoning: lotApiData?.zoning,
+              apiMatches: [],
+            }}
+            geometry={selectedLot.geometry}
+            onSelectFloorPlan={setSelectedFloorPlan}
+            onZoningDataUpdate={handleZoningDataUpdate}
+          />
+        </Suspense>
       )}
     </div>
   );
