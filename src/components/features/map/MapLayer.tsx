@@ -822,9 +822,10 @@ export default function ZoneMap() {
             type: selectedLot.properties.TYPE,
             zoning: selectedLot.properties.LAND_USE_POLICY_ZONES,
             overlays: selectedLot.properties.OVERLAY_PROVISION_ZONES,
-            width: undefined,
-            depth: undefined,
-            apiDimensions: undefined,
+            apiDimensions: {
+              width: selectedLot.properties.width,
+              depth: selectedLot.properties.depth,
+            },
             apiZoning: lotApiData?.zoning,
             apiMatches: [],
           }}

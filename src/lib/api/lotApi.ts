@@ -16,6 +16,8 @@ export interface DatabaseLot {
     type: 'Feature';
     geometry: GeoJSON.Polygon;
     properties: Array<Record<string, number>>;
+    width: number,
+    depth: number
   };
   createdAt: string;
   updatedAt: string;
