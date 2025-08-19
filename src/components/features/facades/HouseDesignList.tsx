@@ -44,8 +44,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
     true
   );
 
-  console.log("api response", apiResponse)  
-  console.log("error", error)
+  
 
   // Safely extract house designs with fallback
   const houseDesigns = (apiResponse?.houseDesigns as HouseDesignItem[]) || [];

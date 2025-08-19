@@ -3,10 +3,8 @@ import mapboxgl, { Map, MapMouseEvent } from 'mapbox-gl';
 import type { MapboxGeoJSONFeature } from 'mapbox-gl';
 import { debounce } from '../../../lib/utils/geometry';
 import type { LotProperties } from '../../../types/lot';
+import { trackLotSelected } from '../../../lib/analytics/segment';
 
-// -----------------------------
-// Types
-// -----------------------------
 
 // -----------------------------
 // Props
@@ -82,7 +80,7 @@ export function MapControls({
     const handleMouseEnter = (e: MapMouseEvent) => {
       const f = map.queryRenderedFeatures(e.point, { layers: ['demo-lot-layer'] })[0] as MapboxGeoJSONFeature | undefined;
       if (!f) return;
-      const isRed = !!(f.properties as any)?.isRed;
+      const isRed = !!(f.properties as Record<string, unknown>)?.isRed;
       const isSidebarOpen = sidebarOpenRef.current;
       map.getCanvas().style.cursor = (isRed && !isSidebarOpen) ? 'pointer' : 'not-allowed';
     };
@@ -92,28 +90,20 @@ export function MapControls({
     };
 
     const handleClick = (e: MapMouseEvent) => {
-      console.log('Lot clicked!', e.point);
       const f = map.queryRenderedFeatures(e.point, { layers: ['demo-lot-layer'] })[0] as MapboxGeoJSONFeature | undefined;
-      console.log('Clicked feature:', f);
       if (!f) {
-        console.log('No feature found at click point');
         return;
       }
-      const isRed = !!(f.properties as any)?.isRed;
-      console.log('Is red lot:', isRed, 'Properties:', f.properties);
+      const isRed = !!(f.properties as Record<string, unknown>)?.isRed;
       if (!isRed) {
-        console.log('Lot is not red (not available or missing s1-s4 data)');
         return;
       }
       if (sidebarOpenRef.current) {
-        console.log('Sidebar is open, ignoring click');
         return;
       }
 
-      const id = (f.properties as any)?.BLOCK_KEY;
-      console.log('Lot ID:', id);
+      const id = (f.properties as Record<string, unknown>)?.BLOCK_KEY as string;
       if (!id) {
-        console.log('No lot ID found');
         return;
       }
 
@@ -123,16 +113,16 @@ export function MapControls({
       map.setFeatureState({ source: 'demo-lot-source', id }, { selected: true });
       selectedIdRef.current = id;
 
-      setSelectedLot(f as any);
-      console.log('Selected lot set, now zooming...');
+      setSelectedLot(f as MapboxGeoJSONFeature & { properties: LotProperties });
+      
+      // Track lot selection in Segment
+      trackLotSelected(id, f.properties as Record<string, unknown>);
       
       // Improved zoom to lot: fit the entire lot boundary with padding
       try {
         const geometry = f.geometry as GeoJSON.Polygon;
-        console.log('Lot geometry:', geometry);
         if (geometry && geometry.coordinates && geometry.coordinates[0]) {
           const coordinates = geometry.coordinates[0] as [number, number][];
-          console.log('Lot coordinates:', coordinates);
           if (coordinates.length >= 3) {
             // Calculate the bounding box of the lot
             const lngs = coordinates.map(coord => coord[0]);
@@ -142,16 +132,13 @@ export function MapControls({
               [Math.max(...lngs), Math.max(...lats)]
             ] as [[number, number], [number, number]];
             
-            console.log('Calculated bounds:', bounds);
             // Fit the map to the lot bounds with padding
             map.fitBounds(bounds, {
               padding: 50, // Add 50px padding around the lot
               maxZoom: 25, // Maximum zoom level
               duration: 1000 // Smooth animation duration
             });
-            console.log('fitBounds called successfully');
           } else {
-            console.log('Geometry has insufficient coordinates, using fallback zoom');
             // Fallback to center point zoom if geometry is invalid
             map.flyTo({ 
               center: e.lngLat, 
@@ -160,7 +147,6 @@ export function MapControls({
             });
           }
         } else {
-          console.log('No geometry found, using fallback zoom');
           // Fallback to center point zoom if no geometry
           map.flyTo({ 
             center: e.lngLat, 

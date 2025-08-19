@@ -94,26 +94,22 @@ export function insetQuadPerSideLL(
 // -----------------------------
 export function createSValueLabel(text: string, position: 'top' | 'right' | 'bottom' | 'left' | 'center') {
   const el = document.createElement('div');
-  el.style.background = '#FF6B6B';
-  el.style.border = '2px solid #FF4757';
-  el.style.borderRadius = '6px';
-  el.style.padding = '6px 10px';
-  el.style.fontSize = '11px';
-  el.style.fontWeight = 'bold';
-  el.style.color = 'white';
-  el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-  el.style.minWidth = '40px';
-  el.style.textAlign = 'center';
-  el.style.zIndex = '1000';
+  el.style.fontSize = '12px';
+  el.style.fontWeight = 'normal';
+  el.style.color = '#0F0E0E';
+  el.style.background = 'rgba(255, 255, 255, 0.8)';
+  el.style.padding = '2px 4px';
+  el.style.borderRadius = '2px';
   el.style.whiteSpace = 'pre-line';
   el.style.lineHeight = '1.2';
+  el.style.textAlign = 'center';
   el.innerText = text;
 
   switch (position) {
-    case 'top': el.style.transform = 'translate(-50%, -120%)'; break;
-    case 'right': el.style.transform = 'translate(20%, -50%)'; break;
-    case 'bottom': el.style.transform = 'translate(-50%, 20%)'; break;
-    case 'left': el.style.transform = 'translate(-120%, -50%)'; break;
+    case 'top': el.style.transform = 'translate(-50%, -150%)'; break;
+    case 'right': el.style.transform = 'translate(50%, -50%)'; break;
+    case 'bottom': el.style.transform = 'translate(-50%, 50%)'; break;
+    case 'left': el.style.transform = 'translate(-150%, -50%)'; break;
     case 'center': el.style.transform = 'translate(-50%, -50%)'; break;
   }
   return el;

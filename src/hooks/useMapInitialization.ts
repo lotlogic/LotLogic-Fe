@@ -9,7 +9,8 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 // -----------------------------
 export function useMapInitialization(
   mapContainer: React.RefObject<HTMLDivElement | null>,
-  estateLots: GeoJSON.FeatureCollection
+  estateLots: GeoJSON.FeatureCollection,
+  activeOverlays: Set<string> = new Set()
 ) {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const dataRef = useRef<GeoJSON.FeatureCollection>({ type: 'FeatureCollection', features: [] });
@@ -48,12 +49,20 @@ export function useMapInitialization(
           'fill-color': [
             'case',
             ['boolean', ['feature-state', 'selected'], false], '#FFFFFF',
+            ['boolean', ['feature-state', 'flood'], false], '#00FFFF',
+            ['boolean', ['feature-state', 'bushfire'], false], '#FF6347',
+            ['boolean', ['feature-state', 'heritage'], false], '#F3E5AB',
             ['==', ['get', 'isRed'], true], '#2E5A1C',
             '#A52A2A'
           ],
           'fill-opacity': [
             'case',
             ['boolean', ['feature-state', 'selected'], false], 0.9,
+            ['any', 
+              ['boolean', ['feature-state', 'flood'], false],
+              ['boolean', ['feature-state', 'bushfire'], false],
+              ['boolean', ['feature-state', 'heritage'], false]
+            ], 0.7,
             ['==', ['get', 'isRed'], true], 0.3,
             0.4
           ],
@@ -115,6 +124,38 @@ export function useMapInitialization(
     const src = map.getSource('demo-lot-source') as mapboxgl.GeoJSONSource | undefined;
     if (src) src.setData(estateLots);
   }, [estateLots]);
+
+  // Update overlay feature states when activeOverlays change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !dataRef.current) return;
+
+    // Clear all overlay states first
+    dataRef.current.features.forEach(feature => {
+      const id = feature.properties?.BLOCK_KEY;
+      if (id) {
+        map.setFeatureState(
+          { source: 'demo-lot-source', id },
+          { flood: false, bushfire: false, heritage: false }
+        );
+      }
+    });
+
+    // Set overlay states for active overlays
+    activeOverlays.forEach(overlayType => {
+      dataRef.current.features.forEach(feature => {
+        const id = feature.properties?.BLOCK_KEY;
+        const overlayString = feature.properties?.OVERLAY_PROVISION_ZONES || '';
+        
+        if (id && overlayString.toLowerCase().includes(overlayType.toLowerCase())) {
+          map.setFeatureState(
+            { source: 'demo-lot-source', id },
+            { [overlayType]: true }
+          );
+        }
+      });
+    });
+  }, [activeOverlays]);
 
   return {
     map: mapRef.current,

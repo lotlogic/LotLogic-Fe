@@ -11,6 +11,8 @@ export const useLots = () => {
 };
 
 export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
+
+  
   return {
     type: 'FeatureCollection' as const,
     features: lots.map((lot) => {
@@ -46,6 +48,7 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
           BLOCK_DERIVED_AREA: lot.areaSqm != null ? String(lot.areaSqm) : '',
           DISTRICT_NAME: lot.district ?? '',
           LAND_USE_POLICY_ZONES: lot.zoning ?? 'unknown',
+          OVERLAY_PROVISION_ZONES: lot.overlays?.join(', ') ?? '',
           LOT_NUMBER: Number(lot.id),
           STAGE: lot.lifecycleStage ?? 'available',
           ID: Number(lot.id),
