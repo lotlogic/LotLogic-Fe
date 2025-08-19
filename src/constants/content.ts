@@ -102,6 +102,12 @@ export const APP_CONTENT = {
     noSavedProperties: "No saved properties",
     noSavedPropertiesDescription: "Start exploring properties and save them to your shortlist.",
     viewDetails: "View Details",
+    // Map layer colors
+    layerColors: {
+      flood: "#FF0000",
+      bushfire: "#FF9800", 
+      heritage: "#15cf04",
+    },
   },
 
   // Filter content
@@ -158,6 +164,16 @@ export const APP_CONTENT = {
     success: "#10B981",
     warning: "#F59E0B",
     error: "#EF4444",
+    // Additional colors found in components
+    toast: "#345B5B",
+    gray: {
+      100: "#F7F7F8",
+      200: "#EAEFEF",
+      300: "#D1D5DB",
+      400: "#9CA3AF",
+      600: "#6B7280",
+      700: "#374151",
+    },
     text: {
       primary: "#000000",
       secondary: "#6B7280",
@@ -204,6 +220,42 @@ export const APP_CONTENT = {
     "2xl": "3rem",
   },
 
+  // Component-specific sizing
+  sizing: {
+    header: {
+      height: "60px",
+    },
+    sidebar: {
+      width: "496px",
+      maxWidth: "full",
+      top: "80px",
+      left: "20px",
+      maxHeight: "calc(100vh-100px)",
+    },
+    zoningSidebar: {
+      width: "350px",
+    },
+    savedPropertiesSidebar: {
+      width: "450px",
+    },
+    modal: {
+      width: "956px",
+      height: "662px",
+      borderRadius: "16px",
+    },
+    modalContent: {
+      width: "900px",
+      height: "430px",
+    },
+    icon: {
+      small: "w-9 h-9",
+      medium: "w-16 h-16",
+    },
+    input: {
+      height: "h-12",
+    },
+  },
+
   // Shadows
   shadows: {
     sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
@@ -246,4 +298,15 @@ export function formatContent(template: string, variables: Record<string, string
 export type ContentPath = keyof typeof APP_CONTENT;
 
 // Export individual sections for easier imports
-export const { app, brand, header, sidebar, lotSidebar, houseDesign, quote, map, filter, summary, validation, errors, success, loading, colors, typography, spacing, shadows, transitions } = APP_CONTENT; 
+export const { app, brand, header, sidebar, lotSidebar, houseDesign, quote, map, filter, summary, validation, errors, success, loading, colors, typography, spacing, sizing, shadows, transitions } = APP_CONTENT;
+
+// Utility function to get color values for Tailwind classes
+export function getColorClass(colorPath: string, type: 'bg' | 'text' | 'border' | 'ring' = 'bg'): string {
+  const color = getContent(`colors.${colorPath}`);
+  return `${type}-[${color}]`;
+}
+
+// Utility function to get sizing values
+export function getSizingClass(sizingPath: string): string {
+  return getContent(`sizing.${sizingPath}`);
+} 

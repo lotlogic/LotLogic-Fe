@@ -21,8 +21,8 @@ export function HouseDesignDetailOverlay({
   if (!house) return null;
 
   const images = house.images || [];
-  const mainImage = images.length > 0 ? images[0].src : '';
-  const floorPlanImage = house.floorPlanImage || '';
+  const mainImage = images.length > 0 ? images[0].src : null;
+  const floorPlanImage = house.floorPlanImage || null;
 
   const handleStarClick = (event: React.MouseEvent) => {
     event.stopPropagation();
@@ -75,14 +75,22 @@ export function HouseDesignDetailOverlay({
           {/* Image/Plan/Facade Display Area */}
           <div className="relative w-full aspect-video bg-gray-100 rounded-xl overflow-hidden flex items-center justify-center">
             {currentView === 'main' && (
-              <img src={mainImage} alt="House Main" className="w-full h-full object-cover rounded-xl" />
+              mainImage ? (
+                <img src={mainImage} alt="House Main" className="w-full h-full object-cover rounded-xl" />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded-xl">
+                  <p className="text-gray-500">Image not available</p>
+                </div>
+              )
             )}
 
             {currentView === 'floorPlan' && (
               floorPlanImage ? (
                 <img src={getImageUrl(floorPlanImage)} alt="Floor Plan" className="w-full h-full object-contain rounded-xl p-4" />
               ) : (
-                <p className="text-gray-500">Floor plan not available.</p>
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded-xl">
+                  <p className="text-gray-500">Floor plan not available</p>
+                </div>
               )
             )}
 

@@ -75,7 +75,7 @@ export function ZoningLayersSidebar({ open, onClose, onOverlayToggle, activeOver
         {/* Flood Risk Areas */}
         <div className="flex items-center justify-between border-b py-3">
           <div className="flex items-center">
-            <img src="" alt="Flood Risk Icon" className="h-10 w-10 mr-3 rounded" /> 
+            <img src="https://www.researchgate.net/profile/Hazem-Abdo/publication/370239361/figure/fig3/AS:11431281153522635@1682449696735/Flood-risk-map-of-the-study-area.png" alt="Flood Risk Icon" className="h-10 w-10 mr-3 rounded" /> 
             <div>
               <h3 className="font-semibold text-gray-800">Flood Risk Areas</h3>
               <p className="text-xs text-gray-500">Properties with elevated flood risk requiring special consideration</p>
