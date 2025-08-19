@@ -207,7 +207,7 @@ export function MapLayers({
       if (!showFloorPlanModal && !showFacadeModal) {
         const mpt = mid(side.a, side.b);
         const marker = new mapboxgl.Marker({
-          element: createSValueLabel(`${side.label}: ${side.val}`, side.pos),
+          element: createSValueLabel(`${side.label}: ${side.val}m`, side.pos),
           anchor: 'center'
         }).setLngLat(mpt).addTo(map);
         newMarkers.push(marker);

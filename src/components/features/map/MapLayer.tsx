@@ -77,6 +77,21 @@ export default function ZoneMap() {
     });
   }, []);
 
+  // Handle overlay toggling - DISABLED FOR NOW
+  // const handleOverlayToggle = useCallback((overlayType: string, enabled: boolean) => {
+  //   console.log('Overlay toggle:', overlayType, enabled);
+  //   setActiveOverlays(prev => {
+  //     const newSet = new Set(prev);
+  //     if (enabled) {
+  //       newSet.add(overlayType);
+  //     } else {
+  //       newSet.delete(overlayType);
+  //     }
+  //     console.log('Active overlays:', Array.from(newSet));
+  //     return newSet;
+  //   });
+  // }, []);
+
   // Saved props
   let savedProperties: SavedProperty[] = [];
   if (typeof window !== 'undefined') {
@@ -151,11 +166,28 @@ export default function ZoneMap() {
   };
 
   // UI state
-  const [isZoningSidebarOpen, setIsZoningSidebarOpen] = useState(false);
-  const [isSavedSidebarOpen, setIsSavedSidebarOpen] = useState(false);
+      const [isZoningSidebarOpen, setIsZoningSidebarOpen] = useState(false);
+    const [isSavedSidebarOpen, setIsSavedSidebarOpen] = useState(false);
+   
+    // Overlay filter states
+    const [activeOverlays, setActiveOverlays] = useState<Set<string>>(new Set());
+
+    // Handle overlay toggle
+    const handleOverlayToggle = (overlayType: string, enabled: boolean) => {
+      console.log('Overlay toggle:', overlayType, enabled);
+      setActiveOverlays(prev => {
+        const newSet = new Set(prev);
+        if (enabled) {
+          newSet.add(overlayType);
+        } else {
+          newSet.delete(overlayType);
+        }
+        return newSet;
+      });
+    };
 
   // Initialize map using custom hook
-  const { map: mapRef, isLoading, initialView: mapInitialView, setInitialView } = useMapInitialization(mapContainer, estateLots);
+  const { map: mapRef, isLoading, initialView: mapInitialView, setInitialView } = useMapInitialization(mapContainer, estateLots, activeOverlays);
 
   // Set initial view when lots data is available
   useEffect(() => {
@@ -224,7 +256,8 @@ export default function ZoneMap() {
         <ZoningLayersSidebar
           open={isZoningSidebarOpen}
           onClose={() => setIsZoningSidebarOpen(false)}
-          mapInstance={mapRef}
+          onOverlayToggle={handleOverlayToggle}
+          activeOverlays={activeOverlays}
         />
       </Suspense>
 

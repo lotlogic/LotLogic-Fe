@@ -12,6 +12,7 @@ export interface DatabaseLot {
   division: string | null;
   lifecycleStage: string | null;
   estateId: string | null;
+  overlays: string[];
   geojson: {
     type: 'Feature';
     geometry: GeoJSON.Polygon;

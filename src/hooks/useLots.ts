@@ -11,6 +11,22 @@ export const useLots = () => {
 };
 
 export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
+  // Debug: Log raw lot data
+  console.log('Raw lots data:', lots.map(lot => ({
+    id: lot.id,
+    blockKey: lot.blockKey,
+    overlays: lot.overlays,
+    hasOverlays: !!lot.overlays,
+    overlaysLength: lot.overlays?.length || 0
+  })));
+  
+  // Debug: Log overlay data
+  console.log('Lots with overlays:', lots.filter(lot => lot.overlays && lot.overlays.length > 0).map(lot => ({
+    id: lot.id,
+    overlays: lot.overlays,
+    overlayString: lot.overlays?.join(', ') ?? ''
+  })));
+  
   return {
     type: 'FeatureCollection' as const,
     features: lots.map((lot) => {
@@ -46,6 +62,7 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
           BLOCK_DERIVED_AREA: lot.areaSqm != null ? String(lot.areaSqm) : '',
           DISTRICT_NAME: lot.district ?? '',
           LAND_USE_POLICY_ZONES: lot.zoning ?? 'unknown',
+          OVERLAY_PROVISION_ZONES: lot.overlays?.join(', ') ?? '',
           LOT_NUMBER: Number(lot.id),
           STAGE: lot.lifecycleStage ?? 'available',
           ID: Number(lot.id),

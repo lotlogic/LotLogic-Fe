@@ -6,6 +6,7 @@ import { Suspense, lazy, useEffect } from 'react'
 
 import Header from './components/layouts/Header'
 import { preloadCriticalComponents } from './utils/preload'
+import { trackEvent } from './lib/analytics/segment'
 
 // Lazy load heavy components
 const ZoneMap = lazy(() => import('./components/features/map/MapLayer'))
@@ -13,6 +14,15 @@ const ZoneMap = lazy(() => import('./components/features/map/MapLayer'))
 const queryClient = new QueryClient()
 
 function App() {
+  // Initialize Segment analytics
+  useEffect(() => {
+    // Track app load
+    trackEvent('App Loaded', {
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+    });
+  }, []);
+
   // Preload critical components after initial render
   useEffect(() => {
     const { preloadSidebar, preloadSearch } = preloadCriticalComponents();

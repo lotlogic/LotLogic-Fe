@@ -3,10 +3,8 @@ import mapboxgl, { Map, MapMouseEvent } from 'mapbox-gl';
 import type { MapboxGeoJSONFeature } from 'mapbox-gl';
 import { debounce } from '../../../lib/utils/geometry';
 import type { LotProperties } from '../../../types/lot';
+import { trackLotSelected } from '../../../lib/analytics/segment';
 
-// -----------------------------
-// Types
-// -----------------------------
 
 // -----------------------------
 // Props
@@ -82,7 +80,7 @@ export function MapControls({
     const handleMouseEnter = (e: MapMouseEvent) => {
       const f = map.queryRenderedFeatures(e.point, { layers: ['demo-lot-layer'] })[0] as MapboxGeoJSONFeature | undefined;
       if (!f) return;
-      const isRed = !!(f.properties as any)?.isRed;
+      const isRed = !!(f.properties as Record<string, unknown>)?.isRed;
       const isSidebarOpen = sidebarOpenRef.current;
       map.getCanvas().style.cursor = (isRed && !isSidebarOpen) ? 'pointer' : 'not-allowed';
     };
@@ -99,7 +97,7 @@ export function MapControls({
         console.log('No feature found at click point');
         return;
       }
-      const isRed = !!(f.properties as any)?.isRed;
+      const isRed = !!(f.properties as Record<string, unknown>)?.isRed;
       console.log('Is red lot:', isRed, 'Properties:', f.properties);
       if (!isRed) {
         console.log('Lot is not red (not available or missing s1-s4 data)');
@@ -110,7 +108,7 @@ export function MapControls({
         return;
       }
 
-      const id = (f.properties as any)?.BLOCK_KEY;
+      const id = (f.properties as Record<string, unknown>)?.BLOCK_KEY as string;
       console.log('Lot ID:', id);
       if (!id) {
         console.log('No lot ID found');
@@ -123,7 +121,11 @@ export function MapControls({
       map.setFeatureState({ source: 'demo-lot-source', id }, { selected: true });
       selectedIdRef.current = id;
 
-      setSelectedLot(f as any);
+      setSelectedLot(f as MapboxGeoJSONFeature & { properties: LotProperties });
+      
+      // Track lot selection in Segment
+      trackLotSelected(id, f.properties as Record<string, unknown>);
+      
       console.log('Selected lot set, now zooming...');
       
       // Improved zoom to lot: fit the entire lot boundary with padding
