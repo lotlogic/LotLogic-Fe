@@ -90,28 +90,20 @@ export function MapControls({
     };
 
     const handleClick = (e: MapMouseEvent) => {
-      console.log('Lot clicked!', e.point);
       const f = map.queryRenderedFeatures(e.point, { layers: ['demo-lot-layer'] })[0] as MapboxGeoJSONFeature | undefined;
-      console.log('Clicked feature:', f);
       if (!f) {
-        console.log('No feature found at click point');
         return;
       }
       const isRed = !!(f.properties as Record<string, unknown>)?.isRed;
-      console.log('Is red lot:', isRed, 'Properties:', f.properties);
       if (!isRed) {
-        console.log('Lot is not red (not available or missing s1-s4 data)');
         return;
       }
       if (sidebarOpenRef.current) {
-        console.log('Sidebar is open, ignoring click');
         return;
       }
 
       const id = (f.properties as Record<string, unknown>)?.BLOCK_KEY as string;
-      console.log('Lot ID:', id);
       if (!id) {
-        console.log('No lot ID found');
         return;
       }
 
@@ -126,15 +118,11 @@ export function MapControls({
       // Track lot selection in Segment
       trackLotSelected(id, f.properties as Record<string, unknown>);
       
-      console.log('Selected lot set, now zooming...');
-      
       // Improved zoom to lot: fit the entire lot boundary with padding
       try {
         const geometry = f.geometry as GeoJSON.Polygon;
-        console.log('Lot geometry:', geometry);
         if (geometry && geometry.coordinates && geometry.coordinates[0]) {
           const coordinates = geometry.coordinates[0] as [number, number][];
-          console.log('Lot coordinates:', coordinates);
           if (coordinates.length >= 3) {
             // Calculate the bounding box of the lot
             const lngs = coordinates.map(coord => coord[0]);
@@ -144,16 +132,13 @@ export function MapControls({
               [Math.max(...lngs), Math.max(...lats)]
             ] as [[number, number], [number, number]];
             
-            console.log('Calculated bounds:', bounds);
             // Fit the map to the lot bounds with padding
             map.fitBounds(bounds, {
               padding: 50, // Add 50px padding around the lot
               maxZoom: 25, // Maximum zoom level
               duration: 1000 // Smooth animation duration
             });
-            console.log('fitBounds called successfully');
           } else {
-            console.log('Geometry has insufficient coordinates, using fallback zoom');
             // Fallback to center point zoom if geometry is invalid
             map.flyTo({ 
               center: e.lngLat, 
@@ -162,7 +147,6 @@ export function MapControls({
             });
           }
         } else {
-          console.log('No geometry found, using fallback zoom');
           // Fallback to center point zoom if no geometry
           map.flyTo({ 
             center: e.lngLat, 

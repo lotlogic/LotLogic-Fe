@@ -174,7 +174,6 @@ export default function ZoneMap() {
 
     // Handle overlay toggle
     const handleOverlayToggle = (overlayType: string, enabled: boolean) => {
-      console.log('Overlay toggle:', overlayType, enabled);
       setActiveOverlays(prev => {
         const newSet = new Set(prev);
         if (enabled) {

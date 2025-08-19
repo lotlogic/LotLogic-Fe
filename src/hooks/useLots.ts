@@ -11,21 +11,7 @@ export const useLots = () => {
 };
 
 export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
-  // Debug: Log raw lot data
-  console.log('Raw lots data:', lots.map(lot => ({
-    id: lot.id,
-    blockKey: lot.blockKey,
-    overlays: lot.overlays,
-    hasOverlays: !!lot.overlays,
-    overlaysLength: lot.overlays?.length || 0
-  })));
-  
-  // Debug: Log overlay data
-  console.log('Lots with overlays:', lots.filter(lot => lot.overlays && lot.overlays.length > 0).map(lot => ({
-    id: lot.id,
-    overlays: lot.overlays,
-    overlayString: lot.overlays?.join(', ') ?? ''
-  })));
+
   
   return {
     type: 'FeatureCollection' as const,

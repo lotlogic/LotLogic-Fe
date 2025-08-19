@@ -26,7 +26,7 @@ export const identifyUser = (userId: string, traits: Record<string, unknown>) =>
 export const trackEvent = (event: string, properties?: Record<string, unknown>) => {
   const analytics = getAnalytics();
   if (analytics) {
-    console.log('Sending event to Segment:', event, properties);
+
     analytics.track(event, properties);
   } else {
     console.error('Analytics not available for event:', event);
