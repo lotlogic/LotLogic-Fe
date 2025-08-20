@@ -5,6 +5,7 @@ import { Input } from './input';
 import { Button } from './Button';
 import type { DesignRowProps, FilterRowProps, FilterSectionProps, HouseSizeInputRowProps } from "../../types/houseDesign";
 import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "../../constants/houseDesigns";
+import { getColorClass } from "../../constants/content";
 
 const FilterRow = React.memo(({
   icon,
@@ -244,7 +245,7 @@ export const FilterSectionWithSingleLineSliders = React.memo(({
       {/* Sticky Footer with "Show House Design" button */}
       <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-100 pb-6">
         <Button
-          className="w-full bg-[#2F5D62] text-white text-lg py-3 rounded-lg font-medium"
+          className={`w-full ${getColorClass('primary')} text-white text-lg py-3 rounded-lg font-medium`}
           onClick={onShowHouseDesign}
         >
           Show House Design

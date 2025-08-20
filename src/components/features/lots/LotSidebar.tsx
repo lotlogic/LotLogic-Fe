@@ -9,6 +9,7 @@ import { Sidebar } from "../../ui/Sidebar";
 import { GetYourQuoteSidebar } from '../quote/QuoteSideBar';
 import type { DesignState, HouseDesignItem } from "../../../types/houseDesign";
 import { useContent } from "../../../hooks/useContent";
+import { getColorClass } from "../../../constants/content";
 import { SummaryView } from "./SummaryView";
 import { HouseDesignList } from "../facades/HouseDesignList";
 import { Diamond } from "lucide-react";
@@ -204,7 +205,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
 
   const headerContent = (
     <>
-      <h2 className="text-2xl font-medium text-[#000000]">
+      <h2 className={`text-2xl font-medium ${getColorClass('text.primary', 'text')}`}>
         {headerTitle}
       </h2>
       {/* Lot details only shown when not in filter mode */}
@@ -429,7 +430,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
                       <button
                         key={idx}
                         onClick={() => setCurrentModalFacadeIdx(idx)}
-                        className={`w-16 h-16 rounded object-cover border-2 ${currentModalFacadeIdx === idx ? 'border-[#2F5D62]' : 'border-transparent'} flex-shrink-0 relative group`}
+                        className={`w-16 h-16 rounded object-cover border-2 ${currentModalFacadeIdx === idx ? getColorClass('primary', 'border') : 'border-transparent'} flex-shrink-0 relative group`}
                         title={img.faced || `Facade ${idx + 1}`}
                       >
                         <img src={img.src} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover rounded" />
