@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { X, ChevronLeft } from 'lucide-react'; 
 import type { ZoningLayersSidebarProps } from '../../../types/ui';
 import { getColorClass } from '../../../constants/content';
+import { trackMapLayerToggle } from '../../../lib/analytics/segment';
 
 export function ZoningLayersSidebar({ open, onClose, onOverlayToggle, activeOverlays }: ZoningLayersSidebarProps) {
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -36,6 +37,9 @@ export function ZoningLayersSidebar({ open, onClose, onOverlayToggle, activeOver
   const handleOverlayToggle = (overlayType: string, enabled: boolean) => {
     // Use lot color highlighting
     onOverlayToggle?.(overlayType, enabled);
+    
+    // Track map layer toggle
+    trackMapLayerToggle(overlayType, enabled);
   };
 
   return (

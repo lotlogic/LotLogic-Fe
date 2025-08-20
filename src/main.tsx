@@ -1,15 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import 'mapbox-gl/dist/mapbox-gl.css'
 import App from './App.tsx'
 import { APP_CONTENT } from './constants/content.ts'
 import { getCurrentBrand } from './lib/api/lotApi.ts'
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
 
 function setFavicon(url: string) {
   let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;

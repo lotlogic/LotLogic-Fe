@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Search, X } from 'lucide-react'; 
 import type { SearchControlProps, SearchResult } from '../../../types/ui';
 import { getColorClass } from '../../../constants/content';
+import { trackSearch } from '../../../lib/analytics/segment';
 
 export function SearchControl({ onResultSelect }: SearchControlProps) {
   const [query, setQuery] = useState('');
@@ -75,7 +76,12 @@ export function SearchControl({ onResultSelect }: SearchControlProps) {
     onResultSelect(result.center);
     setQuery(result.place_name);
     setIsOpen(false);
-    setIsSearchVisible(false); 
+    setIsSearchVisible(false);
+    
+    // Track search result selection
+    trackSearch(result.place_name, {
+      coordinates: result.center
+    });
   };
 
   const handleClear = () => {

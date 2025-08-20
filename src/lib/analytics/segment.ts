@@ -26,7 +26,6 @@ export const identifyUser = (userId: string, traits: Record<string, unknown>) =>
 export const trackEvent = (event: string, properties?: Record<string, unknown>) => {
   const analytics = getAnalytics();
   if (analytics) {
-
     analytics.track(event, properties);
   } else {
     console.error('Analytics not available for event:', event);
@@ -130,6 +129,113 @@ export const trackPropertySaved = (lotId: string, action: 'saved' | 'removed') =
     analytics.track(`Property ${action === 'saved' ? 'Saved' : 'Removed'}`, {
       lotId,
       action,
+    });
+  }
+};
+
+// Track filter interactions
+export const trackFilterApplied = (filterType: string, filterValue: unknown) => {
+  const analytics = getAnalytics();
+  if (analytics) {
+    analytics.track('Filter Applied', {
+      filterType,
+      filterValue,
+    });
+  }
+};
+
+// Track house design interactions
+export const trackHouseDesignInteraction = (action: string, designData: Record<string, unknown>) => {
+  const analytics = getAnalytics();
+  if (analytics) {
+    analytics.track(`House Design ${action}`, {
+      designId: designData.id,
+      designName: designData.title,
+      bedrooms: designData.bedrooms,
+      bathrooms: designData.bathrooms,
+      area: designData.area,
+      lotId: designData.lotId,
+    });
+  }
+};
+
+// Track quote form interactions
+export const trackQuoteFormInteraction = (action: string, formData: Record<string, unknown>) => {
+  const analytics = getAnalytics();
+  if (analytics) {
+    analytics.track(`Quote Form ${action}`, {
+      lotId: formData.lotId,
+      houseDesignId: formData.houseDesignId,
+      builderCount: (formData.builders as unknown[])?.length || 0,
+      hasComments: !!(formData.comments as string)?.trim(),
+    });
+  }
+};
+
+// Track map layer interactions
+export const trackMapLayerToggle = (layerType: string, enabled: boolean) => {
+  const analytics = getAnalytics();
+  if (analytics) {
+    analytics.track('Map Layer Toggled', {
+      layerType,
+      enabled,
+    });
+  }
+};
+
+// Track sidebar interactions
+export const trackSidebarInteraction = (sidebarType: string, action: string) => {
+  const analytics = getAnalytics();
+  if (analytics) {
+    analytics.track('Sidebar Interaction', {
+      sidebarType,
+      action,
+    });
+  }
+};
+
+// Track modal interactions
+export const trackModalInteraction = (modalType: string, action: string) => {
+  const analytics = getAnalytics();
+  if (analytics) {
+    analytics.track('Modal Interaction', {
+      modalType,
+      action,
+    });
+  }
+};
+
+// Track user journey milestones
+export const trackUserJourneyMilestone = (milestone: string, data: Record<string, unknown>) => {
+  const analytics = getAnalytics();
+  if (analytics) {
+    analytics.track('User Journey Milestone', {
+      milestone,
+      ...data,
+    });
+  }
+};
+
+// Track error events
+export const trackError = (errorType: string, errorMessage: string, context: Record<string, unknown>) => {
+  const analytics = getAnalytics();
+  if (analytics) {
+    analytics.track('Error Occurred', {
+      errorType,
+      errorMessage,
+      ...context,
+    });
+  }
+};
+
+// Track performance metrics
+export const trackPerformance = (metric: string, value: number, context: Record<string, unknown>) => {
+  const analytics = getAnalytics();
+  if (analytics) {
+    analytics.track('Performance Metric', {
+      metric,
+      value,
+      ...context,
     });
   }
 };

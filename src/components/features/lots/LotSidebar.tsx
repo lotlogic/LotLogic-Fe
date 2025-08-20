@@ -387,19 +387,15 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
 
             {/* Facade Images */}
             <div className="p-6 flex-1 overflow-auto relative">
-              {/* Use S3 facade images for all house designs */}
+              {/* Use facade images from API response */}
               {(() => {
-                const facadeImages = [
-                  { src: "https://loglogic-assets.s3.ap-southeast-2.amazonaws.com/images/brick.jpg", faced: "Brick" },
-                  { src: "https://loglogic-assets.s3.ap-southeast-2.amazonaws.com/images/timmerland.jpg", faced: "Render" },
-                  { src: "https://loglogic-assets.s3.ap-southeast-2.amazonaws.com/images/weatherboard.jpg", faced: "Weatherboard" },
-                ];
+                const facadeImages = selectedHouseDesignForModals.images || [];
                 
                 return facadeImages.length > 0 ? (
                 <>
                   <div className="relative w-[900px] h-[430px] mb-4 flex items-center justify-center">
                     <img
-                      src={facadeImages[currentModalFacadeIdx]?.src || ''}
+                      src={getImageUrl(facadeImages[currentModalFacadeIdx]?.src) || ''}
                       alt={`Facade ${currentModalFacadeIdx + 1}`}
                       className="w-full h-full object-cover rounded-lg"
                     />
@@ -433,7 +429,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
                         className={`w-16 h-16 rounded object-cover border-2 ${currentModalFacadeIdx === idx ? getColorClass('primary', 'border') : 'border-transparent'} flex-shrink-0 relative group`}
                         title={img.faced || `Facade ${idx + 1}`}
                       >
-                        <img src={img.src} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover rounded" />
+                        <img src={getImageUrl(img.src)} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover rounded" />
 
                         {/* Tooltip */}
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
