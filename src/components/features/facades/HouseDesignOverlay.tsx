@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { X, ChevronLeft, ChevronRight, BedDouble, Bath, Car, Building2, Bookmark } from "lucide-react";
 import { Button } from "../../ui/Button";
 import type { HouseDesignItem } from "../../../types/houseDesign";
-import { houseDesign, lotSidebar, colors } from "../../../constants/content";
+import { houseDesign, lotSidebar, colors, getColorClass } from "../../../constants/content";
 import { getImageUrl } from "../../../lib/api/lotApi";
 
 export function HouseDesignDetailOverlay({
@@ -122,20 +122,20 @@ export function HouseDesignDetailOverlay({
           <div className="mt-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <Button
-                className={currentView === 'floorPlan' ? "bg-[#2F5D62] text-white" : "border border-gray-300 text-gray-700"}
+                className={currentView === 'floorPlan' ? `${getColorClass('primary')} text-white` : "border border-gray-300 text-gray-700"}
                 onClick={() => setCurrentView('floorPlan')}
               >
                 View Floor Plan
               </Button>
               <Button
-                className={currentView === 'facades' ? "bg-[#2F5D62] text-white" : "border border-gray-300 text-gray-700"}
+                className={currentView === 'facades' ? `${getColorClass('primary')} text-white` : "border border-gray-300 text-gray-700"}
                 onClick={() => { setCurrentView('facades'); setCurrentFacadeIdx(0); }} // Reset facade index on view
               >
                 View Facades
               </Button>
             </div>
             <Button
-              className="w-full bg-[#2F5D62] text-white px-9 py-3 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors"
+                              className={`w-full ${getColorClass('primary')} text-white px-9 py-3 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors`}
               onClick={() => onEnquireNow(house)}
             >
               {houseDesign.enquireNow || "Enquire Now"}

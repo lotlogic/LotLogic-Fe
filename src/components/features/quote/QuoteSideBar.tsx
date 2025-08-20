@@ -5,7 +5,7 @@ import { MultiSelect } from "../../ui/MultiSelect";
 import { Checkbox } from "../../ui/checkbox";
 import type { GetYourQuoteSidebarProps, QuoteFormData } from "../../../types/houseDesign";
 import { quoteFormSchema } from "../../../types/houseDesign";
-import { quote, formatContent } from "../../../constants/content";
+import { quote, formatContent, getColorClass } from "../../../constants/content";
 import { Input } from '../../ui/input';
 import { getImageUrl, submitEnquiry } from '../../../lib/api/lotApi';
 import { useBuilders, convertBuildersToOptions } from '../../../hooks/useBuilders';
@@ -129,7 +129,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
             {showThankYou || lotSecured ? (
                 // Show lot info in header for thank you screens
                 <>
-                    <h2 className="text-2xl font-medium text-[#000000]">
+                    <h2 className={`text-2xl font-medium ${getColorClass('text.primary', 'text')}`}>
                         {lotSecured ? '' : ''}
                     </h2>
                     {selectedHouseDesign && (
@@ -160,7 +160,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 </>
             ) : (
                 <>
-                    <h2 className="text-2xl font-medium text-[#000000]">{quote.title}</h2>
+                    <h2 className={`text-2xl font-medium ${getColorClass('text.primary', 'text')}`}>{quote.title}</h2>
                     <div className="text-gray-600 mt-1 text-base font-normal">
                         {quote.subtitle}
                     </div>
@@ -180,7 +180,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
             {lotSecured ? (
                 <div className="p-6 space-y-6">
                     <div className="text-center space-y-4">
-                        <div className="w-16 h-16 bg-[#2F5D62] rounded-full flex items-center justify-center mx-auto">
+                        <div className={`w-16 h-16 ${getColorClass('primary')} rounded-full flex items-center justify-center mx-auto`}>
                             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
@@ -194,7 +194,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
             ) : showThankYou ? (
                 <div className="p-6 space-y-6">
                     <div className="text-center space-y-3">
-                        <div className="w-9 h-9 bg-[#2F5D62] rounded-full flex items-center justify-center mx-auto">
+                        <div className={`w-9 h-9 ${getColorClass('primary')} rounded-full flex items-center justify-center mx-auto`}>
                             <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
@@ -204,18 +204,18 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                     </div>
                     
                     {/* Reserve Your Lot Section */}
-                    <div className=" border border-gray-200 bg-[#eaf3f2]  rounded-lg p-6 space-y-4 text-center">
+                    <div className={` border border-gray-200 ${getColorClass('background.accent')}  rounded-lg p-6 space-y-4 text-center`}>
                         <div className="flex items-center justify-center gap-2">
                             <h1 className="text-lg font-semibold text-gray-900">{quote.reserveYourLot}</h1>
                         </div>
                         <p className="text-gray-600 text-sm">
                             {formatContent(quote.secureLotDescription, { lotId: lotDetails.id })}
                         </p>
-                        <div className="text-3xl font-bold text-[#2F5D62]">{quote.deposit}</div>
+                        <div className={`text-3xl font-bold ${getColorClass('primary', 'text')}`}>{quote.deposit}</div>
                         <div className="flex flex-col gap-3 pt-2">
                             <Button
                                 onClick={() => setLotSecured(true)}
-                                className="bg-[#2F5D62] text-white py-3 px-6 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors"
+                                className={`${getColorClass('primary')} text-white py-3 px-6 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors`}
                             >
                                 {quote.secureThisLot}
                             </Button>
@@ -240,7 +240,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 id="yourName"
                                 value={formData.yourName}
                                 onChange={(e) => handleInputChange('yourName', e.target.value)}
-                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:${getColorClass('primary', 'ring')} focus:${getColorClass('primary', 'border')} ${
                                     errors.yourName ? 'border-red-500' : 'border-gray-300'
                                 }`}
                                 placeholder="Your name"
@@ -256,7 +256,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 id="emailAddress"
                                 value={formData.emailAddress}
                                 onChange={(e) => handleInputChange('emailAddress', e.target.value)}
-                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:${getColorClass('primary', 'ring')} focus:${getColorClass('primary', 'border')} ${
                                     errors.emailAddress ? 'border-red-500' : 'border-gray-300'
                                 }`}
                                 placeholder="mail@company.com"
@@ -272,7 +272,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 id="phoneNumber"
                                 value={formData.phoneNumber}
                                 onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:${getColorClass('primary', 'ring')} focus:${getColorClass('primary', 'border')} ${
                                     errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
                                 }`}
                                 placeholder="+1 (555) 000-0000"
@@ -306,7 +306,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 rows={3}
                                 value={formData.additionalComments}
                                 onChange={(e) => handleInputChange('additionalComments', e.target.value)}
-                                className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] ${
+                                className={`block w-full p-3 border rounded-lg shadow-sm focus:${getColorClass('primary', 'ring')} focus:${getColorClass('primary', 'border')} ${
                                     errors.additionalComments ? 'border-red-500' : 'border-gray-300'
                                 }`}
                                 placeholder="Any specific requirements or questions?"
@@ -320,7 +320,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                             <div className="mt-6">
                                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Your Selection</h3>
                                 <div className="border-t border-gray-200 pt-2">
-                                    <div className="rounded-2xl border border-gray-200 bg-[#eaf3f2] p-4 flex gap-4 items-center">
+                                    <div className={`rounded-2xl border border-gray-200 ${getColorClass('background.accent')} p-4 flex gap-4 items-center`}>
                                         <img 
                                             src={getImageUrl(selectedHouseDesign.floorPlanImage) || selectedHouseDesign.image} 
                                             alt="Floor Plan" 
@@ -349,7 +349,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 I agree to the{' '}
                                 <a 
                                     href="#" 
-                                    className="text-[#2F5D62] underline hover:text-[#1a3d42] transition-colors"
+                                    className={`${getColorClass('primary', 'text')} underline hover:${getColorClass('accent', 'text')} transition-colors`}
                                     onClick={(e) => {
                                         e.preventDefault();
                                     }}
@@ -363,7 +363,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                     <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6">
                         <Button
                             type="submit"
-                            className="w-full text-lg py-3 rounded-lg bg-[#2F5D62] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                            className={`w-full text-lg py-3 rounded-lg ${getColorClass('primary')} text-white disabled:opacity-50 disabled:cursor-not-allowed`}
                             disabled={isSubmitting || !agreeToTerms}
                         >
                             {isSubmitting ? quote.submitting : "Get Quote"}

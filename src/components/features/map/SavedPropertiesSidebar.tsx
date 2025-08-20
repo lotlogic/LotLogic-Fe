@@ -4,6 +4,7 @@ import type { SavedPropertiesSidebarProps, SavedProperty } from '../../../types/
 import { getZoningColor } from '../../../lib/utils/zoning';
 import { getOverlaysColor } from '../../../lib/utils/overlays';
 import { getImageUrl } from '../../../lib/api/lotApi';
+import { getColorClass, colors } from '../../../constants/content';
 
 export function SavedPropertiesSidebar({ 
     open, 
@@ -115,11 +116,11 @@ export function SavedPropertiesSidebar({
                                         Lot ID: {property.lotId}, {property.suburb}, {property.address}
                                     </div>
                                     <Bookmark
-                                        className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 text-[#2F5D62] ${
-                                            property.houseDesign.isFavorite ? 'fill-[#2F5D62]' : "fill-white"
+                                        className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${getColorClass('primary', 'text')} ${
+                                            property.houseDesign.isFavorite ? 'fill-current' : "fill-white"
                                         }`}
                                         style={{
-                                        color: property.houseDesign.isFavorite ? "#2F5D62" : undefined,
+                                        color: property.houseDesign.isFavorite ? colors.primary : undefined,
                                         }}
                                         onClick={() => {
                                             setProperties((prev) => {
@@ -183,7 +184,7 @@ export function SavedPropertiesSidebar({
                                     </div>
                                     <button
                                         onClick={() => onViewDetails(property)}
-                                        className="bg-[#2F5D62] text-white px-1 py-2.5 rounded-md text-sm font-medium hover:bg-[#1a3d42] transition-colors w-28 h-9 mt-12"
+                                        className={`${getColorClass('primary')} text-white px-1 py-2.5 rounded-md text-sm font-medium hover:${getColorClass('accent')} transition-colors w-28 h-9 mt-12`}
                                     >
                                         View Details
                                     </button>

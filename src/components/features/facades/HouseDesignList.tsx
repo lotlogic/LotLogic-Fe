@@ -1,6 +1,6 @@
 import { Bath, BedDouble, Bookmark, Car, Funnel, MailQuestionMark } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { colors, filter as filterContent, houseDesign, lotSidebar } from "../../../constants/content";
+import { colors, filter as filterContent, houseDesign, lotSidebar, getColorClass } from "../../../constants/content";
 import { useHouseDesigns } from "../../../hooks/useHouseDesigns";
 import type { HouseDesignFilterRequest } from "../../../lib/api/lotApi";
 import { getImageUrl } from "../../../lib/api/lotApi";
@@ -127,7 +127,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
             <div className="space-y-3">
               <Button
                 onClick={() => window.location.reload()}
-                className="w-full bg-[#2F5D62] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors"
+                className={`w-full ${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors`}
               >
                 Try Again
               </Button>
@@ -165,7 +165,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
             <div className="space-y-3">
               <Button
                 onClick={onShowFilter}
-                className="w-full bg-[#2F5D62] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors"
+                className={`w-full ${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors`}
               >
                 Adjust Filters
               </Button>
@@ -190,7 +190,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
       <div className="flex items-center justify-between mb-4">
         <div>
           <span className="text-xl font-bold">
-            <span className="text-[#2F5D62]">{filteredHouses.length}</span> {houseDesign.title}
+            <span className={`${getColorClass('primary', 'text')}`}>{filteredHouses.length}</span> {houseDesign.title}
           </span>
           {/* {(apiHouseDesigns as HouseDesignItem[])?.length > 0 && (
             <div className="text-xs text-green-600 mt-1">
@@ -216,7 +216,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
           return (
             <div
               key={house.id}
-              className={`rounded-2xl border border-gray-200 p-4 transition-all duration-300 ${isExpanded ? 'bg-[#eaf3f2]' : 'bg-white hover:shadow-md'}`}
+              className={`rounded-2xl border border-gray-200 p-4 transition-all duration-300 ${isExpanded ? getColorClass('background.accent') : 'bg-white hover:shadow-md'}`}
               onClick={() => {
                 if (expandedIdx === idx) {
                   setExpandedIdx(null);
@@ -282,7 +282,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                             onViewFloorPlan(house);
                           }
                         }}
-                        className="bg-[#2F5D62] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors flex-1"
+                        className={`${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1`}
                       >
                         View Floor plan
                       </Button>
@@ -293,7 +293,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                             onViewFacades(house);
                           }
                         }}
-                        className="bg-[#2F5D62] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors flex-1"
+                        className={`${getColorClass('primary')} text-white py-3 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1`}
                       >
                         View Facades
                       </Button>
@@ -308,7 +308,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                           onEnquireNow(house);
                         }
                       }}
-                      className="border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-[#2F5D62] hover:text-white hover:border-[#2F5D62] transition-colors w-full flex items-center justify-center gap-2"
+                      className={`border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:${getColorClass('primary')} hover:text-white hover:${getColorClass('primary', 'border')} transition-colors w-full flex items-center justify-center gap-2`}
                     >
                       <MailQuestionMark className="h-4 w-4" />
                       Enquire Now

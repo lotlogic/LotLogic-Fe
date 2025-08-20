@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, ChevronLeft } from "lucide-react";
 import clsx from "clsx";
-import { sidebar } from "../../constants/content";
+import { sidebar, getColorClass } from "../../constants/content";
 
 export function Sidebar({
   open,
@@ -46,7 +46,7 @@ export function Sidebar({
         </div>
         <button
           onClick={onClose}
-          className="p-2 rounded-full hover:bg-gray-100 text-[#000000] hover:text-gray-700 ml-auto"
+          className={`p-2 rounded-full hover:bg-gray-100 ${getColorClass('text.primary', 'text')} hover:text-gray-700 ml-auto`}
           aria-label={sidebar.close}
         >
           <X className="h-6 w-6" />
