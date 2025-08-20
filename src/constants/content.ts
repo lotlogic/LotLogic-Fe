@@ -1,5 +1,5 @@
 // Centralized content management for white-labeling
-export let APP_CONTENT = {
+export const APP_CONTENT = {
   // App-wide content
   app: {
     name: "LotLogic",

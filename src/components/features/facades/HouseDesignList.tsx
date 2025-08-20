@@ -7,18 +7,18 @@ import { getImageUrl } from "../../../lib/api/lotApi";
 import type { HouseDesignItem, HouseDesignListProps } from "../../../types/houseDesign";
 import { Button } from "../../ui/Button";
 import { showToast } from "../../ui/Toast";
+import { trackHouseDesignInteraction, trackPropertySaved } from "../../../lib/analytics/segment";
+import { useSavedPropertiesStore } from "../../../stores/savedPropertiesStore";
 
-// Define the type for saved data
-interface SavedHouseData {
-  lotId: string | number;
-  houseDesign: HouseDesignItem & { isFavorite: boolean };
-}
+
 
 export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [, setSelectedImageIdx] = useState(0);
   const [showToastMessage, setShowToastMessage] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
-  const [favoriteStates, setFavoriteStates] = useState<Record<string, boolean>>({});
+  
+  // Use Zustand store for saved properties
+  const { isDesignSaved, toggleSaved } = useSavedPropertiesStore();
 
   // Handle toast display with useEffect
   useEffect(() => {
@@ -57,44 +57,24 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
     const clickedHouse = (houseDesigns as HouseDesignItem[]).find(house => house.id === clickedHouseId);
     if (!clickedHouse) return;
     
-    const currentFavorite = favoriteStates[clickedHouseId] ?? clickedHouse.isFavorite;
-    const newFavorite = !currentFavorite;
+    const isCurrentlySaved = isDesignSaved(lot.lotId, clickedHouseId);
     
-    // Update the favorite states
-    setFavoriteStates(prev => ({
-      ...prev,
-      [clickedHouseId]: newFavorite
-    }));
+    // Track property save/remove
+    trackPropertySaved(lot.lotId?.toString() || '', !isCurrentlySaved ? 'saved' : 'removed');
     
-    if (newFavorite) {
-      const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
-      
-      // Check if this lot and house design combination already exists
-      const existingIndex = savedData.findIndex((data: SavedHouseData) => 
-        data.lotId === lot.lotId && data.houseDesign.id === clickedHouse.id
-      );
-      
-      if (existingIndex === -1) {
-        // Only add if it doesn't already exist
-        savedData.push({
-          ...lot,
-          houseDesign: {...clickedHouse, isFavorite: newFavorite}
-        });
-        localStorage.setItem('userFavorite', JSON.stringify(savedData));
-        
-        setShowToastMessage({
-          message: 'Design saved to your Shortlist',
-          type: 'success'
-        });
-      }
-    } else {
-      const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
-      const newFav = savedData.filter((data: SavedHouseData) => {
-        if((data.lotId == lot.lotId && data.houseDesign.id == clickedHouse.id) == false) {
-          return data;
-        }
-      })
-      localStorage.setItem('userFavorite', JSON.stringify(newFav));
+    // Toggle saved state using Zustand store
+    toggleSaved({
+      id: lot.lotId?.toString() || '',
+      ...lot,
+      houseDesign: { ...clickedHouse, isFavorite: !isCurrentlySaved }
+    });
+    
+    // Show toast message when adding
+    if (!isCurrentlySaved) {
+      setShowToastMessage({
+        message: 'Design saved to your Shortlist',
+        type: 'success'
+      });
     }
   };
 
@@ -226,13 +206,23 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                   setSelectedImageIdx(0);
                   const houseWithOverlayOnly = { ...house, overlayOnly: true };
                   onDesignClick(houseWithOverlayOnly);
+                  
+                  // Track house design view
+                  trackHouseDesignInteraction('Viewed', {
+                    id: house.id,
+                    title: house.title,
+                    bedrooms: house.bedrooms,
+                    bathrooms: house.bathrooms,
+                    area: house.area,
+                    lotId: lot.lotId
+                  });
                 }
               }}
             >
               <div className="flex gap-4 items-start">
                 {/* Floor Plan Thumbnail on the left */}
                 <img 
-                  src={getImageUrl(house.floorPlanImage) || images[0]?.src || house.image} 
+                  src={getImageUrl(house.floorPlanImage) || getImageUrl(images[0]?.src) || house.image} 
                   alt="Floor Plan" 
                   className="w-24 h-24 rounded-lg object-cover flex-shrink-0" 
                 />
@@ -247,11 +237,11 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                       </div>
                     </div>
                     <Bookmark
-                      className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
-                        (favoriteStates[house.id] ?? house.isFavorite) ? 'fill-current' : 'text-gray-400'
+                      className={`h-6 w-6 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
+                        isDesignSaved(lot.lotId, house.id) ? 'fill-current' : 'text-gray-400'
                       }`}
                       style={{
-                        color: (favoriteStates[house.id] ?? house.isFavorite) ? colors.primary : undefined,
+                        color: isDesignSaved(lot.lotId, house.id) ? colors.primary : undefined,
                       }}
                       onClick={(e) => handleStarClick(e, house.id)}
                       data-star-icon
@@ -281,6 +271,16 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                           if (onViewFloorPlan) {
                             onViewFloorPlan(house);
                           }
+                          
+                          // Track floor plan view
+                          trackHouseDesignInteraction('Floor Plan Viewed', {
+                            id: house.id,
+                            title: house.title,
+                            bedrooms: house.bedrooms,
+                            bathrooms: house.bathrooms,
+                            area: house.area,
+                            lotId: lot.lotId
+                          });
                         }}
                         className={`${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1`}
                       >
@@ -292,6 +292,16 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                           if (onViewFacades) {
                             onViewFacades(house);
                           }
+                          
+                          // Track facades view
+                          trackHouseDesignInteraction('Facades Viewed', {
+                            id: house.id,
+                            title: house.title,
+                            bedrooms: house.bedrooms,
+                            bathrooms: house.bathrooms,
+                            area: house.area,
+                            lotId: lot.lotId
+                          });
                         }}
                         className={`${getColorClass('primary')} text-white py-3 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1`}
                       >
@@ -307,6 +317,16 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                         if (onEnquireNow) {
                           onEnquireNow(house);
                         }
+                        
+                        // Track enquiry initiation
+                        trackHouseDesignInteraction('Enquiry Initiated', {
+                          id: house.id,
+                          title: house.title,
+                          bedrooms: house.bedrooms,
+                          bathrooms: house.bathrooms,
+                          area: house.area,
+                          lotId: lot.lotId
+                        });
                       }}
                       className={`border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:${getColorClass('primary')} hover:text-white hover:${getColorClass('primary', 'border')} transition-colors w-full flex items-center justify-center gap-2`}
                     >

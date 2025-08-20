@@ -1,42 +1,27 @@
 import  { useState, useRef, useEffect } from 'react';
 import { X, BedDouble, Bath, Car, ExternalLink, Bookmark } from 'lucide-react';
-import type { SavedPropertiesSidebarProps, SavedProperty } from '../../../types/ui';
+import type { SavedPropertiesSidebarProps } from '../../../types/ui';
 import { getZoningColor } from '../../../lib/utils/zoning';
 import { getOverlaysColor } from '../../../lib/utils/overlays';
 import { getImageUrl } from '../../../lib/api/lotApi';
 import { getColorClass, colors } from '../../../constants/content';
+import { useSavedPropertiesStore } from '../../../stores/savedPropertiesStore';
 
 export function SavedPropertiesSidebar({ 
     open, 
     onClose, 
-    savedProperties, 
     onViewDetails 
-}: SavedPropertiesSidebarProps) {
+}: Omit<SavedPropertiesSidebarProps, 'savedProperties'>) {
     const sidebarRef = useRef<HTMLDivElement>(null);
-    const [properties, setProperties] = useState<SavedProperty[]>([]);
     const [isClient, setIsClient] = useState(false);
+    
+    // Use Zustand store for saved properties
+    const { savedProperties: storeSavedProperties, removeFromSaved } = useSavedPropertiesStore();
 
     // Handle client-side initialization
     useEffect(() => {
         setIsClient(true);
-        // Load from localStorage only on client
-        if (typeof window !== 'undefined') {
-            try {
-                const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? '[]');
-                setProperties(savedData);
-            } catch (e) {
-                console.error('Error parsing localStorage:', e);
-                setProperties([]);
-            }
-        }
     }, []);
-
-    // Update properties when savedProperties prop changes
-    useEffect(() => {
-        if (isClient) {
-            setProperties(savedProperties);
-        }
-    }, [savedProperties, isClient]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -98,7 +83,7 @@ export function SavedPropertiesSidebar({
                             <h3 className="text-lg font-medium text-gray-900 mb-2">Loading...</h3>
                         </div>
                     </div>
-                ) : properties.length === 0 ? (
+                ) : storeSavedProperties.length === 0 ? (
                     <div className="text-center py-8">
                         <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No saved properties</h3>
@@ -106,8 +91,7 @@ export function SavedPropertiesSidebar({
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {properties
-                            .filter((property) => property.houseDesign.isFavorite)
+                        {storeSavedProperties
                             .map((property, index) => (
                             <div key={`${property.lotId}-${property.houseDesign.id}-${index}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                                 {/* Lot Info Header */}
@@ -123,15 +107,7 @@ export function SavedPropertiesSidebar({
                                         color: property.houseDesign.isFavorite ? colors.primary : undefined,
                                         }}
                                         onClick={() => {
-                                            setProperties((prev) => {
-                                                const newFav = prev.filter((data) => {
-                                                    if((data.lotId == property.lotId && data.houseDesign.id == property.houseDesign.id) == false) {
-                                                        return data;
-                                                    }
-                                                })
-                                                localStorage.setItem('userFavorite', JSON.stringify(newFav));
-                                                return newFav;
-                                            });
+                                            removeFromSaved(property.lotId, property.houseDesign.id);
                                         }}
                                     />
                                 </div>
@@ -158,7 +134,7 @@ export function SavedPropertiesSidebar({
                                 {/* House Design */}
                                 <div className="flex gap-4">
                                     <img 
-                                        src={getImageUrl(property.houseDesign.floorPlanImage) || property.houseDesign.image} 
+                                        src={getImageUrl(property.houseDesign.floorPlanImage) || getImageUrl(property.houseDesign.images?.[0]?.src) || property.houseDesign.image} 
                                         alt={property.houseDesign.title}
                                         className="w-16 h-16 rounded-lg object-cover"
                                     />

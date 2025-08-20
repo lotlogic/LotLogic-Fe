@@ -92,12 +92,7 @@ export default function ZoneMap() {
   //   });
   // }, []);
 
-  // Saved props
-  let savedProperties: SavedProperty[] = [];
-  if (typeof window !== 'undefined') {
-    try { savedProperties = JSON.parse(localStorage.getItem('userFavorite') ?? '[]'); }
-    catch (e) { console.error('Error parsing localStorage:', e); }
-  }
+
 
   const handleViewDetails = (property: SavedProperty) => {
     setIsSavedSidebarOpen(false);
@@ -109,20 +104,20 @@ export default function ZoneMap() {
       geometry: lotData.geometry,
       properties: {
         BLOCK_KEY: property.lotId,
-        ID: parseInt(property.lotId),
-        LOT_NUMBER: parseInt(property.lotId),
+        ID: typeof property.lotId === 'number' ? property.lotId : parseInt(property.lotId),
+        LOT_NUMBER: typeof property.lotId === 'number' ? property.lotId : parseInt(property.lotId),
         databaseId: property.lotId,
         areaSqm: property.size,
         lifecycleStage: 'available',
         ADDRESSES: property.address,
         DISTRICT_NAME: property.suburb,
         LAND_USE_POLICY_ZONES: property.zoning,
-        BLOCK_DERIVED_AREA: property.size.toString(),
+        BLOCK_DERIVED_AREA: property.size?.toString() || '0',
         STAGE: 'available',
         BLOCK_NUMBER: null,
         SECTION_NUMBER: null,
         DISTRICT_CODE: 1,
-        OBJECTID: parseInt(property.lotId),
+        OBJECTID: typeof property.lotId === 'number' ? property.lotId : parseInt(property.lotId),
         division: '',
         estateId: '',
         isRed: true,
@@ -134,13 +129,13 @@ export default function ZoneMap() {
     if (selectedIdRef.current) {
       mapRef.setFeatureState({ source: 'demo-lot-source', id: selectedIdRef.current }, { selected: false });
     }
-    mapRef.setFeatureState({ source: 'demo-lot-source', id: property.lotId }, { selected: true });
-    selectedIdRef.current = property.lotId;
+    mapRef.setFeatureState({ source: 'demo-lot-source', id: property.lotId.toString() }, { selected: true });
+    selectedIdRef.current = property.lotId.toString();
 
     if (property.houseDesign.floorPlanImage) {
       const coordinates = lotData.geometry.coordinates[0] as [number, number][];
       if (coordinates?.length >= 4) {
-        const lotArea = property.size || 0;
+        const lotArea = typeof property.size === 'number' ? property.size : (property.size ? parseFloat(property.size) : 0);
         const houseArea = property.houseDesign.area ? parseFloat(property.houseDesign.area) : 0;
         const scaleFactor = lotArea > 0 && houseArea > 0 ? Math.sqrt(houseArea / lotArea) : 1;
         const centerLng = coordinates.reduce((s, c) => s + c[0], 0) / coordinates.length;
@@ -264,7 +259,6 @@ export default function ZoneMap() {
         <SavedPropertiesSidebar
           open={isSavedSidebarOpen}
           onClose={() => setIsSavedSidebarOpen(false)}
-          savedProperties={savedProperties}
           onViewDetails={handleViewDetails}
         />
       </Suspense>

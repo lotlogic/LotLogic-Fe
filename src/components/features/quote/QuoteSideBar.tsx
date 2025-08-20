@@ -9,6 +9,7 @@ import { quote, formatContent, getColorClass } from "../../../constants/content"
 import { Input } from '../../ui/input';
 import { getImageUrl, submitEnquiry } from '../../../lib/api/lotApi';
 import { useBuilders, convertBuildersToOptions } from '../../../hooks/useBuilders';
+import { trackQuoteFormInteraction, trackEnquirySubmitted } from '../../../lib/analytics/segment';
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
@@ -64,6 +65,14 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: '' }));
         }
+        
+        // Track form field interaction
+        trackQuoteFormInteraction('Field Updated', {
+            field,
+            hasValue: !!value.trim(),
+            lotId: lotDetails.id,
+            houseDesignId: selectedHouseDesign?.id
+        });
     };
 
     // Handle form submission
@@ -84,11 +93,19 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 comments: formData.additionalComments || '',
                 lot_id: parseInt(lotDetails.id.toString()),
                 house_design_id: selectedHouseDesign?.id || '',
-                facade_id: selectedHouseDesign?.images[0]?.src || ''
+                facade_id: '' 
             };
             
             // Submit enquiry to API
             await submitEnquiry(enquiryData);
+            
+            // Track successful enquiry submission
+            trackEnquirySubmitted({
+                lotId: lotDetails.id,
+                houseDesignId: selectedHouseDesign?.id || '',
+                facadeId: null, 
+                builder: formData.selectedBuilders
+            });
             
             setShowThankYou(true);
             setErrors({});
