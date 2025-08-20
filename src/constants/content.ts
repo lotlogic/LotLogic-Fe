@@ -1,5 +1,5 @@
 // Centralized content management for white-labeling
-export const APP_CONTENT = {
+export let APP_CONTENT = {
   // App-wide content
   app: {
     name: "LotLogic",
@@ -269,7 +269,7 @@ export const APP_CONTENT = {
     normal: "250ms ease-in-out",
     slow: "350ms ease-in-out",
   },
-} as const;
+};
 
 // Helper function to get nested content with fallback
 export function getContent(path: string, fallback?: string): string {

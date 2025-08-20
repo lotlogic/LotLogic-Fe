@@ -153,6 +153,25 @@ export const submitEnquiry = async (enquiryData: EnquiryRequest): Promise<{ mess
   return response.json();
 };
 
+export const getCurrentBrand = async () => {
+  // const domain = window.location.hostname;
+  
+  // This is done for different brand demo process
+  const domain = `${window.location.hostname}:${window.location.port}`;
+  const response = await fetch(`${getApiBaseUrl()}/brand/${domain}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
+  
+  if (!response.ok) {
+    return {};
+  }
+
+  return response.json();
+};
+
 export const lotApi = {
   // Fetch all lots from database
   async getAllLots(): Promise<DatabaseLot[]> {
