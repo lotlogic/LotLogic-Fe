@@ -154,7 +154,10 @@ export const submitEnquiry = async (enquiryData: EnquiryRequest): Promise<{ mess
 };
 
 export const getCurrentBrand = async () => {
-  const domain = window.location.hostname;
+  // const domain = window.location.hostname;
+  
+  // This is done for different brand demo process
+  const domain = `${window.location.hostname}:${window.location.port}`;
   const response = await fetch(`${getApiBaseUrl()}/brand/${domain}`, {
     method: 'GET',
     headers: {
