@@ -1,6 +1,7 @@
 import { Diamond, Home } from "lucide-react";
 import type { LotData } from "../../../types/lot";
 import { hexToRgba } from "../../../lib/utils/zoning";
+import { getColorClass, colors } from "../../../constants/content";
 
 interface SummaryViewProps {
   lot: LotData;
@@ -73,8 +74,8 @@ export function SummaryView({ lot, zoningColor, zoningText }: SummaryViewProps) 
       {/* Land Use Details */}
       <div className="bg-white rounded-xl shadow border border-gray-100 p-4 mx-6 mb-4 flex flex-col">
         <div className="flex items-center mb-2">
-          <div className="p-2 rounded-full" style={{ backgroundColor: '#EAEFEF' }}>
-            <Home className="h-4 w-4" style={{ color: '#2F5D62' }} />
+          <div className={`p-2 rounded-full ${getColorClass('secondary')}`}>
+            <Home className="h-4 w-4" style={{ color: colors.primary }} />
           </div>
           <span className="font-semibold text-gray-800 text-base ml-2">Land Use Details</span>
         </div>

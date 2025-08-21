@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Search, X } from 'lucide-react'; 
 import type { SearchControlProps, SearchResult } from '../../../types/ui';
+import { getColorClass } from '../../../constants/content';
+import { trackSearch } from '../../../lib/analytics/segment';
 
 export function SearchControl({ onResultSelect }: SearchControlProps) {
   const [query, setQuery] = useState('');
@@ -74,7 +76,12 @@ export function SearchControl({ onResultSelect }: SearchControlProps) {
     onResultSelect(result.center);
     setQuery(result.place_name);
     setIsOpen(false);
-    setIsSearchVisible(false); 
+    setIsSearchVisible(false);
+    
+    // Track search result selection
+    trackSearch(result.place_name, {
+      coordinates: result.center
+    });
   };
 
   const handleClear = () => {
@@ -107,7 +114,7 @@ export function SearchControl({ onResultSelect }: SearchControlProps) {
             }}
             onFocus={() => setIsOpen(true)}
             placeholder="Search for an address..."
-            className="w-64 pl-10 pr-10 py-2 border border-gray-300 bg-white rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2F5D62] focus:border-transparent"
+            className={`w-64 pl-10 pr-10 py-2 border border-gray-300 bg-white rounded-lg focus:outline-none focus:ring-2 focus:${getColorClass('primary', 'ring')} focus:border-transparent`}
             
           />
           {query && (
@@ -124,7 +131,7 @@ export function SearchControl({ onResultSelect }: SearchControlProps) {
       {/* The main search icon button for toggling visibility */}
       <button
         onClick={handleToggleSearch}
-        className="p-2 border bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2F5D62] focus:border-transparent"
+                    className={`p-2 border bg-white border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:${getColorClass('primary', 'ring')} focus:border-transparent`}
         aria-label={isSearchVisible ? "Hide search" : "Show search"}
       >
         <Search className="h-5 w-5 text-gray-600" />
@@ -135,7 +142,7 @@ export function SearchControl({ onResultSelect }: SearchControlProps) {
         <div className="absolute top-full right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto w-64"> {/* Adjusted width to match input */}
           {isLoading ? (
             <div className="p-3 text-center text-gray-500">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#2F5D62] mx-auto"></div>
+              <div className={`animate-spin rounded-full h-4 w-4 border-b-2 ${getColorClass('primary', 'border')} mx-auto`}></div>
               <span className="ml-2">Searching...</span>
             </div>
           ) : results.length > 0 ? (

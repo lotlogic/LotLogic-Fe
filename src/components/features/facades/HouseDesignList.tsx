@@ -1,24 +1,24 @@
 import { Bath, BedDouble, Bookmark, Car, Funnel, MailQuestionMark } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { colors, filter as filterContent, houseDesign, lotSidebar } from "../../../constants/content";
+import { colors, filter as filterContent, houseDesign, lotSidebar, getColorClass } from "../../../constants/content";
 import { useHouseDesigns } from "../../../hooks/useHouseDesigns";
 import type { HouseDesignFilterRequest } from "../../../lib/api/lotApi";
 import { getImageUrl } from "../../../lib/api/lotApi";
 import type { HouseDesignItem, HouseDesignListProps } from "../../../types/houseDesign";
 import { Button } from "../../ui/Button";
 import { showToast } from "../../ui/Toast";
+import { trackHouseDesignInteraction, trackPropertySaved } from "../../../lib/analytics/segment";
+import { useSavedPropertiesStore } from "../../../stores/savedPropertiesStore";
 
-// Define the type for saved data
-interface SavedHouseData {
-  lotId: string | number;
-  houseDesign: HouseDesignItem & { isFavorite: boolean };
-}
+
 
 export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [, setSelectedImageIdx] = useState(0);
   const [showToastMessage, setShowToastMessage] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
-  const [favoriteStates, setFavoriteStates] = useState<Record<string, boolean>>({});
+  
+  // Use Zustand store for saved properties
+  const { isDesignSaved, toggleSaved } = useSavedPropertiesStore();
 
   // Handle toast display with useEffect
   useEffect(() => {
@@ -44,8 +44,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
     true
   );
 
-  console.log("api response", apiResponse)  
-  console.log("error", error)
+  
 
   // Safely extract house designs with fallback
   const houseDesigns = (apiResponse?.houseDesigns as HouseDesignItem[]) || [];
@@ -58,44 +57,24 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
     const clickedHouse = (houseDesigns as HouseDesignItem[]).find(house => house.id === clickedHouseId);
     if (!clickedHouse) return;
     
-    const currentFavorite = favoriteStates[clickedHouseId] ?? clickedHouse.isFavorite;
-    const newFavorite = !currentFavorite;
+    const isCurrentlySaved = isDesignSaved(lot.lotId, clickedHouseId);
     
-    // Update the favorite states
-    setFavoriteStates(prev => ({
-      ...prev,
-      [clickedHouseId]: newFavorite
-    }));
+    // Track property save/remove
+    trackPropertySaved(lot.lotId?.toString() || '', !isCurrentlySaved ? 'saved' : 'removed');
     
-    if (newFavorite) {
-      const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
-      
-      // Check if this lot and house design combination already exists
-      const existingIndex = savedData.findIndex((data: SavedHouseData) => 
-        data.lotId === lot.lotId && data.houseDesign.id === clickedHouse.id
-      );
-      
-      if (existingIndex === -1) {
-        // Only add if it doesn't already exist
-        savedData.push({
-          ...lot,
-          houseDesign: {...clickedHouse, isFavorite: newFavorite}
-        });
-        localStorage.setItem('userFavorite', JSON.stringify(savedData));
-        
-        setShowToastMessage({
-          message: 'Design saved to your Shortlist',
-          type: 'success'
-        });
-      }
-    } else {
-      const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
-      const newFav = savedData.filter((data: SavedHouseData) => {
-        if((data.lotId == lot.lotId && data.houseDesign.id == clickedHouse.id) == false) {
-          return data;
-        }
-      })
-      localStorage.setItem('userFavorite', JSON.stringify(newFav));
+    // Toggle saved state using Zustand store
+    toggleSaved({
+      id: lot.lotId?.toString() || '',
+      ...lot,
+      houseDesign: { ...clickedHouse, isFavorite: !isCurrentlySaved }
+    });
+    
+    // Show toast message when adding
+    if (!isCurrentlySaved) {
+      setShowToastMessage({
+        message: 'Design saved to your Shortlist',
+        type: 'success'
+      });
     }
   };
 
@@ -128,7 +107,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
             <div className="space-y-3">
               <Button
                 onClick={() => window.location.reload()}
-                className="w-full bg-[#2F5D62] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors"
+                className={`w-full ${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors`}
               >
                 Try Again
               </Button>
@@ -166,7 +145,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
             <div className="space-y-3">
               <Button
                 onClick={onShowFilter}
-                className="w-full bg-[#2F5D62] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors"
+                className={`w-full ${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors`}
               >
                 Adjust Filters
               </Button>
@@ -191,7 +170,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
       <div className="flex items-center justify-between mb-4">
         <div>
           <span className="text-xl font-bold">
-            <span className="text-[#2F5D62]">{filteredHouses.length}</span> {houseDesign.title}
+            <span className={`${getColorClass('primary', 'text')}`}>{filteredHouses.length}</span> {houseDesign.title}
           </span>
           {/* {(apiHouseDesigns as HouseDesignItem[])?.length > 0 && (
             <div className="text-xs text-green-600 mt-1">
@@ -217,7 +196,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
           return (
             <div
               key={house.id}
-              className={`rounded-2xl border border-gray-200 p-4 transition-all duration-300 ${isExpanded ? 'bg-[#eaf3f2]' : 'bg-white hover:shadow-md'}`}
+              className={`rounded-2xl border border-gray-200 p-4 transition-all duration-300 ${isExpanded ? getColorClass('background.accent') : 'bg-white hover:shadow-md'}`}
               onClick={() => {
                 if (expandedIdx === idx) {
                   setExpandedIdx(null);
@@ -227,13 +206,23 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                   setSelectedImageIdx(0);
                   const houseWithOverlayOnly = { ...house, overlayOnly: true };
                   onDesignClick(houseWithOverlayOnly);
+                  
+                  // Track house design view
+                  trackHouseDesignInteraction('Viewed', {
+                    id: house.id,
+                    title: house.title,
+                    bedrooms: house.bedrooms,
+                    bathrooms: house.bathrooms,
+                    area: house.area,
+                    lotId: lot.lotId
+                  });
                 }
               }}
             >
               <div className="flex gap-4 items-start">
                 {/* Floor Plan Thumbnail on the left */}
                 <img 
-                  src={getImageUrl(house.floorPlanImage) || images[0]?.src || house.image} 
+                  src={getImageUrl(house.floorPlanImage) || getImageUrl(images[0]?.src) || house.image} 
                   alt="Floor Plan" 
                   className="w-24 h-24 rounded-lg object-cover flex-shrink-0" 
                 />
@@ -248,11 +237,11 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                       </div>
                     </div>
                     <Bookmark
-                      className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
-                        (favoriteStates[house.id] ?? house.isFavorite) ? 'fill-current' : 'text-gray-400'
+                      className={`h-6 w-6 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
+                        isDesignSaved(lot.lotId, house.id) ? 'fill-current' : 'text-gray-400'
                       }`}
                       style={{
-                        color: (favoriteStates[house.id] ?? house.isFavorite) ? colors.primary : undefined,
+                        color: isDesignSaved(lot.lotId, house.id) ? colors.primary : undefined,
                       }}
                       onClick={(e) => handleStarClick(e, house.id)}
                       data-star-icon
@@ -282,8 +271,18 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                           if (onViewFloorPlan) {
                             onViewFloorPlan(house);
                           }
+                          
+                          // Track floor plan view
+                          trackHouseDesignInteraction('Floor Plan Viewed', {
+                            id: house.id,
+                            title: house.title,
+                            bedrooms: house.bedrooms,
+                            bathrooms: house.bathrooms,
+                            area: house.area,
+                            lotId: lot.lotId
+                          });
                         }}
-                        className="bg-[#2F5D62] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors flex-1"
+                        className={`${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1`}
                       >
                         View Floor plan
                       </Button>
@@ -293,8 +292,18 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                           if (onViewFacades) {
                             onViewFacades(house);
                           }
+                          
+                          // Track facades view
+                          trackHouseDesignInteraction('Facades Viewed', {
+                            id: house.id,
+                            title: house.title,
+                            bedrooms: house.bedrooms,
+                            bathrooms: house.bathrooms,
+                            area: house.area,
+                            lotId: lot.lotId
+                          });
                         }}
-                        className="bg-[#2F5D62] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors flex-1"
+                        className={`${getColorClass('primary')} text-white py-3 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1`}
                       >
                         View Facades
                       </Button>
@@ -308,8 +317,18 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                         if (onEnquireNow) {
                           onEnquireNow(house);
                         }
+                        
+                        // Track enquiry initiation
+                        trackHouseDesignInteraction('Enquiry Initiated', {
+                          id: house.id,
+                          title: house.title,
+                          bedrooms: house.bedrooms,
+                          bathrooms: house.bathrooms,
+                          area: house.area,
+                          lotId: lot.lotId
+                        });
                       }}
-                      className="border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-[#2F5D62] hover:text-white hover:border-[#2F5D62] transition-colors w-full flex items-center justify-center gap-2"
+                      className={`border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:${getColorClass('primary')} hover:text-white hover:${getColorClass('primary', 'border')} transition-colors w-full flex items-center justify-center gap-2`}
                     >
                       <MailQuestionMark className="h-4 w-4" />
                       Enquire Now

@@ -2,6 +2,7 @@ import { Home } from "lucide-react";
 import { Button } from "../../ui/Button";
 import { CollapsibleSection } from "../../ui/CollapsibleSection";
 import type { LotData } from "../../../types/lot";
+import { getColorClass } from "../../../constants/content";
 
 interface DetailedRulesViewProps {
   lot: LotData;
@@ -46,7 +47,7 @@ export function DetailedRulesView({ lot }: DetailedRulesViewProps) {
 
       {/* Floor Space Ratio (FSR) Section  */}
       <CollapsibleSection title="Floor Space Ratio (FSR)">
-          <div className="bg-[#F7F7F8] p-4 rounded-lg"> 
+          <div className={`${getColorClass('gray.100')} p-4 rounded-lg`}> 
               <div className="flex justify-between items-start gap-4">
                   <div className="flex-shrink-0">
                       <p className="text-xl font-bold text-gray-900 leading-tight">

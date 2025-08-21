@@ -34,7 +34,9 @@ export interface LayersButtonProps {
 export interface ZoningLayersSidebarProps {
   open: boolean;
   onClose: () => void;
-  mapInstance: mapboxgl.Map | null;
+  mapInstance?: mapboxgl.Map | null;
+  onOverlayToggle?: (overlayType: string, enabled: boolean) => void;
+  activeOverlays?: Set<string>;
 }
 
 export interface SavedButtonProps {
@@ -51,16 +53,17 @@ export interface SavedPropertiesSidebarProps {
 
 export interface SavedProperty {
   id: string;
-  lotId: string;
-  suburb: string;
-  address: string;
-  size: number;
-  zoning: string;
+  lotId: string | number;
+  suburb?: string;
+  address?: string;
+  size?: string | number;
+  zoning?: string;
   overlays?: string;
   houseDesign: {
     id: string;
     title: string;
     image: string;
+    images?: { src: string; faced: string }[];
     floorPlanImage?: string;
     area?: string;
     bedrooms: number;

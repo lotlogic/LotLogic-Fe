@@ -12,10 +12,13 @@ export interface DatabaseLot {
   division: string | null;
   lifecycleStage: string | null;
   estateId: string | null;
+  overlays: string[];
   geojson: {
     type: 'Feature';
     geometry: GeoJSON.Polygon;
     properties: Array<Record<string, number>>;
+    width: number,
+    depth: number
   };
   createdAt: string;
   updatedAt: string;
@@ -145,6 +148,25 @@ export const submitEnquiry = async (enquiryData: EnquiryRequest): Promise<{ mess
 
   if (!response.ok) {
     throw new Error(`Enquiry submission failed: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+export const getCurrentBrand = async () => {
+  // const domain = window.location.hostname;
+  
+  // This is done for different brand demo process
+  const domain = `${window.location.hostname}:${window.location.port}`;
+  const response = await fetch(`${getApiBaseUrl()}/brand/${domain}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
+  
+  if (!response.ok) {
+    return {};
   }
 
   return response.json();

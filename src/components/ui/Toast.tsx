@@ -1,6 +1,7 @@
 import { toast } from 'react-toastify';
 import type { ToastOptions } from 'react-toastify';
 import { Check, X, AlertTriangle } from 'lucide-react';
+import { getColorClass, colors } from '../../constants/content';
 import 'react-toastify/dist/ReactToastify.css';
 
 type ToastType = 'success' | 'error' | 'warning';
@@ -17,19 +18,19 @@ const getToastIcon = (type: ToastType) => {
   switch (type) {
     case 'success':
       return (
-        <div className={`${baseClasses} bg-[#345B5B]`}>
+        <div className={`${baseClasses} ${getColorClass('toast')}`}>
           <Check className="w-4 h-4 text-white" strokeWidth={3} />
         </div>
       );
     case 'error':
       return (
-        <div className={`${baseClasses} bg-red-600`}>
+        <div className={`${baseClasses} ${getColorClass('error')}`}>
           <X className="w-4 h-4 text-white" strokeWidth={3} />
         </div>
       );
     case 'warning':
       return (
-        <div className={`${baseClasses} bg-yellow-500`}>
+        <div className={`${baseClasses} ${getColorClass('warning')}`}>
           <AlertTriangle className="w-4 h-4 text-white" strokeWidth={3} />
         </div>
       );
@@ -48,7 +49,7 @@ export function showToast({
   toastFn(
     <div className="flex items-center gap-3">
       {getToastIcon(type)}
-      <span className="text-[#345B5B] font-medium">{message}</span>
+      <span className={`${getColorClass('toast', 'text')} font-medium`}>{message}</span>
     </div>,
     {
       position: 'bottom-right',
@@ -59,7 +60,7 @@ export function showToast({
       draggable: true,
       style: {
         backgroundColor: 'white',
-        border: '1px solid #345B5B',
+        border: `1px solid ${colors.toast}`,
         borderRadius: '12px',
         boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
       },
