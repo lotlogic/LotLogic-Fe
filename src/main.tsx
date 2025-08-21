@@ -32,7 +32,7 @@ async function bootstrap() {
     APP_CONTENT.header.title = currentBrand?.name ?? APP_CONTENT.header.title;
     
     APP_CONTENT.colors.primary = currentBrand?.primaryColor ?? APP_CONTENT.colors.primary;
-    APP_CONTENT.colors.secondary = currentBrand?.secondaryColor ?? APP_CONTENT.colors.secondary;
+    APP_CONTENT.colors.accent = currentBrand?.secondaryColor ?? APP_CONTENT.colors.accent;
     APP_CONTENT.colors.text.primary = currentBrand?.textPrimaryColor ?? APP_CONTENT.colors.text.primary;
     APP_CONTENT.colors.text.secondary = currentBrand?.textSecondaryColor ?? APP_CONTENT.colors.text.secondary;
     APP_CONTENT.colors.background.primary = currentBrand?.bgPrimaryColor ?? APP_CONTENT.colors.background.primary;
