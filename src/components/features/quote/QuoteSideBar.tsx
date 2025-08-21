@@ -276,7 +276,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:${getColorClass('primary', 'ring')} focus:${getColorClass('primary', 'border')} ${
                                     errors.emailAddress ? 'border-red-500' : 'border-gray-300'
                                 }`}
-                                placeholder="mail@company.com"
+                                placeholder="your.email@company.com"
                             />
                             {errors.emailAddress && (
                                 <p className="mt-1 text-sm text-red-600">{errors.emailAddress}</p>
@@ -292,7 +292,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:${getColorClass('primary', 'ring')} focus:${getColorClass('primary', 'border')} ${
                                     errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
                                 }`}
-                                placeholder="+1 (555) 000-0000"
+                                placeholder="0412 *** ***"
                             />
                             {errors.phoneNumber && (
                                 <p className="mt-1 text-sm text-red-600">{errors.phoneNumber}</p>

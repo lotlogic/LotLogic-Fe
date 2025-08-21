@@ -145,12 +145,12 @@ export function MapLayers({
       if (map.getLayer('fsr-boundary-layer')) map.removeLayer('fsr-boundary-layer');
       if (map.getSource('fsr-boundary-source')) map.removeSource('fsr-boundary-source');
       map.addSource('fsr-boundary-source', { type: 'geojson', data: fsrBoundary });
-      map.addLayer({
-        id: 'fsr-boundary-layer',
-        type: 'line',
-        source: 'fsr-boundary-source',
-        paint: { 'line-color': '#FF9800', 'line-width': 2, 'line-dasharray': [4, 4] }
-      });
+    //   map.addLayer({
+    //     id: 'fsr-boundary-layer',
+    //     type: 'line',
+    //     source: 'fsr-boundary-source',
+    //     paint: { 'line-color': '#FF9800', 'line-width': 2, 'line-dasharray': [4, 4] }
+    //   });
 
       // Center label for FSR m² - only show when no floor plan is displayed and no modals are open
       if (!selectedFloorPlan && !showFloorPlanModal && !showFacadeModal) {
@@ -163,7 +163,7 @@ export function MapLayers({
         newMarkers.push(fsrAreaLabel);
       }
 
-      // --------- House Design Area Boundary (Red Dotted) ----------
+      // --------- House Design Area Boundary (Green Dotted) ----------
       if (selectedFloorPlan && selectedFloorPlan.houseArea && selectedFloorPlan.houseArea > 0) {
         const houseArea = selectedFloorPlan.houseArea;
         const houseScale = Math.sqrt(houseArea / innerArea); // Scale to house area
@@ -172,12 +172,12 @@ export function MapLayers({
         if (map.getLayer('house-area-boundary-layer')) map.removeLayer('house-area-boundary-layer');
         if (map.getSource('house-area-boundary-source')) map.removeSource('house-area-boundary-source');
         map.addSource('house-area-boundary-source', { type: 'geojson', data: houseBoundary });
-        map.addLayer({
-          id: 'house-area-boundary-layer',
-          type: 'line',
-          source: 'house-area-boundary-source',
-          paint: { 'line-color': '#15cf04', 'line-width': 2, 'line-dasharray': [4, 4] }
-        });
+        // map.addLayer({
+        //   id: 'house-area-boundary-layer',
+        //   type: 'line',
+        //   source: 'house-area-boundary-source',
+        //   paint: { 'line-color': '#15cf04', 'line-width': 2, 'line-dasharray': [4, 4] }
+        // });
 
         // Center label for House Area m² - only show when no floor plan is displayed and no modals are open
         if (!selectedFloorPlan && !showFloorPlanModal && !showFacadeModal) {
