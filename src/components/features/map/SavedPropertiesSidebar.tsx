@@ -11,7 +11,7 @@ import { Button } from '../../ui/Button';
 export function SavedPropertiesSidebar({ 
     open, 
     onClose, 
-    onViewDetails 
+    // onViewDetails 
 }: Omit<SavedPropertiesSidebarProps, 'savedProperties'>) {
     const sidebarRef = useRef<HTMLDivElement>(null);
     const [isClient, setIsClient] = useState(false);
