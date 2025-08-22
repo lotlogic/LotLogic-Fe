@@ -32,6 +32,7 @@ jobs:
       run: |
         echo "VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}" > .env
         echo "VITE_API_URL=${{ secrets.VITE_API_URL_DEV }}" >> .env
+        echo "VITE_SEGMENT_WRITE_KEY=${{ secrets.VITE_SEGMENT_WRITE_KEY }}" >> .env
 
     - name: Build application
       run: npm run build
