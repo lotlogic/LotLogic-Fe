@@ -108,21 +108,46 @@ const getApiBaseUrl = () => {
 };
 
 // Utility function to get the correct image URL
+// export const getImageUrl = (imagePath: string | null | undefined): string => {
+//   if (!imagePath) return '';
+  
+//   // If it's already a full URL, return as is
+//   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+//     return imagePath;
+//   }
+  
+//   // If it's a relative path starting with /, prepend the API base URL
+//   if (imagePath.startsWith('/')) {
+//     return `${getApiBaseUrl()}${imagePath}`;
+//   }
+  
+//   // Otherwise, assume it's a relative path and prepend the API base URL with /
+//   return `${getApiBaseUrl()}/${imagePath}`;
+// };
+
+
+// Add this function to handle CORS proxy for images
+export const getImageUrlWithCorsProxy = (imagePath: string | null | undefined): string => {
+  if (!imagePath) return '';
+  
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    const proxyUrl = 'https://corsproxy.io/'; 
+    return `${proxyUrl}?${encodeURIComponent(imagePath)}`;
+  }
+  
+  return imagePath;
+};
+
+// Function for non-CORS issues
 export const getImageUrl = (imagePath: string | null | undefined): string => {
   if (!imagePath) return '';
   
-  // If it's already a full URL, return as is
+  // If it's already a full URL, return as-is
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
   
-  // If it's a relative path starting with /, prepend the API base URL
-  if (imagePath.startsWith('/')) {
-    return `${getApiBaseUrl()}${imagePath}`;
-  }
-  
-  // Otherwise, assume it's a relative path and prepend the API base URL with /
-  return `${getApiBaseUrl()}/${imagePath}`;
+  return imagePath;
 };
 
 // Enquiry API

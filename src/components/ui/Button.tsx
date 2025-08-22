@@ -1,10 +1,13 @@
+// Button.tsx
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import clsx from "clsx";
+import { cn } from "../../lib/utils"; // use cn (clsx + tailwind-merge)
 import { colors } from "../../constants/content";
 
-const PRIMARY_COLOR = colors.primary;
-const PRIMARY_COLOR_HOVER = colors.accent;
-const PRIMARY_COLOR_DISABLED = `${colors.primary}B3`; // 70% opacity
+const BRAND = {
+  base: colors.primary,
+  hover: colors.accent,
+  disabled: `${colors.primary}B3`,
+};
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "outline" | "ghost";
@@ -25,35 +28,61 @@ export function Button({
   ...props
 }: ButtonProps) {
   const isPrimary = variant === "primary";
+  const isOutline = variant === "outline";
+
   let style: React.CSSProperties | undefined = undefined;
+
   if (isPrimary) {
+    style = { backgroundColor: disabled || loading ? BRAND.disabled : BRAND.base, color: "#fff" };
+  }
+
+  if (isOutline) {
     style = {
-      backgroundColor: disabled || loading ? PRIMARY_COLOR_DISABLED : PRIMARY_COLOR,
+      ...style,
+      backgroundColor: "#fff",
+      color: BRAND.base,
+      borderColor: BRAND.base,
+      borderWidth: 1,
+      borderStyle: "solid",
     };
   }
+
   return (
     <button
-      className={clsx(
+      className={cn(
         "inline-flex items-center justify-center gap-2 rounded px-4 py-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2",
         {
           "text-white": isPrimary,
-          "bg-white text-primary-btn border border-primary-btn hover:bg-primary-btn/10": variant === "outline",
+          // keep outline neutral; let inline styles + your className control colors
+          "bg-white": isOutline,
           "bg-gray-100 text-gray-800 hover:bg-gray-200": variant === "secondary",
-          "bg-transparent text-primary-btn hover:bg-primary-btn/10": variant === "ghost",
+          "bg-transparent": variant === "ghost",
           "opacity-70 cursor-not-allowed": loading || disabled,
         },
         className
       )}
       style={style}
       disabled={loading || disabled}
-      onMouseOver={e => {
-        if (isPrimary && !(loading || disabled)) {
-          (e.currentTarget as HTMLButtonElement).style.backgroundColor = PRIMARY_COLOR_HOVER;
+      onMouseOver={(e) => {
+        if (loading || disabled) return;
+        if (isPrimary) {
+          e.currentTarget.style.backgroundColor = BRAND.hover;
+        }
+        if (isOutline) {
+          e.currentTarget.style.backgroundColor = BRAND.base;
+          e.currentTarget.style.color = "#fff";
+          e.currentTarget.style.borderColor = BRAND.base;
         }
       }}
-      onMouseOut={e => {
-        if (isPrimary && !(loading || disabled)) {
-          (e.currentTarget as HTMLButtonElement).style.backgroundColor = PRIMARY_COLOR;
+      onMouseOut={(e) => {
+        if (loading || disabled) return;
+        if (isPrimary) {
+          e.currentTarget.style.backgroundColor = BRAND.base;
+        }
+        if (isOutline) {
+          e.currentTarget.style.backgroundColor = "#fff";
+          e.currentTarget.style.color = BRAND.base;
+          e.currentTarget.style.borderColor = BRAND.base;
         }
       }}
       {...props}
