@@ -6,6 +6,7 @@ import { getOverlaysColor } from '../../../lib/utils/overlays';
 import { getImageUrl } from '../../../lib/api/lotApi';
 import { getColorClass, colors } from '../../../constants/content';
 import { useSavedPropertiesStore } from '../../../stores/savedPropertiesStore';
+import { Button } from '../../ui/Button';
 
 export function SavedPropertiesSidebar({ 
     open, 
@@ -158,12 +159,13 @@ export function SavedPropertiesSidebar({
                                             </span>
                                         </div>
                                     </div>
-                                    <button
+                                    <Button
+                                        variant="primary"
                                         onClick={() => onViewDetails(property)}
-                                        className={`${getColorClass('primary')} text-white px-1 py-2.5 rounded-md text-sm font-medium hover:${getColorClass('accent')} transition-colors w-28 h-9 mt-12`}
+                                        className={`${getColorClass('primary')} px-1 py-2.5 rounded-md text-sm font-medium hover:${getColorClass('accent')} transition-colors w-30 h-9 mt-12`}
                                     >
                                         View Details
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         ))}

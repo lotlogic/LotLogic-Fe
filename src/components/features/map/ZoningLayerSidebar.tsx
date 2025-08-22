@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { X, ChevronLeft } from 'lucide-react'; 
 import type { ZoningLayersSidebarProps } from '../../../types/ui';
-import { getColorClass } from '../../../constants/content';
+import { colors, getColorClass } from '../../../constants/content';
 import { trackMapLayerToggle } from '../../../lib/analytics/segment';
 
 export function ZoningLayersSidebar({ open, onClose, onOverlayToggle, activeOverlays }: ZoningLayersSidebarProps) {
@@ -94,7 +94,17 @@ export function ZoningLayersSidebar({ open, onClose, onOverlayToggle, activeOver
               checked={activeOverlays?.has('flood') || false}
               onChange={(e) => handleOverlayToggle('flood', e.target.checked)} 
             />
-            <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:${getColorClass('primary', 'ring')}/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:${getColorClass('primary')}`}></div>
+            <div 
+              className={`w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}
+              style={{
+                backgroundColor: activeOverlays?.has('flood') 
+                  ? colors.primary 
+                  : "#e5e7eb",
+                borderColor: activeOverlays?.has('flood') 
+                  ? colors.primary 
+                  : undefined
+              }}
+            ></div>
           </label>
         </div>
 
@@ -115,7 +125,17 @@ export function ZoningLayersSidebar({ open, onClose, onOverlayToggle, activeOver
               checked={activeOverlays?.has('bushfire') || false}
               onChange={(e) => handleOverlayToggle('bushfire', e.target.checked)} 
             />
-            <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:${getColorClass('primary', 'ring')}/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:${getColorClass('primary')}`}></div>
+            <div 
+              className={`w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}
+              style={{
+                backgroundColor: activeOverlays?.has('bushfire') 
+                  ? colors.primary 
+                  : "#e5e7eb",
+                borderColor: activeOverlays?.has('bushfire') 
+                  ? colors.primary 
+                  : undefined
+              }}
+            ></div>
           </label>
         </div>
 
@@ -136,7 +156,17 @@ export function ZoningLayersSidebar({ open, onClose, onOverlayToggle, activeOver
               checked={activeOverlays?.has('heritage') || false}
               onChange={(e) => handleOverlayToggle('heritage', e.target.checked)} 
             />
-            <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:${getColorClass('primary', 'ring')}/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:${getColorClass('primary')}`}></div>
+            <div 
+              className={`w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}
+              style={{
+                backgroundColor: activeOverlays?.has('heritage') 
+                  ? colors.primary 
+                  : "#e5e7eb",
+                borderColor: activeOverlays?.has('heritage') 
+                  ? colors.primary 
+                  : undefined
+              }}
+            ></div>
           </label>
         </div>
 
