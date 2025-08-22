@@ -160,8 +160,9 @@ export function SavedPropertiesSidebar({
                                         </div>
                                     </div>
                                     <Button
+                                        variant="primary"
                                         // onClick={() => onViewDetails(property)}
-                                        className={`${getColorClass('primary')} text-white px-1 py-2.5 rounded-md text-sm font-medium hover:${getColorClass('accent')} transition-colors w-31 h-9 mt-12`}
+                                        className={`${getColorClass('primary')} px-1 py-2.5 rounded-md text-sm font-medium hover:${getColorClass('accent')} transition-colors w-30 h-9 mt-12`}
                                     >
                                         View Details
                                     </Button>
