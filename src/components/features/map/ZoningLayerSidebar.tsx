@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { X, ChevronLeft } from 'lucide-react'; 
 import type { ZoningLayersSidebarProps } from '../../../types/ui';
-import { colors, getColorClass } from '../../../constants/content';
+import { colors } from '../../../constants/content';
 import { trackMapLayerToggle } from '../../../lib/analytics/segment';
 
 export function ZoningLayersSidebar({ open, onClose, onOverlayToggle, activeOverlays }: ZoningLayersSidebarProps) {
