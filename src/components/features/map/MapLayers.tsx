@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import * as turf from '@turf/turf';
 import { insetQuadPerSideLL, createSValueLabel, type Pt, type SetbackValues } from '../../../lib/utils/geometry';
 import type { LotProperties } from '../../../types/lot';
+import { getImageUrlWithCorsProxy } from '../../../lib/api/lotApi';
 
 // -----------------------------
 // Types
@@ -43,6 +44,8 @@ export function MapLayers({
 }: MapLayersProps) {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
+  console.log(selectedFloorPlan, "floorplan");
+
   // Floorplan overlay - now uses house area boundary coordinates
   useEffect(() => {
     if (!map || !selectedFloorPlan) return;
@@ -53,44 +56,83 @@ export function MapLayers({
     if (map.getLayer(layerId)) map.removeLayer(layerId);
     if (map.getSource(sourceId)) map.removeSource(sourceId);
 
-    // Calculate house area boundary coordinates for the floor plan
-    if (selectedFloorPlan.houseArea && selectedFloorPlan.houseArea > 0 && selectedLot) {
-      const geometry = selectedLot.geometry as GeoJSON.Polygon;
-      const coordinates = geometry.coordinates[0] as [number, number][];
-      if (coordinates && coordinates.length >= 4) {
-        const setbacks = { front: 4, side: 3, rear: 3 };
-        const innerLL = insetQuadPerSideLL(coordinates, setbacks);
+    // Use CORS proxy for the image URL
+    const proxiedImageUrl = getImageUrlWithCorsProxy(selectedFloorPlan.url);
+    
+    // Preload the image to check for errors
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = () => {
+      
+      // Calculate house area boundary coordinates for the floor plan
+      if (selectedFloorPlan.houseArea && selectedFloorPlan.houseArea > 0 && selectedLot) {
+        const geometry = selectedLot.geometry as GeoJSON.Polygon;
+        const coordinates = geometry.coordinates[0] as [number, number][];
+        if (coordinates && coordinates.length >= 4) {
+          const setbacks = { front: 4, side: 3, rear: 3 };
+          const innerLL = insetQuadPerSideLL(coordinates, setbacks);
 
-        if (innerLL && innerLL.length >= 5) {
-          const innerPoly = turf.polygon([innerLL]);
-          const innerArea = turf.area(innerPoly);
-          const innerCenter = turf.center(innerPoly);
+          if (innerLL && innerLL.length >= 5) {
+            const innerPoly = turf.polygon([innerLL]);
+            const innerArea = turf.area(innerPoly);
+            const innerCenter = turf.center(innerPoly);
 
-          // Calculate house area boundary
-          const houseArea = selectedFloorPlan.houseArea;
-          const houseScale = Math.sqrt(houseArea / innerArea);
-          const houseBoundary = turf.transformScale(innerPoly, houseScale, { origin: innerCenter });
+            // Calculate house area boundary
+            const houseArea = selectedFloorPlan.houseArea;
+            const houseScale = Math.sqrt(houseArea / innerArea);
+            const houseBoundary = turf.transformScale(innerPoly, houseScale, { origin: innerCenter });
 
-          // Extract coordinates from house boundary for floor plan
-          if (houseBoundary && houseBoundary.geometry && 'coordinates' in houseBoundary.geometry && houseBoundary.geometry.coordinates[0]) {
-            const houseCoordinates = houseBoundary.geometry.coordinates[0] as [number, number][];
-            const floorPlanCoordinates: [[number, number], [number, number], [number, number], [number, number]] = [
-              houseCoordinates[0],
-              houseCoordinates[1],
-              houseCoordinates[2],
-              houseCoordinates[3]
-            ];
+            // Extract coordinates from house boundary for floor plan
+            if (houseBoundary && houseBoundary.geometry && 'coordinates' in houseBoundary.geometry && houseBoundary.geometry.coordinates[0]) {
+              const houseCoordinates = houseBoundary.geometry.coordinates[0] as [number, number][];
+              const floorPlanCoordinates: [[number, number], [number, number], [number, number], [number, number]] = [
+                houseCoordinates[0],
+                houseCoordinates[1],
+                houseCoordinates[2],
+                houseCoordinates[3]
+              ];
 
-            map.addSource(sourceId, { type: 'image', url: selectedFloorPlan.url, coordinates: floorPlanCoordinates });
-            map.addLayer({ id: layerId, type: 'raster', source: sourceId, paint: { 'raster-opacity': 0.8 } });
+              map.addSource(sourceId, { 
+                type: 'image', 
+                url: proxiedImageUrl, 
+                coordinates: floorPlanCoordinates 
+              });
+              map.addLayer({ 
+                id: layerId, 
+                type: 'raster', 
+                source: sourceId, 
+                paint: { 'raster-opacity': 0.8 } 
+              });
+            }
           }
         }
+      } else {
+        // Fallback to original coordinates if no house area
+        map.addSource(sourceId, { 
+          type: 'image', 
+          url: proxiedImageUrl, 
+          coordinates: selectedFloorPlan.coordinates 
+        });
+        map.addLayer({ 
+          id: layerId, 
+          type: 'raster', 
+          source: sourceId, 
+          paint: { 'raster-opacity': 0.8 } 
+        });
       }
-    } else {
-      // Fallback to original coordinates if no house area
-      map.addSource(sourceId, { type: 'image', url: selectedFloorPlan.url, coordinates: selectedFloorPlan.coordinates });
-      map.addLayer({ id: layerId, type: 'raster', source: sourceId, paint: { 'raster-opacity': 0.8 } });
-    }
+    };
+    
+    img.onerror = () => {
+      // Image failed to load
+      console.error('Failed to load floor plan image:', selectedFloorPlan.url);
+      
+      // Remove any existing floorplan layers
+      if (map.getLayer(layerId)) map.removeLayer(layerId);
+      if (map.getSource(sourceId)) map.removeSource(sourceId);
+    };
+    
+    img.src = proxiedImageUrl;
 
     return () => {
       if (map.getLayer(layerId)) map.removeLayer(layerId);
