@@ -282,7 +282,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                             lotId: lot.lotId
                           });
                         }}
-                        className={`${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1`}
+                        className={`${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1 cursor-pointer`}
                       >
                         View Floor plan
                       </Button>
@@ -303,7 +303,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                             lotId: lot.lotId
                           });
                         }}
-                        className={`${getColorClass('primary')} text-white py-3 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1`}
+                        className={`${getColorClass('primary')} text-white py-3 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1 cursor-pointer`}
                       >
                         View Facades
                       </Button>
@@ -328,7 +328,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                           lotId: lot.lotId
                         });
                       }}
-                      className={`border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:${getColorClass('primary')} hover:text-white hover:${getColorClass('primary', 'border')} transition-colors w-full flex items-center justify-center gap-2`}
+                      className={`border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:${getColorClass('primary')} hover:text-white hover:${getColorClass('primary', 'border')} transition-colors w-full flex items-center justify-center gap-2 cursor-pointer`}
                     >
                       <MailQuestionMark className="h-4 w-4" />
                       Enquire Now
