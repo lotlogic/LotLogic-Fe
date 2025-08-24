@@ -44,7 +44,7 @@ export function MapLayers({
 }: MapLayersProps) {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  console.log(selectedFloorPlan, "floorplan");
+  // console.log(selectedFloorPlan, "floorplan");
 
   // Floorplan overlay - now uses house area boundary coordinates
   useEffect(() => {

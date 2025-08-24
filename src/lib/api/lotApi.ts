@@ -1,4 +1,5 @@
 // API service for lot-related operations
+import axios from 'axios';
 
 export interface DatabaseLot {
   id: string;
@@ -100,11 +101,11 @@ const getApiBaseUrl = () => {
   
   // If running in Docker, use the service name
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    return 'http://localhost:3000';
+    return 'http://localhost:3000/api';
   }
   
   // For Docker container communication
-  return 'http://backend:3000';
+  return 'http://backend:3000/api';
 };
 
 // Utility function to get the correct image URL
@@ -163,57 +164,29 @@ export interface EnquiryRequest {
 }
 
 export const submitEnquiry = async (enquiryData: EnquiryRequest): Promise<{ message: string }> => {
-  const response = await fetch(`${getApiBaseUrl()}/enquiry`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(enquiryData),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Enquiry submission failed: ${response.statusText}`);
+  try {
+    const response = await axios.post(`${getApiBaseUrl()}/enquiry`, enquiryData);
+    return response.data;
+  } catch (error) {
+    throw new Error(`Enquiry submission failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-
-  return response.json();
 };
 
 export const getCurrentBrand = async () => {
-  // const domain = window.location.hostname;
-  
-  // This is done for different brand demo process
-  const domain = `${window.location.hostname}:${window.location.port}`;
-  const response = await fetch(`${getApiBaseUrl()}/brand/${domain}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  });
-  
-  if (!response.ok) {
+  try {
+    const response = await axios.get(`${getApiBaseUrl()}/brand`);
+    return response.data;
+  } catch (error) {
     return {};
   }
-
-  return response.json();
 };
 
 export const lotApi = {
   // Fetch all lots from database
   async getAllLots(): Promise<DatabaseLot[]> {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/lot`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
+      const response = await axios.get(`${getApiBaseUrl()}/lot`);
+      return response.data;
     } catch (error) {
       console.error('Error fetching lots:', error);
       throw error;
@@ -223,19 +196,8 @@ export const lotApi = {
   // Fetch a single lot by ID
   async getLotById(lotId: string): Promise<DatabaseLot> {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/lot/${lotId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
+      const response = await axios.get(`${getApiBaseUrl()}/lot/${lotId}`);
+      return response.data;
     } catch (error) {
       console.error('Error fetching lot by ID:', error);
       throw error;
@@ -245,19 +207,8 @@ export const lotApi = {
   // Calculate house designs for a specific lot
   async calculateDesignsOnLot(lotId: string): Promise<LotCalculationResponse> {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/design-on-lot/calculate?lotId=${lotId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
+      const response = await axios.get(`${getApiBaseUrl()}/design-on-lot/calculate?lotId=${lotId}`);
+      return response.data;
     } catch (error) {
       console.error('Error fetching lot calculations:', error);
       throw error;
@@ -315,12 +266,7 @@ export const lotApi = {
         params.append('pergola', filters.pergola.toString());
       }
 
-      const response = await fetch(`${getApiBaseUrl()}/house-design/${lotId}?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await axios.get(`${getApiBaseUrl()}/house-design/${lotId}?${params.toString()}`);
       
       // Handle 204 No Content as a successful response with no results
       if (response.status === 204) {
@@ -330,12 +276,7 @@ export const lotApi = {
         };
       }
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
+      return response.data;
     } catch (error) {
       console.error('Error filtering house designs:', error);
       throw error;
@@ -345,19 +286,8 @@ export const lotApi = {
   // Fetch all builders from the backend
   async getBuilders(): Promise<Builder[]> {
     try {
-      const response = await fetch(`${getApiBaseUrl()}/builders`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
+      const response = await axios.get(`${getApiBaseUrl()}/builders`);
+      return response.data;
     } catch (error) {
       console.error('Error fetching builders:', error);
       throw error;

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Search, X } from 'lucide-react'; 
+import axios from 'axios';
 import type { SearchControlProps, SearchResult } from '../../../types/ui';
 import { getColorClass } from '../../../constants/content';
 import { trackSearch } from '../../../lib/analytics/segment';
@@ -40,7 +41,7 @@ export function SearchControl({ onResultSelect }: SearchControlProps) {
     setIsLoading(true);
     try {
       const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
-      const response = await fetch(
+      const response = await axios.get(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?` +
         `access_token=${accessToken}&` +
         `country=au&` +
@@ -48,10 +49,7 @@ export function SearchControl({ onResultSelect }: SearchControlProps) {
         `limit=5`
       );
 
-      if (response.ok) {
-        const data = await response.json();
-        setResults(data.features || []);
-      }
+      setResults(response.data.features || []);
     } catch (error) {
       console.error('Search error:', error);
       setResults([]);
