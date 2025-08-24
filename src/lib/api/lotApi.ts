@@ -101,11 +101,11 @@ const getApiBaseUrl = () => {
   
   // If running in Docker, use the service name
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-    return 'http://localhost:3000';
+    return 'http://localhost:3000/api';
   }
   
   // For Docker container communication
-  return 'http://backend:3000';
+  return 'http://backend:3000/api';
 };
 
 // Utility function to get the correct image URL
