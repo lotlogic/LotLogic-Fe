@@ -1,22 +1,24 @@
-import React, { useState, useEffect } from "react";
-import { Button } from "../../ui/Button";
-import {  MailQuestionMark, Bookmark, BedDouble, Bath, Car, Funnel} from "lucide-react";
+import { Bath, BedDouble, Bookmark, Car, Funnel, MailQuestionMark } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { colors, filter as filterContent, houseDesign, lotSidebar, getColorClass } from "../../../constants/content";
+import { useHouseDesigns } from "../../../hooks/useHouseDesigns";
+import type { HouseDesignFilterRequest } from "../../../lib/api/lotApi";
+import { getImageUrl } from "../../../lib/api/lotApi";
 import type { HouseDesignItem, HouseDesignListProps } from "../../../types/houseDesign";
-import { initialHouseData } from "../../../constants/houseDesigns";
-import { houseDesign, filter as filterContent, lotSidebar, colors } from "../../../constants/content";
+import { Button } from "../../ui/Button";
 import { showToast } from "../../ui/Toast";
+import { trackHouseDesignInteraction, trackPropertySaved } from "../../../lib/analytics/segment";
+import { useSavedPropertiesStore } from "../../../stores/savedPropertiesStore";
 
-// Define the type for saved data
-interface SavedHouseData {
-  lotId: string | number;
-  houseDesign: HouseDesignItem & { isFavorite: boolean };
-}
+
 
 export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEnquireNow, onViewFloorPlan, onViewFacades }: HouseDesignListProps) {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [, setSelectedImageIdx] = useState(0);
-  const [houseDesigns, setHouseDesigns] = useState<HouseDesignItem[]>(initialHouseData);
   const [showToastMessage, setShowToastMessage] = useState<{ message: string; type: 'success' | 'error' | 'warning' } | null>(null);
+  
+  // Use Zustand store for saved properties
+  const { isDesignSaved, toggleSaved } = useSavedPropertiesStore();
 
   // Handle toast display with useEffect
   useEffect(() => {
@@ -26,69 +28,156 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
     }
   }, [showToastMessage]);
 
-  const filteredHouses = houseDesigns.filter(house => {
-    return (
-      filter.bedroom.includes(house.bedrooms) &&
-      filter.bathroom.includes(house.bathrooms) &&
-      filter.car.includes(house.cars)
-    );
-  });
+
+  const apiFilters: HouseDesignFilterRequest = {
+    bedroom: filter.bedroom,
+    bathroom: filter.bathroom,
+    car: filter.car,
+    min_size: filter.min_size && !isNaN(filter.min_size) ? filter.min_size : undefined,
+    max_size: filter.max_size && !isNaN(filter.max_size) ? filter.max_size : undefined,
+  };
+
+  // Fetch house designs from API
+  const { data: apiResponse, isLoading, error } = useHouseDesigns(
+    lot.lotId?.toString() || null,
+    apiFilters,
+    true
+  );
+
+  
+
+  // Safely extract house designs with fallback
+  const houseDesigns = (apiResponse?.houseDesigns as HouseDesignItem[]) || [];
+
+  const filteredHouses = houseDesigns;
 
   const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
     event.stopPropagation();
-    console.log('Star clicked for house:', clickedHouseId);
     
-    setHouseDesigns(prevDesigns =>
-      prevDesigns.map(house => {
-        if (house.id === clickedHouseId) {
-          const fav = !house.isFavorite;
-          console.log('Setting favorite to:', fav);
-          
-          if (fav) {
-            console.log('Setting toast message...');
-
-            const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
-            
-            // Check if this lot and house design combination already exists
-            const existingIndex = savedData.findIndex((data: SavedHouseData) => 
-              data.lotId === lot.lotId && data.houseDesign.id === house.id
-            );
-            
-            if (existingIndex === -1) {
-              // Only add if it doesn't already exist
-              savedData.push({
-                ...lot,
-                houseDesign: {...house, isFavorite: fav}
-              });
-              localStorage.setItem('userFavorite', JSON.stringify(savedData));
-              
-              setShowToastMessage({
-                message: 'Design saved to your Shortlist',
-                type: 'success'
-              });
-            }
-          } else {
-            const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? "[]");
-            const newFav = savedData.filter((data: SavedHouseData) => {
-              if((data.lotId == lot.lotId && data.houseDesign.id == house.id) == false) {
-                return data;
-              }
-            })
-            localStorage.setItem('userFavorite', JSON.stringify(newFav));
-          }
-          return { ...house, isFavorite: fav };
-        }
-        return house;
-      })
-    );
+    const clickedHouse = (houseDesigns as HouseDesignItem[]).find(house => house.id === clickedHouseId);
+    if (!clickedHouse) return;
+    
+    const isCurrentlySaved = isDesignSaved(lot.lotId, clickedHouseId);
+    
+    // Track property save/remove
+    trackPropertySaved(lot.lotId?.toString() || '', !isCurrentlySaved ? 'saved' : 'removed');
+    
+    // Toggle saved state using Zustand store
+    toggleSaved({
+      id: lot.lotId?.toString() || '',
+      ...lot,
+      houseDesign: { ...clickedHouse, isFavorite: !isCurrentlySaved }
+    });
+    
+    // Show toast message when adding
+    if (!isCurrentlySaved) {
+      setShowToastMessage({
+        message: 'Design saved to your Shortlist',
+        type: 'success'
+      });
+    }
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="p-6 overflow-y-auto h-full">
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="p-6 overflow-y-auto h-full">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center max-w-md">
+            <div className="mb-4">
+              <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to Load House Designs</h3>
+              <p className="text-gray-600 mb-4">We encountered an issue while loading the house designs for this lot.</p>
+            </div>
+            <div className="space-y-3">
+              <Button
+                onClick={() => window.location.reload()}
+                className={`w-full ${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors`}
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onShowFilter}
+                className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              >
+                Adjust Filters
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show no results state - simplified condition
+  if (!isLoading && filteredHouses.length === 0) {
+    return (
+      <div className="p-6 overflow-y-auto h-full">
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center max-w-md">
+            <div className="mb-4">
+              <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No House Designs Found</h3>
+              <p className="text-gray-600 mb-4">
+                We couldn't find any house designs matching your current criteria. Try adjusting your filters to see more options.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <Button
+                onClick={onShowFilter}
+                className={`w-full ${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors`}
+              >
+                Adjust Filters
+              </Button>
+              <div className="text-sm text-gray-500">
+                <p className="mb-2">Try these suggestions:</p>
+                <ul className="text-left space-y-1">
+                  <li>• Increase the number of bedrooms or bathrooms</li>
+                  <li>• Adjust the size range</li>
+                  <li>• Change the number of car spaces</li>
+                  <li>• Clear some filters to see all available designs</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 overflow-y-auto h-full">
       <div className="flex items-center justify-between mb-4">
-        <span className="text-xl font-bold">
-          <span className="text-[#2F5D62]">{filteredHouses.length}</span> {houseDesign.title}
-        </span>
+        <div>
+          <span className="text-xl font-bold">
+            <span className={`${getColorClass('primary', 'text')}`}>{filteredHouses.length}</span> {houseDesign.title}
+          </span>
+          {/* {(apiHouseDesigns as HouseDesignItem[])?.length > 0 && (
+            <div className="text-xs text-green-600 mt-1">
+              ✓ Loaded from database
+            </div>
+          )} */}
+        </div>
         <Button
           variant="outline"
           className="border border-gray-300 rounded-lg px-3 py-1 flex items-center gap-2"
@@ -102,13 +191,12 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
         {filteredHouses.map((house, idx) => {
           const isExpanded = expandedIdx === idx;
           const images = house.images;
-          // const mainImage = images[selectedImageIdx]?.src || house.image;
-          // const facedOption = images[selectedImageIdx]?.faced;
+          
 
           return (
             <div
               key={house.id}
-              className={`rounded-2xl border border-gray-200 p-4 transition-all duration-300 ${isExpanded ? 'bg-[#eaf3f2]' : 'bg-white hover:shadow-md'}`}
+              className={`rounded-2xl border border-gray-200 p-4 transition-all duration-300 ${isExpanded ? getColorClass('background.accent') : 'bg-white hover:shadow-md'}`}
               onClick={() => {
                 if (expandedIdx === idx) {
                   setExpandedIdx(null);
@@ -118,13 +206,23 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                   setSelectedImageIdx(0);
                   const houseWithOverlayOnly = { ...house, overlayOnly: true };
                   onDesignClick(houseWithOverlayOnly);
+                  
+                  // Track house design view
+                  trackHouseDesignInteraction('Viewed', {
+                    id: house.id,
+                    title: house.title,
+                    bedrooms: house.bedrooms,
+                    bathrooms: house.bathrooms,
+                    area: house.area,
+                    lotId: lot.lotId
+                  });
                 }
               }}
             >
               <div className="flex gap-4 items-start">
                 {/* Floor Plan Thumbnail on the left */}
                 <img 
-                  src={house.floorPlanImage || images[0]?.src || house.image} 
+                  src={getImageUrl(house.floorPlanImage) || getImageUrl(images[0]?.src) || house.image} 
                   alt="Floor Plan" 
                   className="w-24 h-24 rounded-lg object-cover flex-shrink-0" 
                 />
@@ -139,11 +237,11 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                       </div>
                     </div>
                     <Bookmark
-                      className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
-                        house.isFavorite ? 'fill-current' : 'text-gray-400'
+                      className={`h-6 w-6 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
+                        isDesignSaved(lot.lotId, house.id) ? 'fill-current' : 'text-gray-400'
                       }`}
                       style={{
-                        color: house.isFavorite ? colors.primary : undefined,
+                        color: isDesignSaved(lot.lotId, house.id) ? colors.primary : undefined,
                       }}
                       onClick={(e) => handleStarClick(e, house.id)}
                       data-star-icon
@@ -173,8 +271,18 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                           if (onViewFloorPlan) {
                             onViewFloorPlan(house);
                           }
+                          
+                          // Track floor plan view
+                          trackHouseDesignInteraction('Floor Plan Viewed', {
+                            id: house.id,
+                            title: house.title,
+                            bedrooms: house.bedrooms,
+                            bathrooms: house.bathrooms,
+                            area: house.area,
+                            lotId: lot.lotId
+                          });
                         }}
-                        className="bg-[#2F5D62] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors flex-1"
+                        className={`${getColorClass('primary')} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1 cursor-pointer`}
                       >
                         View Floor plan
                       </Button>
@@ -184,8 +292,18 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                           if (onViewFacades) {
                             onViewFacades(house);
                           }
+                          
+                          // Track facades view
+                          trackHouseDesignInteraction('Facades Viewed', {
+                            id: house.id,
+                            title: house.title,
+                            bedrooms: house.bedrooms,
+                            bathrooms: house.bathrooms,
+                            area: house.area,
+                            lotId: lot.lotId
+                          });
                         }}
-                        className="bg-[#2F5D62] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#1a3d42] transition-colors flex-1"
+                        className={`${getColorClass('primary')} text-white py-3 px-4 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors flex-1 cursor-pointer`}
                       >
                         View Facades
                       </Button>
@@ -199,8 +317,18 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                         if (onEnquireNow) {
                           onEnquireNow(house);
                         }
+                        
+                        // Track enquiry initiation
+                        trackHouseDesignInteraction('Enquiry Initiated', {
+                          id: house.id,
+                          title: house.title,
+                          bedrooms: house.bedrooms,
+                          bathrooms: house.bathrooms,
+                          area: house.area,
+                          lotId: lot.lotId
+                        });
                       }}
-                      className="border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-[#2F5D62] hover:text-white hover:border-[#2F5D62] transition-colors w-full flex items-center justify-center gap-2"
+                      className={`border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:${getColorClass('primary')} hover:text-white hover:${getColorClass('primary', 'border')} transition-colors w-full flex items-center justify-center gap-2 cursor-pointer`}
                     >
                       <MailQuestionMark className="h-4 w-4" />
                       Enquire Now

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import type { MultiSelectProps } from '../../types/ui';
-import { colors } from '../../constants/content';
+import { colors, getColorClass } from '../../constants/content';
 
 export function MultiSelect({ 
   options, 
@@ -49,9 +49,9 @@ export function MultiSelect({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full p-3 border rounded-lg shadow-sm focus:ring-[#2F5D62] focus:border-[#2F5D62] appearance-none bg-white pr-8 text-left ${
+          className={`w-full p-3 border rounded-lg shadow-sm focus:${getColorClass('primary', 'ring')} focus:${getColorClass('primary', 'border')} appearance-none bg-white pr-8 text-left ${
             isOpen 
-              ? 'border-[#2F5D62]' 
+              ? getColorClass('primary', 'border')
               : 'border-gray-300'
           } ${
             selectedOptions.length > 0 
@@ -127,7 +127,7 @@ export function MultiSelect({
             {selectedOptionsData.map((option) => (
               <div
                 key={option.id}
-                className="inline-flex items-center gap-2 px-3 py-1 bg-[#2F5D62] text-white rounded-full text-sm"
+                className={`inline-flex items-center gap-2 px-3 py-1 ${getColorClass('primary')} text-white rounded-full text-sm`}
               >
                 <span>{option.label}</span>
                 <button
@@ -136,7 +136,7 @@ export function MultiSelect({
                     e.stopPropagation();
                     handleOptionToggle(option.id);
                   }}
-                  className="hover:bg-[#1a3d42] rounded-full p-0.5"
+                  className={`hover:${getColorClass('accent')} rounded-full p-0.5`}
                 >
                   <X className="h-3 w-3" />
                 </button>

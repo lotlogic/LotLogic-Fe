@@ -1,40 +1,28 @@
 import  { useState, useRef, useEffect } from 'react';
 import { X, BedDouble, Bath, Car, ExternalLink, Bookmark } from 'lucide-react';
-import type { SavedPropertiesSidebarProps, SavedProperty } from '../../../types/ui';
+import type { SavedPropertiesSidebarProps } from '../../../types/ui';
 import { getZoningColor } from '../../../lib/utils/zoning';
 import { getOverlaysColor } from '../../../lib/utils/overlays';
+import { getImageUrl } from '../../../lib/api/lotApi';
+import { getColorClass, colors } from '../../../constants/content';
+import { useSavedPropertiesStore } from '../../../stores/savedPropertiesStore';
+import { Button } from '../../ui/Button';
 
 export function SavedPropertiesSidebar({ 
     open, 
     onClose, 
-    savedProperties, 
-    onViewDetails 
-}: SavedPropertiesSidebarProps) {
+    // onViewDetails 
+}: Omit<SavedPropertiesSidebarProps, 'savedProperties'>) {
     const sidebarRef = useRef<HTMLDivElement>(null);
-    const [properties, setProperties] = useState<SavedProperty[]>([]);
     const [isClient, setIsClient] = useState(false);
+    
+    // Use Zustand store for saved properties
+    const { savedProperties: storeSavedProperties, removeFromSaved } = useSavedPropertiesStore();
 
     // Handle client-side initialization
     useEffect(() => {
         setIsClient(true);
-        // Load from localStorage only on client
-        if (typeof window !== 'undefined') {
-            try {
-                const savedData = JSON.parse(localStorage.getItem('userFavorite') ?? '[]');
-                setProperties(savedData);
-            } catch (e) {
-                console.error('Error parsing localStorage:', e);
-                setProperties([]);
-            }
-        }
     }, []);
-
-    // Update properties when savedProperties prop changes
-    useEffect(() => {
-        if (isClient) {
-            setProperties(savedProperties);
-        }
-    }, [savedProperties, isClient]);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -96,7 +84,7 @@ export function SavedPropertiesSidebar({
                             <h3 className="text-lg font-medium text-gray-900 mb-2">Loading...</h3>
                         </div>
                     </div>
-                ) : properties.length === 0 ? (
+                ) : storeSavedProperties.length === 0 ? (
                     <div className="text-center py-8">
                         <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-gray-900 mb-2">No saved properties</h3>
@@ -104,8 +92,7 @@ export function SavedPropertiesSidebar({
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {properties
-                            .filter((property) => property.houseDesign.isFavorite)
+                        {storeSavedProperties
                             .map((property, index) => (
                             <div key={`${property.lotId}-${property.houseDesign.id}-${index}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                                 {/* Lot Info Header */}
@@ -114,29 +101,14 @@ export function SavedPropertiesSidebar({
                                         Lot ID: {property.lotId}, {property.suburb}, {property.address}
                                     </div>
                                     <Bookmark
-                                        className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 text-[#2F5D62] ${
-                                            property.houseDesign.isFavorite ? 'fill-[#2F5D62]' : "fill-white"
+                                        className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${getColorClass('primary', 'text')} ${
+                                            property.houseDesign.isFavorite ? 'fill-current' : "fill-white"
                                         }`}
                                         style={{
-                                        color: property.houseDesign.isFavorite ? "#2F5D62" : undefined,
+                                        color: property.houseDesign.isFavorite ? colors.primary : undefined,
                                         }}
                                         onClick={() => {
-                                            setProperties((prev) => {
-                                                const newFav = prev.map((p) =>
-                                                p.lotId === property.lotId && p.houseDesign.id === property.houseDesign.id
-                                                    ? {
-                                                        ...p,
-                                                        houseDesign: {
-                                                        ...p.houseDesign,
-                                                        isFavorite: !p.houseDesign.isFavorite,
-                                                        },
-                                                    }
-                                                    : p
-                                                );
-                                                localStorage.setItem('userFavorite', JSON.stringify(newFav));
-
-                                                return newFav;
-                                            });
+                                            removeFromSaved(property.lotId, property.houseDesign.id);
                                         }}
                                     />
                                 </div>
@@ -163,7 +135,7 @@ export function SavedPropertiesSidebar({
                                 {/* House Design */}
                                 <div className="flex gap-4">
                                     <img 
-                                        src={property.houseDesign.image} 
+                                        src={getImageUrl(property.houseDesign.floorPlanImage) || getImageUrl(property.houseDesign.images?.[0]?.src) || property.houseDesign.image} 
                                         alt={property.houseDesign.title}
                                         className="w-16 h-16 rounded-lg object-cover"
                                     />
@@ -187,12 +159,13 @@ export function SavedPropertiesSidebar({
                                             </span>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => onViewDetails(property)}
-                                        className="bg-[#2F5D62] text-white px-1 py-2.5 rounded-md text-sm font-medium hover:bg-[#1a3d42] transition-colors w-28 h-9 mt-12"
+                                    <Button
+                                        variant="primary"
+                                        // onClick={() => onViewDetails(property)}
+                                        className={`${getColorClass('primary')} px-1 py-2.5 rounded-md text-sm font-medium hover:${getColorClass('accent')} transition-colors w-30 h-9 mt-12`}
                                     >
                                         View Details
-                                    </button>
+                                    </Button>
                                 </div>
                             </div>
                         ))}

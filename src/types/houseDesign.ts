@@ -34,6 +34,8 @@ export interface HouseDesignListProps {
     bedroom: number[];
     bathroom: number[];
     car: number[];
+    min_size?: number;
+    max_size?: number;
   };
   lot: {
     lotId: string | number;
@@ -135,24 +137,52 @@ export interface DesignRowProps {
 export type RangeValue = [number, number];
 export type RangeSetter = React.Dispatch<React.SetStateAction<RangeValue>>;
 
-// Zod validation schema for quote form
+
 export const quoteFormSchema = z.object({
   yourName: z.string()
     .min(2, "Name must be at least 2 characters")
     .max(50, "Name must be less than 50 characters")
-    .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
+    .regex(/^[a-zA-Z\s'-]+$/, "Name can only contain letters, spaces, hyphens, and apostrophes")
+    .transform(name => name.trim()),
+
   emailAddress: z.string()
+    .min(1, "Email is required")
     .email("Please enter a valid email address")
-    .min(1, "Email is required"),
+    .transform(email => email.toLowerCase().trim()),
+
   phoneNumber: z.string()
-    .min(10, "Phone number must be at least 10 digits")
-    .max(15, "Phone number must be less than 15 digits")
-    .regex(/^[\+]?[0-9\s\-\(\)]+$/, "Please enter a valid phone number"),
+    .min(1, "Phone number is required")
+    .refine((phone) => {
+      // Clean the phone number
+      const cleanPhone = phone.replace(/[\s\-()]/g, '');
+      
+      // Australian mobile numbers: 04xx xxx xxx
+      const mobileRegex = /^04\d{8}$/;
+      
+      // Australian landline numbers
+      const landlineRegex = /^0[2-9]\d{8}$/;
+      
+      // International format with +61
+      const internationalRegex = /^\+61[2-9]\d{8}$/;
+      
+      // Check if it's a valid format
+      const isValidFormat = mobileRegex.test(cleanPhone) || 
+                           landlineRegex.test(cleanPhone) || 
+                           internationalRegex.test(cleanPhone);
+      
+      // Additional check for minimum length after cleaning
+      const isValidLength = cleanPhone.length >= 10 && cleanPhone.length <= 15;
+      
+      return isValidFormat && isValidLength;
+    }, "Please enter a valid Australian phone number (e.g., 0412 345 678 or +61 412 345 678)"),
+
   selectedBuilders: z.array(z.string())
     .min(1, "Please select at least one builder"),
+
   additionalComments: z.string()
     .max(500, "Additional comments must be less than 500 characters")
-    .optional(),
+    .optional()
+    .transform(comments => comments?.trim() || ''),
 });
 
 export type QuoteFormData = z.infer<typeof quoteFormSchema>;

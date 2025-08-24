@@ -3,6 +3,12 @@
     top: 51px !important;
     right: 12px !important;
   }
+
+/* Navigation control positioning - place it above custom controls */
+.mapboxgl-ctrl-group.mapboxgl-ctrl-zoom {
+    top: 12px !important;
+    right: 12px !important;
+  }
   
   .mapboxgl-ctrl-bottom-left {
     bottom: 12px !important;
