@@ -173,13 +173,8 @@ export const submitEnquiry = async (enquiryData: EnquiryRequest): Promise<{ mess
 };
 
 export const getCurrentBrand = async () => {
-  // const domain = window.location.hostname;
-  
-  // This is done for different brand demo process
-  const domain = `${window.location.hostname}:${window.location.port}`;
-  
   try {
-    const response = await axios.get(`${getApiBaseUrl()}/brand/${domain}`);
+    const response = await axios.get(`${getApiBaseUrl()}/brand`);
     return response.data;
   } catch (error) {
     return {};
