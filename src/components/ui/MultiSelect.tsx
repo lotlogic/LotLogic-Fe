@@ -125,10 +125,10 @@ export function MultiSelect({
         {selectedOptionsData.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
             {selectedOptionsData.map((option) => (
-              <div
-                key={option.id}
-                className={`inline-flex items-center gap-2 px-3 py-1 ${getColorClass('primary')} text-white rounded-full text-sm`}
-              >
+                <div
+                  key={option.id}
+                  className={`inline-flex items-center gap-2 px-3 py-1 ${getColorClass('primary')} text-white rounded-full text-sm`}
+                >
                 <span>{option.label}</span>
                 <button
                   type="button"
