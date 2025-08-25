@@ -61,6 +61,8 @@ export interface HouseDesignItemResponse {
   id: string;
   title: string;
   area: number;
+  minLotWidth: number;
+  minLotDepth: number;
   image: string;
   images: Array<{
     src: string;

@@ -8,6 +8,8 @@ const convertApiResponseToHouseDesign = (apiDesign: HouseDesignItemResponse): Ho
     id: apiDesign.id,
     title: apiDesign.title,
     area: apiDesign.area.toString(),
+    minLotWidth: apiDesign.minLotWidth,
+    minLotDepth: apiDesign.minLotDepth,
     image: apiDesign.image,
     images: apiDesign.images,
     bedrooms: apiDesign.bedrooms,

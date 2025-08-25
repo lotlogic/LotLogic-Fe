@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
+import type { FloorPlan } from './houseDesign';
 
 export interface LotSidebarProps {
   open: boolean;
   onClose: () => void;
   lot: LotData;
   geometry?: GeoJSON.Geometry; 
-  onSelectFloorPlan?: (data: { url: string; coordinates: [[number, number], [number, number], [number, number], [number, number]]; houseArea?: number } | null) => void;
+  onSelectFloorPlan?: (data: FloorPlan | null) => void;
   onZoningDataUpdate?: (zoning: { fsr: number; frontSetback: number; rearSetback: number; sideSetback: number }) => void;
   isLoadingApiData?: boolean;
   apiError?: Error | null;

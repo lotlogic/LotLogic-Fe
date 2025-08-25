@@ -22,17 +22,12 @@ import { getImageUrl } from "@/lib/api/lotApi";
 import { useModalStore } from "@/stores/modalStore";
 import type { SetbackValues } from '@/lib/utils/geometry';
 import type { LotProperties } from "@/types/lot";
+import type { FloorPlan } from "@/types/houseDesign";
 
 
 // -----------------------------
 // Types
 // -----------------------------
-
-type FloorPlan = {
-  url: string;
-  coordinates: [[number, number], [number, number], [number, number], [number, number]];
-  houseArea?: number;
-};
 
 // -----------------------------
 // Component
@@ -77,20 +72,7 @@ export default function ZoneMap() {
     });
   }, []);
 
-  // Handle overlay toggling - DISABLED FOR NOW
-  // const handleOverlayToggle = useCallback((overlayType: string, enabled: boolean) => {
-  //   console.log('Overlay toggle:', overlayType, enabled);
-  //   setActiveOverlays(prev => {
-  //     const newSet = new Set(prev);
-  //     if (enabled) {
-  //       newSet.add(overlayType);
-  //     } else {
-  //       newSet.delete(overlayType);
-  //     }
-  //     console.log('Active overlays:', Array.from(newSet));
-  //     return newSet;
-  //   });
-  // }, []);
+
 
 
 
@@ -169,6 +151,7 @@ export default function ZoneMap() {
 
     // Handle overlay toggle
     const handleOverlayToggle = (overlayType: string, enabled: boolean) => {
+
       setActiveOverlays(prev => {
         const newSet = new Set(prev);
         if (enabled) {
@@ -176,6 +159,7 @@ export default function ZoneMap() {
         } else {
           newSet.delete(overlayType);
         }
+
         return newSet;
       });
     };
@@ -186,6 +170,7 @@ export default function ZoneMap() {
   // Set initial view when lots data is available
   useEffect(() => {
     if (!mapRef || !lotsData || lotsData.length === 0) return;
+  
     const first = lotsData[0];
     const coords = first?.geometry?.coordinates?.[0];
     if (!coords?.length) return;
@@ -284,6 +269,7 @@ export default function ZoneMap() {
         showFloorPlanModal={showFloorPlanModal}
         showFacadeModal={showFacadeModal}
         setSValuesMarkers={setSValuesMarkers}
+        activeOverlays={activeOverlays}
       />
 
       {selectedLot && (
