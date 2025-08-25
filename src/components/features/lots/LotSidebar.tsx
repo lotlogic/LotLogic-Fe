@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from "../../ui/Button";
+import { Button } from "@/components/ui/Button";
 import { X, ChevronLeft, ArrowRight, ChevronRight } from 'lucide-react';
-import type { LotSidebarProps } from "../../../types/lot";
-import { getZoningColor, hexToRgba } from "../../../lib/utils/zoning";
-import { FilterSectionWithSingleLineSliders } from "../../ui/HouseDesignFilter";
-import { Sidebar } from "../../ui/Sidebar";
+import type { LotSidebarProps } from "@/types/lot";
+import { getZoningColor, hexToRgba } from "@/lib/utils/zoning";
+import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
+import { Sidebar } from "@/components/ui/Sidebar";
 
 import { GetYourQuoteSidebar } from '../quote/QuoteSideBar';
-import type { DesignState, HouseDesignItem } from "../../../types/houseDesign";
-import { useContent } from "../../../hooks/useContent";
-import { getColorClass } from "../../../constants/content";
+import type { DesignState, HouseDesignItem } from "@/types/houseDesign";
+import { useContent } from "@/hooks/useContent";
+import { getColorClass } from "@/constants/content";
 import { SummaryView } from "./SummaryView";
 import { HouseDesignList } from "../facades/HouseDesignList";
 import { Diamond } from "lucide-react";
-import { getImageUrl } from "../../../lib/api/lotApi";
-import { useModalStore } from "../../../stores/modalStore";
-import { useHouseDesigns } from "../../../hooks/useHouseDesigns";
+import { getImageUrl } from "@/lib/api/lotApi";
+import { useModalStore } from "@/stores/modalStore";
+import { useHouseDesigns } from "@/hooks/useHouseDesigns";
 
 export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, onZoningDataUpdate }: LotSidebarProps) {
 

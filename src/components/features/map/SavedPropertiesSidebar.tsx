@@ -1,12 +1,12 @@
 import  { useState, useRef, useEffect } from 'react';
 import { X, BedDouble, Bath, Car, ExternalLink, Bookmark } from 'lucide-react';
-import type { SavedPropertiesSidebarProps } from '../../../types/ui';
-import { getZoningColor } from '../../../lib/utils/zoning';
-import { getOverlaysColor } from '../../../lib/utils/overlays';
-import { getImageUrl } from '../../../lib/api/lotApi';
-import { getColorClass, colors } from '../../../constants/content';
-import { useSavedPropertiesStore } from '../../../stores/savedPropertiesStore';
-import { Button } from '../../ui/Button';
+import type { SavedPropertiesSidebarProps } from '@/types/ui';
+import { getZoningColor } from '@/lib/utils/zoning';
+import { getOverlaysColor } from '@/lib/utils/overlays';
+import { getImageUrl } from '@/lib/api/lotApi';
+import { getColorClass, colors } from '@/constants/content';
+import { useSavedPropertiesStore } from '@/stores/savedPropertiesStore';
+import { Button } from '@/components/ui/Button';
 
 export function SavedPropertiesSidebar({ 
     open, 

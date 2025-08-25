@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X } from 'lucide-react';
-import type { MultiSelectProps } from '../../types/ui';
-import { colors, getColorClass } from '../../constants/content';
+import type { MultiSelectProps } from '@/types/ui';
+import { colors, getColorClass } from '@/constants/content';
 
 export function MultiSelect({ 
   options, 

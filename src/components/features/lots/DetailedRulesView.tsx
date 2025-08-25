@@ -1,8 +1,8 @@
 import { Home } from "lucide-react";
-import { Button } from "../../ui/Button";
-import { CollapsibleSection } from "../../ui/CollapsibleSection";
-import type { LotData } from "../../../types/lot";
-import { getColorClass } from "../../../constants/content";
+import { Button } from "@/components/ui/Button";
+import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
+import type { LotData } from "@/types/lot";
+import { getColorClass } from "@/constants/content";
 
 interface DetailedRulesViewProps {
   lot: LotData;

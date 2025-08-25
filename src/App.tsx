@@ -1,15 +1,15 @@
+import {  useEffect, Suspense, lazy } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import './index.css'
-import { Suspense, lazy, useEffect } from 'react'
 
-import Header from './components/layouts/Header'
-import { preloadCriticalComponents } from './utils/preload'
-import { trackEvent } from './lib/analytics/segment'
+import Header from '@/components/layouts/Header'
+import { preloadCriticalComponents } from '@/utils/preload'
+import { trackEvent } from '@/lib/analytics/segment'
 
 // Lazy load heavy components
-const ZoneMap = lazy(() => import('./components/features/map/MapLayer'))
+const ZoneMap = lazy(() => import('@/components/features/map/MapLayer'))
 
 const queryClient = new QueryClient()
 

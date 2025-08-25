@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import * as turf from '@turf/turf';
-import { insetQuadPerSideLL, createSValueLabel, type Pt, type SetbackValues } from '../../../lib/utils/geometry';
-import type { LotProperties } from '../../../types/lot';
-import { getImageUrlWithCorsProxy } from '../../../lib/api/lotApi';
+import { insetQuadPerSideLL, createSValueLabel, type Pt, type SetbackValues } from '@/lib/utils/geometry';
+import type { LotProperties } from '@/types/lot';
+import { getImageUrlWithCorsProxy } from '@/lib/api/lotApi';
 
 // -----------------------------
 // Types

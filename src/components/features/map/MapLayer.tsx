@@ -12,16 +12,16 @@ const SavedPropertiesSidebar = lazy(() => import("./SavedPropertiesSidebar").the
 // Import optimized components
 import { MapLayers } from './MapLayers';
 import { MapControls } from './MapControls';
-import { useMapInitialization } from '../../../hooks/useMapInitialization';
+import { useMapInitialization } from '@/hooks/useMapInitialization';
 
 import '../map/MapControls.css';
-import { useLotDetails } from "../../../hooks/useLotDetails";
-import type { SavedProperty } from "../../../types/ui";
-import { useLots, convertLotsToGeoJSON } from "../../../hooks/useLots";
-import { getImageUrl } from "../../../lib/api/lotApi";
-import { useModalStore } from "../../../stores/modalStore";
-import type { SetbackValues } from '../../../lib/utils/geometry';
-import type { LotProperties } from "../../../types/lot";
+import { useLotDetails } from "@/hooks/useLotDetails";
+import type { SavedProperty } from "@/types/ui";
+import { useLots, convertLotsToGeoJSON } from "@/hooks/useLots";
+import { getImageUrl } from "@/lib/api/lotApi";
+import { useModalStore } from "@/stores/modalStore";
+import type { SetbackValues } from '@/lib/utils/geometry';
+import type { LotProperties } from "@/types/lot";
 
 
 // -----------------------------
