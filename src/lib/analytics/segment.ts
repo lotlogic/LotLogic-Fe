@@ -5,9 +5,30 @@ declare global {
       identify: (userId: string, traits?: Record<string, unknown>) => void;
       track: (event: string, properties?: Record<string, unknown>) => void;
       page: (page: string, properties?: Record<string, unknown>) => void;
+      setAnonymousId: (anonymousId: string) => void;
     };
   }
 }
+
+// Generate a Mixpanel-compatible ID (24-character hex string)
+export const generateMixpanelCompatibleId = (): string => {
+  const chars = '0123456789abcdef';
+  let result = '';
+  for (let i = 0; i < 24; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
+// Initialize analytics with proper ID
+export const initializeAnalytics = () => {
+  const analytics = getAnalytics();
+  if (analytics) {
+    const mixpanelCompatibleId = generateMixpanelCompatibleId();
+    analytics.setAnonymousId(mixpanelCompatibleId);
+    analytics.identify(mixpanelCompatibleId);
+  }
+};
 
 // Wait for analytics to be available
 const getAnalytics = () => {
@@ -67,6 +88,10 @@ export const trackLotView = (lotId: string, lotData: Record<string, unknown>) =>
       lotZoning: lotData.zoning,
       lotAddress: lotData.address,
       lotDistrict: lotData.district,
+      lotSuburb: lotData.suburb,
+      lotSize: lotData.size,
+      lotType: lotData.type,
+      timestamp: new Date().toISOString(),
     });
   }
 };

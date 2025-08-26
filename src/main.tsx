@@ -5,6 +5,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import App from './App.tsx'
 import { APP_CONTENT } from '@/constants/content.ts'
 import { getCurrentBrand } from '@/lib/api/lotApi.ts'
+import { initializeAnalytics } from '@/lib/analytics/segment.ts'
 
 function setFavicon(url: string) {
   let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
@@ -43,6 +44,9 @@ async function bootstrap() {
   } catch (err) {
     console.error("Brand init failed", err);
   }
+
+  // Initialize analytics with proper Mixpanel-compatible ID
+  initializeAnalytics();
 
   const container = document.getElementById("root")!;
   const root = createRoot(container);
