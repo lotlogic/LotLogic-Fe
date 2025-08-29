@@ -176,7 +176,7 @@ export const quoteFormSchema = z.object({
       const isValidLength = cleanPhone.length >= 10 && cleanPhone.length <= 15;
       
       return isValidFormat && isValidLength;
-    }, "Please enter a valid Australian phone number (e.g., 0412 345 678 or +61 412 345 678)"),
+    }, "Please enter a valid Australian phone number)"),
 
   selectedBuilders: z.array(z.string())
     .min(1, "Please select at least one builder"),
