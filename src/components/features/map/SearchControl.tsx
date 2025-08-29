@@ -51,7 +51,7 @@ export function SearchControl({ onResultSelect }: SearchControlProps) {
 
       setResults(response.data.features || []);
     } catch (error) {
-      console.error('Search error:', error);
+      // console.error('Search error:', error);
       setResults([]);
     } finally {
       setIsLoading(false);
