@@ -5,14 +5,12 @@ export const useLots = () => {
   return useQuery({
     queryKey: ['lots'],
     queryFn: lotApi.getAllLots,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 1 * 60 * 1000, // 1 minutes
     refetchOnWindowFocus: false,
   });
 };
 
 export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
-
-  
   return {
     type: 'FeatureCollection' as const,
     features: lots.map((lot) => {

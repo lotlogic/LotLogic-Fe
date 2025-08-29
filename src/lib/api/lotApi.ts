@@ -24,6 +24,11 @@ export interface DatabaseLot {
   createdAt: string;
   updatedAt: string;
   geometry: GeoJSON.Polygon; // This will be extracted from geojson
+  zoningSetbacks?: {
+    frontSetback: number;
+    rearSetback: number;
+    sideSetback: number;
+  } | null;
 }
 
 export interface LotCalculationResponse {
