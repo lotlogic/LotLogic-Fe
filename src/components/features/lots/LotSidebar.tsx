@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from "../../ui/Button";
-import { X, ChevronLeft, ArrowRight, ChevronRight } from 'lucide-react';
-import type { LotSidebarProps } from "../../../types/lot";
-import { getZoningColor, hexToRgba } from "../../../lib/utils/zoning";
-import { FilterSectionWithSingleLineSliders } from "../../ui/HouseDesignFilter";
-import { Sidebar } from "../../ui/Sidebar";
+import { Button } from "@/components/ui/Button";
+import { ArrowRight } from 'lucide-react';
+import type { LotSidebarProps } from "@/types/lot";
+import { getZoningColor, hexToRgba } from "@/lib/utils/zoning";
+import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
+import { Sidebar } from "@/components/ui/Sidebar";
+import { ImageCarouselModal, SingleImageModal } from "@/components/ui/DynamicModal";
 
 import { GetYourQuoteSidebar } from '../quote/QuoteSideBar';
-import type { DesignState, HouseDesignItem } from "../../../types/houseDesign";
-import { useContent } from "../../../hooks/useContent";
-import { getColorClass } from "../../../constants/content";
+import type { DesignState, HouseDesignItem } from "@/types/houseDesign";
+import { useContent } from "@/hooks/useContent";
+import { getColorClass } from "@/constants/content";
 import { SummaryView } from "./SummaryView";
 import { HouseDesignList } from "../facades/HouseDesignList";
 import { Diamond } from "lucide-react";
-import { getImageUrl } from "../../../lib/api/lotApi";
-import { useModalStore } from "../../../stores/modalStore";
-import { useHouseDesigns } from "../../../hooks/useHouseDesigns";
+import { getImageUrl } from "@/lib/api/lotApi";
+import { useModalStore } from "@/stores/modalStore";
+import { useHouseDesigns } from "@/hooks/useHouseDesigns";
 
 export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, onZoningDataUpdate }: LotSidebarProps) {
 
@@ -170,7 +171,9 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
         onSelectFloorPlan({
           url: floorPlanUrl,
           coordinates,
-          houseArea: houseArea
+          houseArea: houseArea,
+          houseWidth: design.minLotWidth,
+          houseDepth: design.minLotDepth
         });
       }
     } else if (!design && onSelectFloorPlan) {
@@ -334,120 +337,32 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
         </React.Suspense>
       )}
 
-      {/* Floor Plan Modal (Popup) */}
-      {showFloorPlanModal && selectedHouseDesignForModals && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[16px] w-[956px] h-[662px] overflow-hidden shadow-2xl flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-xl font-semibold">
-                Lot ID: {lot.id}, {selectedHouseDesignForModals.title}
-              </h3>
-              <button
-                onClick={() => setShowFloorPlanModal(false)}
-                className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
+      {/* Floor Plan Modal */}
+      <SingleImageModal
+        open={showFloorPlanModal && !!selectedHouseDesignForModals}
+        onClose={() => setShowFloorPlanModal(false)}
+        title={`Lot ID: ${lot.id}, ${selectedHouseDesignForModals?.title || ''}`}
+        imageSrc={selectedHouseDesignForModals?.floorPlanImage ? getImageUrl(selectedHouseDesignForModals.floorPlanImage) : ''}
+        imageAlt="Floor Plan"
+      />
+      
 
-            {/* Floor Plan Image */}
-            <div className="flex-1 flex items-center justify-center overflow-hidden px-6 pb-6">
-              {selectedHouseDesignForModals.floorPlanImage ? (
-                <img
-                  src={getImageUrl(selectedHouseDesignForModals.floorPlanImage)}
-                  alt="Floor Plan"
-                  className="max-w-full max-h-full object-contain"
-                />
-              ) : (
-                <p className="text-center text-gray-500">Floor plan not available for this design.</p>
-              )}
-            </div>
+        {/* Facade Modal */}
+        <ImageCarouselModal
+         open={showFacadeModal && !!selectedHouseDesignForModals}
+         onClose={() => { setShowFacadeModal(false); setCurrentModalFacadeIdx(0); }}
+         title={`${selectedHouseDesignForModals?.title || ''} - Facades`}
+         images={(selectedHouseDesignForModals?.images || []).map((img, index) => ({
+           src: getImageUrl(img.src),
+           alt: `Facade ${index + 1}`,
+           label: img.faced || `Facade ${index + 1}`
+         }))}
+         currentIndex={currentModalFacadeIdx}
+         onIndexChange={setCurrentModalFacadeIdx}
+         showThumbnails={true}
+       /> 
 
-          </div>
-        </div>
-      )}
 
-      {/* Facade Modal (Popup) */}
-      {showFacadeModal && selectedHouseDesignForModals && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[16px] w-[956px] h-[662px] overflow-hidden shadow-2xl flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-xl font-semibold">
-                {selectedHouseDesignForModals.title} - Facades
-              </h3>
-              <button
-                onClick={() => { setShowFacadeModal(false); setCurrentModalFacadeIdx(0); }} // Reset index on close
-                className="p-2 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            {/* Facade Images */}
-            <div className="p-6 flex-1 overflow-auto relative">
-              {/* Use facade images from API response */}
-              {(() => {
-                const facadeImages = selectedHouseDesignForModals.images || [];
-                
-                return facadeImages.length > 0 ? (
-                <>
-                  <div className="relative w-[900px] h-[430px] mb-4 flex items-center justify-center">
-                    <img
-                      src={getImageUrl(facadeImages[currentModalFacadeIdx]?.src) || ''}
-                      alt={`Facade ${currentModalFacadeIdx + 1}`}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                    <div className="absolute top-0 left-0 right-0 bg-black/30 text-white text-center py-2 rounded-t-lg">
-                      {lotSidebar.facedOption}: {facadeImages[currentModalFacadeIdx]?.faced || 'N/A'}
-                    </div>
-                    {facadeImages.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => setCurrentModalFacadeIdx(prev => (prev - 1 + facadeImages.length) % facadeImages.length)}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
-                        >
-                          <ChevronLeft className="h-6 w-6" />
-                        </button>
-                        <button
-                          onClick={() => setCurrentModalFacadeIdx(prev => (prev + 1) % facadeImages.length)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full"
-                        >
-                          <ChevronRight className="h-6 w-6" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Thumbnails below the main facade image */}
-                  <div className="flex justify-center gap-2 overflow-x-auto pb-2">
-                    {facadeImages.map((img, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setCurrentModalFacadeIdx(idx)}
-                        className={`w-16 h-16 rounded object-cover border-2 ${currentModalFacadeIdx === idx ? getColorClass('primary', 'border') : 'border-transparent'} flex-shrink-0 relative group`}
-                        title={img.faced || `Facade ${idx + 1}`}
-                      >
-                        <img src={getImageUrl(img.src)} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover rounded" />
-
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                          {img.faced || `Facade ${idx + 1}`}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-black"></div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <p className="text-center text-gray-500">Facades not available for this design.</p>
-              );
-              })()}
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

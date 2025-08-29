@@ -24,6 +24,12 @@ export interface DatabaseLot {
   createdAt: string;
   updatedAt: string;
   geometry: GeoJSON.Polygon; // This will be extracted from geojson
+  frontageCoordinate?: string | null; // Frontage coordinate as GeoJSON LineString
+  zoningSetbacks?: {
+    frontSetback: number;
+    rearSetback: number;
+    sideSetback: number;
+  } | null;
 }
 
 export interface LotCalculationResponse {
@@ -61,6 +67,8 @@ export interface HouseDesignItemResponse {
   id: string;
   title: string;
   area: number;
+  minLotWidth: number;
+  minLotDepth: number;
   image: string;
   images: Array<{
     src: string;

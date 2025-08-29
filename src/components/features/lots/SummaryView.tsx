@@ -1,7 +1,7 @@
 import { Diamond, Home } from "lucide-react";
-import type { LotData } from "../../../types/lot";
-import { hexToRgba } from "../../../lib/utils/zoning";
-import { getColorClass, colors } from "../../../constants/content";
+import type { LotData } from "@/types/lot";
+import { hexToRgba } from "@/lib/utils/zoning";
+import { getColorClass, colors } from "@/constants/content";
 
 interface SummaryViewProps {
   lot: LotData;

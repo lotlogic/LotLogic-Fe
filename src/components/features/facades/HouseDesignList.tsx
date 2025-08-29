@@ -1,14 +1,14 @@
 import { Bath, BedDouble, Bookmark, Car, Funnel, MailQuestionMark } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { colors, filter as filterContent, houseDesign, lotSidebar, getColorClass } from "../../../constants/content";
-import { useHouseDesigns } from "../../../hooks/useHouseDesigns";
-import type { HouseDesignFilterRequest } from "../../../lib/api/lotApi";
-import { getImageUrl } from "../../../lib/api/lotApi";
-import type { HouseDesignItem, HouseDesignListProps } from "../../../types/houseDesign";
-import { Button } from "../../ui/Button";
-import { showToast } from "../../ui/Toast";
-import { trackHouseDesignInteraction, trackPropertySaved } from "../../../lib/analytics/segment";
-import { useSavedPropertiesStore } from "../../../stores/savedPropertiesStore";
+import { colors, filter as filterContent, houseDesign, lotSidebar, getColorClass } from "@/constants/content";
+import { useHouseDesigns } from "@/hooks/useHouseDesigns";
+import type { HouseDesignFilterRequest } from "@/lib/api/lotApi";
+import { getImageUrl } from "@/lib/api/lotApi";
+import type { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
+import { Button } from "@/components/ui/Button";
+import { showToast } from "@/components/ui/Toast";
+import { trackHouseDesignInteraction, trackPropertySaved } from "@/lib/analytics/segment";
+import { useSavedPropertiesStore } from "@/stores/savedPropertiesStore";
 
 
 

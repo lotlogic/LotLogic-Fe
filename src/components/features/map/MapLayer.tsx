@@ -12,27 +12,22 @@ const SavedPropertiesSidebar = lazy(() => import("./SavedPropertiesSidebar").the
 // Import optimized components
 import { MapLayers } from './MapLayers';
 import { MapControls } from './MapControls';
-import { useMapInitialization } from '../../../hooks/useMapInitialization';
+import { useMapInitialization } from '@/hooks/useMapInitialization';
 
 import '../map/MapControls.css';
-import { useLotDetails } from "../../../hooks/useLotDetails";
-import type { SavedProperty } from "../../../types/ui";
-import { useLots, convertLotsToGeoJSON } from "../../../hooks/useLots";
-import { getImageUrl } from "../../../lib/api/lotApi";
-import { useModalStore } from "../../../stores/modalStore";
-import type { SetbackValues } from '../../../lib/utils/geometry';
-import type { LotProperties } from "../../../types/lot";
+import { useLotDetails } from "@/hooks/useLotDetails";
+import type { SavedProperty } from "@/types/ui";
+import { useLots, convertLotsToGeoJSON } from "@/hooks/useLots";
+import { getImageUrl } from "@/lib/api/lotApi";
+import { useModalStore } from "@/stores/modalStore";
+import type { SetbackValues } from '@/lib/utils/geometry';
+import type { LotProperties } from "@/types/lot";
+import type { FloorPlan } from "@/types/houseDesign";
 
 
 // -----------------------------
 // Types
 // -----------------------------
-
-type FloorPlan = {
-  url: string;
-  coordinates: [[number, number], [number, number], [number, number], [number, number]];
-  houseArea?: number;
-};
 
 // -----------------------------
 // Component
@@ -47,7 +42,8 @@ export default function ZoneMap() {
   const [sValuesMarkers, setSValuesMarkers] = useState<mapboxgl.Marker[]>([]);
 
   // Setbacks (m). Change front to 9 to see the front edge move 9m inward.
-  const [setbackValues, setSetbackValues] = useState<SetbackValues>({ front: 4, side: 3, rear: 3 });
+
+  
 
   // FSR buildable area (m²) requested; will be capped by setbacks buildable area
   const [fsrBuildableArea, setFsrBuildableArea] = useState(300);
@@ -57,6 +53,8 @@ export default function ZoneMap() {
 
   // Data
   const { data: lotsData, isLoading: isLoadingLots, error: lotsError } = useLots();
+
+  //convert lotsData to geojson format for mapbox
   const estateLots = lotsData ? convertLotsToGeoJSON(lotsData) : { type: 'FeatureCollection' as const, features: [] };
 
   // Keep sidebar open ref in sync
@@ -65,32 +63,31 @@ export default function ZoneMap() {
   // Lot details for sidebar
   const lotId = selectedLot?.properties?.ID?.toString() || null;
   const { data: lotApiData, isLoading: isLoadingLotData, error: lotApiError } = useLotDetails(lotId);
+  const [setbackValues, setSetbackValues] = useState<SetbackValues>({ front: 4, side: 3, rear: 3 });
 
   // Handle zoning data updates from LotSidebar
   const handleZoningDataUpdate = useCallback((zoning: { fsr: number; frontSetback: number; rearSetback: number; sideSetback: number }) => {
     const { fsr, frontSetback, rearSetback, sideSetback } = zoning;
     setFsrBuildableArea(fsr);
+    // Convert from meters to decimeters (API returns meters, system expects decimeters)
     setSetbackValues({
       front: frontSetback,
       side: sideSetback,
-      rear: rearSetback
+      rear: rearSetback 
     });
   }, []);
 
-  // Handle overlay toggling - DISABLED FOR NOW
-  // const handleOverlayToggle = useCallback((overlayType: string, enabled: boolean) => {
-  //   console.log('Overlay toggle:', overlayType, enabled);
-  //   setActiveOverlays(prev => {
-  //     const newSet = new Set(prev);
-  //     if (enabled) {
-  //       newSet.add(overlayType);
-  //     } else {
-  //       newSet.delete(overlayType);
-  //     }
-  //     console.log('Active overlays:', Array.from(newSet));
-  //     return newSet;
-  //   });
-  // }, []);
+  // Update setback values when lot data is loaded (if it contains zoning setbacks)
+  useEffect(() => {
+    if (lotApiData?.zoningSetbacks) {
+      console.log('MapLayer: Updating setback values from lot API:', lotApiData.zoningSetbacks);
+      setSetbackValues({
+        front: lotApiData.zoningSetbacks.frontSetback ,
+        side: lotApiData.zoningSetbacks.sideSetback ,
+        rear: lotApiData.zoningSetbacks.rearSetback
+      });
+    }
+  }, [lotApiData?.zoningSetbacks]);
 
 
 
@@ -169,6 +166,7 @@ export default function ZoneMap() {
 
     // Handle overlay toggle
     const handleOverlayToggle = (overlayType: string, enabled: boolean) => {
+
       setActiveOverlays(prev => {
         const newSet = new Set(prev);
         if (enabled) {
@@ -176,6 +174,7 @@ export default function ZoneMap() {
         } else {
           newSet.delete(overlayType);
         }
+
         return newSet;
       });
     };
@@ -186,6 +185,7 @@ export default function ZoneMap() {
   // Set initial view when lots data is available
   useEffect(() => {
     if (!mapRef || !lotsData || lotsData.length === 0) return;
+  
     const first = lotsData[0];
     const coords = first?.geometry?.coordinates?.[0];
     if (!coords?.length) return;
@@ -284,6 +284,7 @@ export default function ZoneMap() {
         showFloorPlanModal={showFloorPlanModal}
         showFacadeModal={showFacadeModal}
         setSValuesMarkers={setSValuesMarkers}
+        activeOverlays={activeOverlays}
       />
 
       {selectedLot && (

@@ -35,6 +35,7 @@ export function useMapInitialization(
     mapRef.current = map;
 
     map.on('load', () => {
+      //set the source for the map
       map.addSource('demo-lot-source', {
         type: 'geojson',
         data: dataRef.current,

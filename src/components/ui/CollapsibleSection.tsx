@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { CollapsibleSectionProps } from "../../types/lot";
+import type { CollapsibleSectionProps } from "@/types/lot";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 export function CollapsibleSection({ title, children, initialOpen = true }: CollapsibleSectionProps) {

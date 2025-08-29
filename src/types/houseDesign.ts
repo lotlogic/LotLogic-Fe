@@ -19,6 +19,8 @@ export interface HouseDesignItem {
   id: string;
   title: string;
   area: string; 
+  minLotWidth?: number;
+  minLotDepth?: number;
   image: string; 
   images: HouseDesignImage[]; 
   bedrooms: number;
@@ -186,3 +188,11 @@ export const quoteFormSchema = z.object({
 });
 
 export type QuoteFormData = z.infer<typeof quoteFormSchema>;
+
+export type FloorPlan = {
+  url: string;
+  coordinates: [[number, number], [number, number], [number, number], [number, number]];
+  houseArea?: number;
+  houseWidth?: number;
+  houseDepth?: number;
+};

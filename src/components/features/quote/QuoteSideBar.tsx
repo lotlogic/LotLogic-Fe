@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { Button } from "../../ui/Button";
-import { Sidebar } from "../../ui/Sidebar";
-import { MultiSelect } from "../../ui/MultiSelect";
-import { Checkbox } from "../../ui/checkbox";
-import type { GetYourQuoteSidebarProps, QuoteFormData } from "../../../types/houseDesign";
-import { quoteFormSchema } from "../../../types/houseDesign";
-import { quote, formatContent, getColorClass } from "../../../constants/content";
-import { Input } from '../../ui/input';
-import { getImageUrl, submitEnquiry } from '../../../lib/api/lotApi';
-import { useBuilders, convertBuildersToOptions } from '../../../hooks/useBuilders';
-import { trackQuoteFormInteraction, trackEnquirySubmitted } from '../../../lib/analytics/segment';
+import { Button } from "@/components/ui/Button";
+import { Sidebar } from "@/components/ui/Sidebar";
+import { MultiSelect } from "@/components/ui/MultiSelect";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { GetYourQuoteSidebarProps, QuoteFormData } from "@/types/houseDesign";
+import { quoteFormSchema } from "@/types/houseDesign";
+import { quote, formatContent, getColorClass } from "@/constants/content";
+import { Input } from '@/components/ui/input';
+import { getImageUrl, submitEnquiry } from '@/lib/api/lotApi';
+import { useBuilders, convertBuildersToOptions } from '@/hooks/useBuilders';
+import { trackQuoteFormInteraction, trackEnquirySubmitted } from '@/lib/analytics/segment';
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);

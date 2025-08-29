@@ -1,4 +1,4 @@
-import { brand, colors } from "../../constants/content";
+import { brand, colors } from "@/constants/content";
 
 export default function Header() {
   const handleLogoClick = () => {

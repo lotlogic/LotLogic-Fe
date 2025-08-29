@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 import mapboxgl, { Map, MapMouseEvent } from 'mapbox-gl';
 import type { MapboxGeoJSONFeature } from 'mapbox-gl';
-import { debounce } from '../../../lib/utils/geometry';
-import type { LotProperties } from '../../../types/lot';
-import { trackLotSelected } from '../../../lib/analytics/segment';
+import { debounce } from '@/lib/utils/geometry';
+import type { LotProperties } from '@/types/lot';
+import { trackLotSelected } from '@/lib/analytics/segment';
 
 
 // -----------------------------
