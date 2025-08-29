@@ -170,3 +170,66 @@ export function debounce<T extends (...args: any[]) => any>(func: T, wait: numbe
     timeout = setTimeout(() => func(...args), wait);
   }) as T;
 }
+
+// -----------------------------
+// S-value mapping utility
+// -----------------------------
+
+/**
+ * Maps s-values from database to the correct sides by calculating actual distances
+ * @param coordinates - Polygon coordinates [p0, p1, p2, p3, p0]
+ * @param sValues - Array of s-values from database [s1, s2, s3, s4]
+ * @returns Object with mapped s-values for each side
+ */
+export function mapSValuesToSides(coordinates: Pt[], sValues: number[]): { s1: number, s2: number, s3: number, s4: number } {
+  if (coordinates.length < 5 || sValues.length !== 4) {
+    throw new Error('Invalid coordinates or s-values');
+  }
+
+  // Calculate actual distances for each side
+  const sideDistances = [];
+  for (let i = 0; i < 4; i++) {
+    const distance = turf.distance(coordinates[i], coordinates[i + 1], { units: 'meters' });
+    sideDistances.push({ index: i, distance });
+  }
+
+  // Sort s-values by size to match with sorted distances
+  const sortedSValues = [...sValues].sort((a, b) => a - b);
+  const sortedDistances = [...sideDistances].sort((a, b) => a.distance - b.distance);
+
+  // Map s-values to sides based on distance matching
+  const result = { s1: 0, s2: 0, s3: 0, s4: 0 };
+  
+  for (let i = 0; i < 4; i++) {
+    const sideIndex = sortedDistances[i].index;
+    const sValue = sortedSValues[i];
+    
+    switch (sideIndex) {
+      case 0: result.s1 = sValue; break;
+      case 1: result.s2 = sValue; break;
+      case 2: result.s3 = sValue; break;
+      case 3: result.s4 = sValue; break;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Alternative: Map s-values directly by coordinate order (simpler approach)
+ * @param coordinates - Polygon coordinates [p0, p1, p2, p3, p0]
+ * @param sValues - Array of s-values from database [s1, s2, s3, s4]
+ * @returns Object with mapped s-values for each side
+ */
+export function mapSValuesByOrder(coordinates: Pt[], sValues: number[]): { s1: number, s2: number, s3: number, s4: number } {
+  if (coordinates.length < 5 || sValues.length !== 4) {
+    throw new Error('Invalid coordinates or s-values');
+  }
+
+  return {
+    s1: sValues[0], // coordinates[0] to coordinates[1]
+    s2: sValues[1], // coordinates[1] to coordinates[2]
+    s3: sValues[2], // coordinates[2] to coordinates[3]
+    s4: sValues[3]  // coordinates[3] to coordinates[0]
+  };
+}

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import * as turf from '@turf/turf';
-import { insetQuadPerSideLL, createSValueLabel, type Pt, type SetbackValues } from '@/lib/utils/geometry';
+import { insetQuadPerSideLL, createSValueLabel, mapSValuesToSides, type Pt, type SetbackValues } from '@/lib/utils/geometry';
 import type { LotProperties } from '@/types/lot';
 import { getImageUrlWithCorsProxy } from '@/lib/api/lotApi';
 import type { FloorPlan } from '@/types/houseDesign';
@@ -78,6 +78,7 @@ const calculateHouseBoundary = (
     // Calculate the lot's orientation
     const geometry = selectedLot.geometry as GeoJSON.Polygon;
     const coordinates = geometry.coordinates[0] as [number, number][];
+    console.log(coordinates, "coordinates");
     
     // Calculate sides distances from the lot geometry
     const side1 = turf.distance(coordinates[0], coordinates[1], { units: 'meters' });
@@ -309,12 +310,12 @@ export function MapLayers({
       if (map.getLayer('setback-boundary-layer')) map.removeLayer('setback-boundary-layer');
       if (map.getSource('setback-boundary-source')) map.removeSource('setback-boundary-source');
       map.addSource('setback-boundary-source', { type: 'geojson', data: innerPoly });
-      map.addLayer({
-        id: 'setback-boundary-layer',
-        type: 'line',
-        source: 'setback-boundary-source',
-        paint: { 'line-color': '#FF0000', 'line-width': 2, 'line-dasharray': [2, 2] }
-      });
+      // map.addLayer({
+      //   id: 'setback-boundary-layer',
+      //   type: 'line',
+      //   source: 'setback-boundary-source',
+      //   paint: { 'line-color': '#FF0000', 'line-width': 2, 'line-dasharray': [2, 2] }
+      // });
 
       // Add center marker for testing
       // const centerMarker = new mapboxgl.Marker({
@@ -400,13 +401,32 @@ export function MapLayers({
       }
     }
 
-    // S labels on sides
+    // S labels on sides - Map s-values correctly to coordinates
     const mid = (a: Pt, b: Pt): Pt => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-    const sides: Array<{ a: Pt; b: Pt; val: number | null | undefined; label: 'S1' | 'S2' | 'S3' | 'S4'; pos: 'top' | 'right' | 'bottom' | 'left' }> = [
-      { a: coordinates[0], b: coordinates[1], val: s1, label: 'S1', pos: 'top' },
-      { a: coordinates[1], b: coordinates[2], val: s2, label: 'S2', pos: 'right' },
-      { a: coordinates[2], b: coordinates[3], val: s3, label: 'S3', pos: 'bottom' },
-      { a: coordinates[3], b: coordinates[0], val: s4, label: 'S4', pos: 'left' },
+    
+    // Calculate actual distances for debugging
+    const actualDistances = [
+      turf.distance(coordinates[0], coordinates[1], { units: 'meters' }),
+      turf.distance(coordinates[1], coordinates[2], { units: 'meters' }),
+      turf.distance(coordinates[2], coordinates[3], { units: 'meters' }),
+      turf.distance(coordinates[3], coordinates[0], { units: 'meters' })
+    ];
+    
+    console.log('Coordinates:', coordinates);
+    console.log('S-values from DB:', [s1, s2, s3, s4]);
+    console.log('Actual distances:', actualDistances);
+    
+    // Map s-values to the correct sides based on distance matching
+    const sValues = [s1 ?? 0, s2 ?? 0, s3 ?? 0, s4 ?? 0];
+    const mappedSValues = mapSValuesToSides(coordinates, sValues);
+    
+    console.log('Mapped s-values:', mappedSValues);
+    
+    const sides: Array<{ a: Pt; b: Pt; val: number | null | undefined; pos: 'top' | 'right' | 'bottom' | 'left' }> = [
+      { a: coordinates[0], b: coordinates[1], val: mappedSValues.s1, pos: 'top' },
+      { a: coordinates[1], b: coordinates[2], val: mappedSValues.s2, pos: 'right' },
+      { a: coordinates[2], b: coordinates[3], val: mappedSValues.s3, pos: 'bottom' },
+      { a: coordinates[3], b: coordinates[0], val: mappedSValues.s4, pos: 'left' },
     ];
     
     sides.forEach(side => {
@@ -414,7 +434,7 @@ export function MapLayers({
       if (!showFloorPlanModal && !showFacadeModal) {
         const mpt = mid(side.a, side.b);
         const marker = new mapboxgl.Marker({
-          element: createSValueLabel(`${side.label}: ${side.val}m`, side.pos),
+          element: createSValueLabel(`${side.val}m`, side.pos),
           anchor: 'center'
         }).setLngLat(mpt).addTo(map);
         newMarkers.push(marker);
