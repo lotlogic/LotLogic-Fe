@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, useCallback, Suspense, lazy } from 'react'
 import type { MapboxGeoJSONFeature } from 'mapbox-gl';
 
 // Lazy load components
-const LotSidebar = lazy(() => import("../lots/LotSidebar").then(module => ({ default: module.LotSidebar })));
+// const LotSidebar = lazy(() => import("../lots/LotSidebar").then(module => ({ default: module.LotSidebar })));
+import { LotSidebar } from "../lots/LotSidebar";
 const SearchControl = lazy(() => import("./SearchControl").then(module => ({ default: module.SearchControl })));
 const LayersButton = lazy(() => import("./LayersButton").then(module => ({ default: module.LayersButton })));
 const SavedButton = lazy(() => import("./SavedButton").then(module => ({ default: module.SavedButton })));
@@ -80,7 +81,7 @@ export default function ZoneMap() {
   // Update setback values when lot data is loaded (if it contains zoning setbacks)
   useEffect(() => {
     if (lotApiData?.zoningSetbacks) {
-      console.log('MapLayer: Updating setback values from lot API:', lotApiData.zoningSetbacks);
+      // console.log('MapLayer: Updating setback values from lot API:', lotApiData.zoningSetbacks);
       setSetbackValues({
         front: lotApiData.zoningSetbacks.frontSetback ,
         side: lotApiData.zoningSetbacks.sideSetback ,

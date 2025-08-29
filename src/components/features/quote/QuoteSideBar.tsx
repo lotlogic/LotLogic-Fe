@@ -128,7 +128,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 
                 setErrors(fieldErrors);
             } else {
-                console.error('Form submission error:', error);
+                // console.error('Form submission error:', error);
                 // Show user-friendly error message
                 setErrors({
                     additionalComments: 'Failed to submit enquiry. Please try again.'

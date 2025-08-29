@@ -78,7 +78,7 @@ const calculateHouseBoundary = (
     // Calculate the lot's orientation
     const geometry = selectedLot.geometry as GeoJSON.Polygon;
     const coordinates = geometry.coordinates[0] as [number, number][];
-    console.log(coordinates, "coordinates");
+    
     
     // Calculate sides distances from the lot geometry
     const side1 = turf.distance(coordinates[0], coordinates[1], { units: 'meters' });
@@ -405,22 +405,22 @@ export function MapLayers({
     const mid = (a: Pt, b: Pt): Pt => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
     
     // Calculate actual distances for debugging
-    const actualDistances = [
-      turf.distance(coordinates[0], coordinates[1], { units: 'meters' }),
-      turf.distance(coordinates[1], coordinates[2], { units: 'meters' }),
-      turf.distance(coordinates[2], coordinates[3], { units: 'meters' }),
-      turf.distance(coordinates[3], coordinates[0], { units: 'meters' })
-    ];
+      // const actualDistances = [
+      //   turf.distance(coordinates[0], coordinates[1], { units: 'meters' }),
+      //   turf.distance(coordinates[1], coordinates[2], { units: 'meters' }),
+      //   turf.distance(coordinates[2], coordinates[3], { units: 'meters' }),
+      //   turf.distance(coordinates[3], coordinates[0], { units: 'meters' })
+      // ];
     
-    console.log('Coordinates:', coordinates);
-    console.log('S-values from DB:', [s1, s2, s3, s4]);
-    console.log('Actual distances:', actualDistances);
+    // console.log('Coordinates:', coordinates);
+    // console.log('S-values from DB:', [s1, s2, s3, s4]);
+    // console.log('Actual distances:', actualDistances);
     
     // Map s-values to the correct sides based on distance matching
     const sValues = [s1 ?? 0, s2 ?? 0, s3 ?? 0, s4 ?? 0];
     const mappedSValues = mapSValuesToSides(coordinates, sValues);
     
-    console.log('Mapped s-values:', mappedSValues);
+    // console.log('Mapped s-values:', mappedSValues);
     
     const sides: Array<{ a: Pt; b: Pt; val: number | null | undefined; pos: 'top' | 'right' | 'bottom' | 'left' }> = [
       { a: coordinates[0], b: coordinates[1], val: mappedSValues.s1, pos: 'top' },

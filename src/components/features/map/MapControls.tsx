@@ -155,7 +155,6 @@ export function MapControls({
           });
         }
       } catch (error) {
-        console.error('Error fitting bounds to lot:', error);
         // Fallback to center point zoom on error
         map.flyTo({ 
           center: e.lngLat, 
