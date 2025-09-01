@@ -57,25 +57,34 @@ export function MapControls({
   useEffect(() => {
     if (!map || !initialView) return;
 
-    // Find the compass button and add click handler
-    const compassButton = map.getContainer().querySelector('.mapboxgl-ctrl-compass');
-    if (compassButton) {
-      const handleCompassClick = () => {
-        map.flyTo({
-          center: initialView.center,
-          zoom: initialView.zoom,
-          bearing: 0,
-          duration: 1000
-        });
-      };
+    // Use a timeout to ensure the compass button is available after map loads
+    const timeoutId = setTimeout(() => {
+      const compassButton = map.getContainer().querySelector('.mapboxgl-ctrl-compass');
+      console.log('Compass button found:', !!compassButton);
       
-      compassButton.addEventListener('click', handleCompassClick);
-      
-      // Cleanup
-      return () => {
-        compassButton.removeEventListener('click', handleCompassClick);
-      };
-    }
+      if (compassButton) {
+        const handleCompassClick = () => {
+          console.log('Compass button clicked, dispatching recenter event');
+          // Use the same event system as mobile
+          window.dispatchEvent(new CustomEvent('recenter-map'));
+        };
+        
+        // Add click listener
+        compassButton.addEventListener('click', handleCompassClick);
+        
+        // Store the handler for cleanup
+        (compassButton as any)._recenterHandler = handleCompassClick;
+      }
+    }, 1000);
+
+    return () => {
+      clearTimeout(timeoutId);
+      // Cleanup if button exists
+      const compassButton = map.getContainer().querySelector('.mapboxgl-ctrl-compass');
+      if (compassButton && (compassButton as any)._recenterHandler) {
+        compassButton.removeEventListener('click', (compassButton as any)._recenterHandler);
+      }
+    };
   }, [map, initialView]);
 
   // Add mouse interactions

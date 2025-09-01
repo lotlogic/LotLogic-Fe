@@ -217,6 +217,43 @@ export default function ZoneMap() {
     if (mapRef) mapRef.flyTo({ center: coordinates, zoom: 15 });
   }, [mapRef]);
 
+  // Add event listeners for mobile search and recenter
+  useEffect(() => {
+    const handleMobileSearchResult = (event: CustomEvent) => {
+      const { coordinates } = event.detail;
+      if (mapRef && coordinates) {
+        mapRef.flyTo({
+          center: coordinates,
+          zoom: 16,
+          duration: 1000
+        });
+      }
+    };
+
+    const handleRecenter = () => {
+      if (mapRef && mapInitialView) {
+        mapRef.flyTo({
+          center: mapInitialView.center,
+          zoom: mapInitialView.zoom,
+          duration: 1000
+        });
+      }
+    };
+
+    // Only add mobile event listeners if on mobile
+    if (isMobile) {
+      window.addEventListener('search-result-selected', handleMobileSearchResult as EventListener);
+    }
+    window.addEventListener('recenter-map', handleRecenter);
+
+    return () => {
+      if (isMobile) {
+        window.removeEventListener('search-result-selected', handleMobileSearchResult as EventListener);
+      }
+      window.removeEventListener('recenter-map', handleRecenter);
+    };
+  }, [mapRef, mapInitialView, isMobile]);
+
   return (
     <div className="relative h-full w-full">
       {(isLoading || isLoadingLots) && (

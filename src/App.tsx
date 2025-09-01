@@ -18,7 +18,7 @@ const queryClient = new QueryClient()
 
 function App() {
   const isMobile = useMobile();
-  const [activeTab, setActiveTab] = useState<'search' | 'saved' | 'layers' | 'share'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'saved' | 'layers' | 'recenter' | null>(null);
   const [showSearch, setShowSearch] = useState(false);
 
   // Initialize Segment analytics
@@ -43,13 +43,24 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleTabChange = (tab: 'search' | 'saved' | 'layers' | 'share') => {
+  const handleTabChange = (tab: 'search' | 'saved' | 'layers' | 'recenter') => {
+    // If clicking the same tab that's already active, dehighlight it
+    if (activeTab === tab) {
+      setActiveTab(null);
+      setShowSearch(false);
+      return;
+    }
+    
+    // Otherwise, select the new tab
     setActiveTab(tab);
     
     // Handle tab-specific actions
     if (tab === 'search') {
-      // Toggle search visibility - if already open, close it
-      setShowSearch(prev => !prev);
+      setShowSearch(true);
+    } else if (tab === 'recenter') {
+      // Dispatch recenter event for map
+      window.dispatchEvent(new CustomEvent('recenter-map'));
+      setShowSearch(false);
     } else {
       // Close search when switching to other tabs
       setShowSearch(false);

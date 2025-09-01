@@ -1,16 +1,16 @@
-import { Search, Bookmark, Layers, Send } from 'lucide-react';
+import { Search, Bookmark, Layers, Navigation } from 'lucide-react';
 
 interface MobileBottomNavProps {
-  activeTab?: 'search' | 'saved' | 'layers' | 'share';
-  onTabChange?: (tab: 'search' | 'saved' | 'layers' | 'share') => void;
+  activeTab?: 'search' | 'saved' | 'layers' | 'recenter' | null;
+  onTabChange?: (tab: 'search' | 'saved' | 'layers' | 'recenter') => void;
 }
 
-export default function MobileBottomNav({ activeTab = 'search', onTabChange }: MobileBottomNavProps) {
+export default function MobileBottomNav({ activeTab = null, onTabChange }: MobileBottomNavProps) {
   const tabs = [
     { id: 'search', icon: Search, label: 'Search' },
     { id: 'saved', icon: Bookmark, label: 'Saved' },
     { id: 'layers', icon: Layers, label: 'Layers' },
-    { id: 'share', icon: Send, label: 'Share' },
+    { id: 'recenter', icon: Navigation, label: 'Recenter' },
   ] as const;
 
   return (
