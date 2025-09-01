@@ -1,10 +1,13 @@
-import {  useEffect, Suspense, lazy } from 'react'
+import { useEffect, Suspense, lazy, useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import './index.css'
 
 import Header from '@/components/layouts/Header'
+import MobileBottomNav from '@/components/layouts/MobileBottomNav'
+import MobileSearch from '@/components/ui/MobileSearch'
+import { useMobile } from '@/hooks/useMobile'
 import { preloadCriticalComponents } from '@/utils/preload'
 import { trackEvent } from '@/lib/analytics/segment'
 
@@ -14,6 +17,10 @@ const ZoneMap = lazy(() => import('@/components/features/map/MapLayer'))
 const queryClient = new QueryClient()
 
 function App() {
+  const isMobile = useMobile();
+  const [activeTab, setActiveTab] = useState<'search' | 'saved' | 'layers' | 'share'>('search');
+  const [showSearch, setShowSearch] = useState(false);
+
   // Initialize Segment analytics
   useEffect(() => {
     // Track app load
@@ -35,12 +42,35 @@ function App() {
     
     return () => clearTimeout(timer);
   }, []);
+
+  const handleTabChange = (tab: 'search' | 'saved' | 'layers' | 'share') => {
+    setActiveTab(tab);
+    
+    // Handle tab-specific actions
+    if (tab === 'search') {
+      // Toggle search visibility - if already open, close it
+      setShowSearch(prev => !prev);
+    } else {
+      // Close search when switching to other tabs
+      setShowSearch(false);
+    }
+    // Add other tab handlers as needed
+  };
+
+  const handleSearch = (query: string) => {
+    console.log('Search query:', query);
+    setShowSearch(false);
+    // Implement search functionality here
+  };
   
   return (
     <QueryClientProvider client={queryClient}>
       <div className="h-screen w-screen flex flex-col overflow-hidden">
-        <Header />
-        <div className="flex-1 relative">
+        {/* Header - Only show on desktop */}
+        {!isMobile && <Header />}
+
+        {/* Main Content */}
+        <div className={`flex-1 relative ${isMobile ? 'pb-16' : ''}`}>
           <Suspense fallback={
             <div className="flex items-center justify-center h-full bg-gray-50">
               <div className="text-center">
@@ -52,6 +82,24 @@ function App() {
             <ZoneMap />
           </Suspense>
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        {isMobile && (
+          <MobileBottomNav 
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
+        )}
+
+        {/* Mobile Search - Only show when search tab is active */}
+        {isMobile && (
+          <MobileSearch
+            isOpen={showSearch}
+            onClose={() => setShowSearch(false)}
+            onSearch={handleSearch}
+          />
+        )}
+
         <ToastContainer
           position="bottom-right"
           autoClose={3000}

@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import mapboxgl, { Map, MapMouseEvent } from 'mapbox-gl';
 import type { MapboxGeoJSONFeature } from 'mapbox-gl';
 import { debounce } from '@/lib/utils/geometry';
 import type { LotProperties } from '@/types/lot';
 import { trackLotSelected } from '@/lib/analytics/segment';
-
+import { useMobile } from '@/hooks/useMobile';
 
 // -----------------------------
 // Props
@@ -27,26 +27,31 @@ export function MapControls({
   sidebarOpenRef,
   initialView
 }: MapControlsProps) {
+  const isMobile = useMobile();
   const handleResize = debounce(() => map?.resize(), 250);
-  const controlsAddedRef = useRef(false);
+  // const controlsAddedRef = useRef(false);
 
-  // Add standard navigation controls
+  // Add standard navigation controls (only zoom on mobile, full controls on tablet/desktop)
   useEffect(() => {
-    if (!map || controlsAddedRef.current) return;
+    if (!map) return;
 
-    // Check if navigation control already exists to prevent duplicates
+    // Remove existing controls first
     const existingControls = map.getContainer().querySelectorAll('.mapboxgl-ctrl-group');
-    if (existingControls.length === 0) {
+    existingControls.forEach(control => control.remove());
+
+    // Add controls based on screen size
+    if (!isMobile) {
+      // Desktop (≥769px): show full navigation control (zoom + recenter)
       map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      controlsAddedRef.current = true;
     }
+    // Mobile (≤768px): no zoom controls - hidden completely
 
     window.addEventListener('resize', handleResize);
 
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [map, handleResize]);
+  }, [map, isMobile, handleResize]);
 
   // Add compass reset functionality when initial view is available
   useEffect(() => {
@@ -177,3 +182,4 @@ export function MapControls({
 
   return null; // This component doesn't render anything
 }
+
