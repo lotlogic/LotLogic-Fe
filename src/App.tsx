@@ -7,6 +7,7 @@ import './index.css'
 import Header from '@/components/layouts/Header'
 import MobileBottomNav from '@/components/layouts/MobileBottomNav'
 import MobileSearch from '@/components/ui/MobileSearch'
+import { ZoningLayersSidebar } from '@/components/features/map/ZoningLayerSidebar'
 import { useMobile } from '@/hooks/useMobile'
 import { preloadCriticalComponents } from '@/utils/preload'
 import { trackEvent } from '@/lib/analytics/segment'
@@ -20,6 +21,8 @@ function App() {
   const isMobile = useMobile();
   const [activeTab, setActiveTab] = useState<'search' | 'saved' | 'layers' | 'recenter' | null>(null);
   const [showSearch, setShowSearch] = useState(false);
+  const [showLayers, setShowLayers] = useState(false);
+  const [activeOverlays, setActiveOverlays] = useState<Set<string>>(new Set());
 
   // Initialize Segment analytics
   useEffect(() => {
@@ -43,11 +46,33 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Listen for overlay state updates
+  useEffect(() => {
+    const handleOverlayStateResponse = (event: CustomEvent) => {
+      const { activeOverlays: newActiveOverlays } = event.detail;
+      setActiveOverlays(new Set(newActiveOverlays));
+    };
+
+    window.addEventListener('overlay-state-response', handleOverlayStateResponse as EventListener);
+
+    return () => {
+      window.removeEventListener('overlay-state-response', handleOverlayStateResponse as EventListener);
+    };
+  }, []);
+
+  // Request overlay state when layers tab is opened
+  useEffect(() => {
+    if (showLayers) {
+      window.dispatchEvent(new CustomEvent('get-overlay-state'));
+    }
+  }, [showLayers]);
+
   const handleTabChange = (tab: 'search' | 'saved' | 'layers' | 'recenter') => {
     // If clicking the same tab that's already active, dehighlight it
     if (activeTab === tab) {
       setActiveTab(null);
       setShowSearch(false);
+      setShowLayers(false);
       return;
     }
     
@@ -57,13 +82,19 @@ function App() {
     // Handle tab-specific actions
     if (tab === 'search') {
       setShowSearch(true);
+      setShowLayers(false);
+    } else if (tab === 'layers') {
+      setShowLayers(true);
+      setShowSearch(false);
     } else if (tab === 'recenter') {
       // Dispatch recenter event for map
       window.dispatchEvent(new CustomEvent('recenter-map'));
       setShowSearch(false);
+      setShowLayers(false);
     } else {
-      // Close search when switching to other tabs
+      // Close search and layers when switching to other tabs
       setShowSearch(false);
+      setShowLayers(false);
     }
     // Add other tab handlers as needed
   };
@@ -108,6 +139,31 @@ function App() {
             isOpen={showSearch}
             onClose={() => setShowSearch(false)}
             onSearch={handleSearch}
+          />
+        )}
+
+        {/* Mobile Layers - Only show when layers tab is active */}
+        {isMobile && (
+          <ZoningLayersSidebar
+            open={showLayers}
+            onClose={() => setShowLayers(false)}
+            onOverlayToggle={(overlayType, enabled) => {
+              // Dispatch overlay toggle event for map
+              window.dispatchEvent(new CustomEvent('overlay-toggle', {
+                detail: { overlayType, enabled }
+              }));
+              // Update local state immediately for UI responsiveness
+              setActiveOverlays(prev => {
+                const newSet = new Set(prev);
+                if (enabled) {
+                  newSet.add(overlayType);
+                } else {
+                  newSet.delete(overlayType);
+                }
+                return newSet;
+              });
+            }}
+            activeOverlays={activeOverlays}
           />
         )}
 

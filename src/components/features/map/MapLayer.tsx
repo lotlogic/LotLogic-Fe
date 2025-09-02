@@ -27,18 +27,12 @@ import type { LotProperties } from "@/types/lot";
 import type { FloorPlan } from "@/types/houseDesign";
 
 
-// -----------------------------
-// Types
-// -----------------------------
-
-// -----------------------------
-// Component
-// -----------------------------
 export default function ZoneMap() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const selectedIdRef = useRef<string | null>(null);
   const sidebarOpenRef = useRef<boolean>(false);
   const isMobile = useMobile();
+  const eventListenersAddedRef = useRef<boolean>(false);
 
   const [selectedLot, setSelectedLot] = useState<MapboxGeoJSONFeature & { properties: LotProperties } | null>(null);
   const [selectedFloorPlan, setSelectedFloorPlan] = useState<FloorPlan | null>(null);
@@ -240,19 +234,40 @@ export default function ZoneMap() {
       }
     };
 
-    // Only add mobile event listeners if on mobile
-    if (isMobile) {
-      window.addEventListener('search-result-selected', handleMobileSearchResult as EventListener);
+    const handleGetOverlayState = () => {
+      window.dispatchEvent(new CustomEvent('overlay-state-response', {
+        detail: { activeOverlays }
+      }));
+    };
+
+    const handleOverlayToggleEvent = (event: CustomEvent) => {
+      const { overlayType, enabled } = event.detail;
+      handleOverlayToggle(overlayType, enabled);
+    };
+
+    // Only add event listeners once
+    if (!eventListenersAddedRef.current) {
+      // Only add mobile event listeners if on mobile
+      if (isMobile) {
+        window.addEventListener('search-result-selected', handleMobileSearchResult as EventListener);
+      }
+      window.addEventListener('recenter-map', handleRecenter);
+      window.addEventListener('get-overlay-state', handleGetOverlayState);
+      window.addEventListener('overlay-toggle', handleOverlayToggleEvent as EventListener);
+      
+      eventListenersAddedRef.current = true;
     }
-    window.addEventListener('recenter-map', handleRecenter);
 
     return () => {
       if (isMobile) {
         window.removeEventListener('search-result-selected', handleMobileSearchResult as EventListener);
       }
       window.removeEventListener('recenter-map', handleRecenter);
+      window.removeEventListener('get-overlay-state', handleGetOverlayState);
+      window.removeEventListener('overlay-toggle', handleOverlayToggleEvent as EventListener);
+      eventListenersAddedRef.current = false;
     };
-  }, [mapRef, mapInitialView, isMobile]);
+  }, [mapRef, mapInitialView, isMobile, activeOverlays]);
 
   return (
     <div className="relative h-full w-full">
@@ -290,6 +305,8 @@ export default function ZoneMap() {
           </div>
         </>
       )}
+
+
 
       {/* Sidebars - only show on desktop since mobile uses bottom navigation */}
       {!isMobile && (
