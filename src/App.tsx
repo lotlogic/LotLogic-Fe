@@ -8,6 +8,7 @@ import Header from '@/components/layouts/Header'
 import MobileBottomNav from '@/components/layouts/MobileBottomNav'
 import MobileSearch from '@/components/ui/MobileSearch'
 import { ZoningLayersSidebar } from '@/components/features/map/ZoningLayerSidebar'
+import { SavedPropertiesSidebar } from '@/components/features/map/SavedPropertiesSidebar'
 import { useMobile } from '@/hooks/useMobile'
 import { preloadCriticalComponents } from '@/utils/preload'
 import { trackEvent } from '@/lib/analytics/segment'
@@ -22,6 +23,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<'search' | 'saved' | 'layers' | 'recenter' | null>(null);
   const [showSearch, setShowSearch] = useState(false);
   const [showLayers, setShowLayers] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
   const [activeOverlays, setActiveOverlays] = useState<Set<string>>(new Set());
 
   // Initialize Segment analytics
@@ -73,6 +75,7 @@ function App() {
       setActiveTab(null);
       setShowSearch(false);
       setShowLayers(false);
+      setShowSaved(false);
       return;
     }
     
@@ -83,18 +86,26 @@ function App() {
     if (tab === 'search') {
       setShowSearch(true);
       setShowLayers(false);
+      setShowSaved(false);
+    } else if (tab === 'saved') {
+      setShowSaved(true);
+      setShowSearch(false);
+      setShowLayers(false);
     } else if (tab === 'layers') {
       setShowLayers(true);
       setShowSearch(false);
+      setShowSaved(false);
     } else if (tab === 'recenter') {
       // Dispatch recenter event for map
       window.dispatchEvent(new CustomEvent('recenter-map'));
       setShowSearch(false);
       setShowLayers(false);
+      setShowSaved(false);
     } else {
-      // Close search and layers when switching to other tabs
+      // Close all panels when switching to other tabs
       setShowSearch(false);
       setShowLayers(false);
+      setShowSaved(false);
     }
     // Add other tab handlers as needed
   };
@@ -104,6 +115,8 @@ function App() {
     setShowSearch(false);
     // Implement search functionality here
   };
+
+
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -164,6 +177,19 @@ function App() {
               });
             }}
             activeOverlays={activeOverlays}
+          />
+        )}
+
+        {/* Mobile Saved Properties - Only show when saved tab is active */}
+        {isMobile && (
+          <SavedPropertiesSidebar
+            open={showSaved}
+            onClose={() => setShowSaved(false)}
+            onViewDetails={(property) => {
+              console.log('Viewing property details:', property);
+              // TODO: Implement property details view
+              setShowSaved(false);
+            }}
           />
         )}
 

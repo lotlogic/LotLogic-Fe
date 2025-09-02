@@ -55,9 +55,17 @@ export function SavedPropertiesSidebar({
     return (
         <div
             ref={sidebarRef}
-            className={`absolute top-0 right-0 h-full w-[450px] bg-white shadow-lg z-30 transition-transform duration-300 ease-in-out
-                ${open ? 'translate-x-0' : 'translate-x-full'}`}
+            className={`absolute bg-white shadow-lg z-30 transition-transform duration-300 ease-in-out
+                bottom-0 left-0 right-0 h-[70vh] w-full
+                ${open ? 'translate-y-0' : 'translate-y-full'}
+                md:bottom-auto md:left-auto md:top-0 md:right-0 md:h-full md:w-[450px]
+                ${open ? 'md:translate-x-0' : 'md:translate-x-full'}`}
         >
+            {/* Draggable Handle - Only show on mobile */}
+            <div className="flex justify-center pt-3 pb-2 md:hidden">
+                <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+            </div>
+
             {/* Header */}
             <div className="p-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
