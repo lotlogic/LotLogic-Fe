@@ -290,7 +290,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
           {/* Action Button - Conditional for "Show Me What I Can Build Here" */}
           {/* Show only if not in filter and not showing house designs */}
           {!showFilter && !showHouseDesigns && (
-            <div className="sticky bottom-0 px-6 pt-0 pb-6">
+            <div className="px-6 pt-0 pb-6 md:sticky md:bottom-0">
               <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
                 <div className="text-left mb-4">
                   <p className="text-gray-600 text-base font-medium">

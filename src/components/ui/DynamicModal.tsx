@@ -19,7 +19,7 @@ const ModalTitle: React.FC<{ title: string; onClose: () => void }> = ({ title, o
       justifyContent: 'space-between',
       alignItems: 'center',
       borderBottom: '1px solid #e5e7eb',
-      padding: '24px',
+      padding: '20px',
       margin: 0
     }}
   >
@@ -27,7 +27,7 @@ const ModalTitle: React.FC<{ title: string; onClose: () => void }> = ({ title, o
       variant="h6" 
       component="h2"
       sx={{
-        fontSize: '20px',
+        fontSize: '18px',
         fontWeight: 600,
         color: '#111827'
       }}
@@ -142,7 +142,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
   showThumbnails = true
 }) => {
   const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handlePrevious = useCallback(() => {
     onIndexChange((currentIndex - 1 + images.length) % images.length);
@@ -157,15 +157,15 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
 
   const dialogPaperProps = useMemo(() => ({
     sx: {
-      borderRadius: fullScreen ? 0 : '16px',
-      maxHeight: fullScreen ? '100%' : '662px',
-      minHeight: fullScreen ? '100%' : '662px',
-      width: fullScreen ? '100%' : '956px',
-      margin: fullScreen ? 0 : '16px',
+      borderRadius: '16px',
+      maxHeight: isMobile ? '70vh' : '662px',
+      minHeight: isMobile ? 'auto' : '662px',
+      width: isMobile ? '92vw' : '956px',
+      margin: '16px',
       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
       overflow: 'hidden'
     }
-  }), [fullScreen]);
+  }), [isMobile]);
 
   if (!currentImage) {
     return null;
@@ -177,36 +177,27 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
       onClose={onClose}
       maxWidth="lg"
       fullWidth
-      fullScreen={fullScreen}
       PaperProps={dialogPaperProps}
-      sx={{
-        '& .MuiDialog-paper': {
-          margin: 0
-        }
-      }}
     >
       <ModalTitle title={title} onClose={onClose} />
 
       <DialogContent 
         sx={{ 
-          padding: '24px',
+          padding: '12px',
           flex: 1,
           margin: 0,
           display: 'flex',
           flexDirection: 'column',
-          overflow: 'auto',
-          '&.MuiDialogContent-root': {
-            padding: '24px'
-          }
+          overflow: 'auto'
         }}
       >
         {/* Main Image Container */}
         <Box
           sx={{
             position: 'relative',
-            width: '900px',
-            height: '430px',
-            marginBottom: '16px',
+            width: '100%',
+            height: isMobile ? '50vh' : '430px',
+            marginBottom: '10px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
@@ -219,7 +210,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
             style={{
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
+              objectFit: isMobile ? 'contain' : 'cover',
               borderRadius: '8px'
             }}
           />
@@ -234,7 +225,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
                 right: 0,
                 backgroundColor: 'rgba(0, 0, 0, 0.3)',
                 color: 'white',
-                padding: '8px',
+                padding: '6px',
                 borderRadius: '8px 8px 0 0',
                 textAlign: 'center'
               }}
@@ -270,7 +261,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
               justifyContent: 'center',
               gap: '8px',
               overflowX: 'auto',
-              paddingBottom: '8px'
+              paddingBottom: '6px'
             }}
           >
             {images.map((image, index) => (
@@ -305,17 +296,20 @@ export const SingleImageModal: React.FC<SingleImageModalProps> = ({
   imageSrc,
   imageAlt
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const dialogPaperProps = useMemo(() => ({
     sx: {
       borderRadius: '16px',
-      maxHeight: '662px',
-      minHeight: '662px',
-      width: '956px',
+      maxHeight: isMobile ? '70vh' : '662px',
+      minHeight: isMobile ? 'auto' : '662px',
+      width: isMobile ? '92vw' : '956px',
       margin: '16px',
       boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
       overflow: 'hidden'
     }
-  }), []);
+  }), [isMobile]);
 
   return (
     <Dialog
@@ -324,42 +318,37 @@ export const SingleImageModal: React.FC<SingleImageModalProps> = ({
       maxWidth="lg"
       fullWidth
       PaperProps={dialogPaperProps}
-      sx={{
-        '& .MuiDialog-paper': {
-          margin: 0
-        }
-      }}
     >
       <ModalTitle title={title} onClose={onClose} />
 
-             <DialogContent 
-         sx={{ 
-           padding: '24px',
-           flex: 1,
-           margin: 0,
-           display: 'flex',
-           alignItems: 'center',
-           justifyContent: 'center',
-           overflow: 'auto',
-         }}
-       >
-         {imageSrc ? (
-           <img
-             src={imageSrc}
-             alt={imageAlt}
-             loading="eager"
-             style={{
-               maxWidth: '100%',
-               maxHeight: 'calc(100vh - 220px)',
-               objectFit: 'contain'
-             }}
-           />
-         ) : (
-           <Typography variant="body1" color="text.secondary">
-             Floor plan not available for this design.
-           </Typography>
-         )}
-       </DialogContent>
+      <DialogContent 
+        sx={{ 
+          padding: '12px',
+          flex: 1,
+          margin: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'auto',
+        }}
+      >
+        {imageSrc ? (
+          <img
+            src={imageSrc}
+            alt={imageAlt}
+            loading="eager"
+            style={{
+              maxWidth: '100%',
+              maxHeight: isMobile ? '55vh' : 'calc(100vh - 220px)',
+              objectFit: 'contain'
+            }}
+          />
+        ) : (
+          <Typography variant="body1" color="text.secondary">
+            Floor plan not available for this design.
+          </Typography>
+        )}
+      </DialogContent>
     </Dialog>
   );
 };

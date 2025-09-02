@@ -2,6 +2,7 @@ import React from 'react';
 import { X, ChevronLeft } from "lucide-react";
 import clsx from "clsx";
 import { sidebar, getColorClass } from "@/constants/content";
+import { useMobile } from "@/hooks/useMobile";
 
 export function Sidebar({
   open,
@@ -22,16 +23,30 @@ export function Sidebar({
   widthClass?: string;
   className?: string;
 }) {
+  const isMobile = useMobile();
+  
   if (!open) return null;
+  
   return (
     <aside
       className={clsx(
-        "fixed top-[80px] left-[20px] max-h-[calc(100vh-100px)] z-50 bg-white shadow-2xl rounded-2xl border border-gray-200 flex flex-col transition-transform duration-300",
-        widthClass,
+        "fixed z-50 bg-white shadow-2xl border border-gray-200 flex flex-col transition-transform duration-300",
+        // Mobile: 40% height from bottom, desktop: original positioning
+        isMobile 
+          ? "bottom-17 left-0 right-0 w-full h-[50vh] rounded-t-2xl" 
+          : "top-[80px] left-[20px] max-h-[calc(100vh-100px)] rounded-2xl",
+        // Desktop: use provided width, mobile: full width
+        isMobile ? "w-full" : widthClass,
         className
       )}
     >
-      <div className="flex items-start p-6 pb-4 border-b border-gray-200 sticky top-0 z-10 bg-white rounded-t-2xl">
+      <div className={clsx(
+        "flex items-start border-b border-gray-200 z-10 bg-white",
+        // Make header non-sticky on mobile, sticky on desktop
+        isMobile 
+          ? "p-4 pb-3 rounded-t-2xl" 
+          : "p-6 pb-4 rounded-t-2xl sticky top-0"
+      )}>
         {showBackButton && onBack && (
           <button
             onClick={onBack}

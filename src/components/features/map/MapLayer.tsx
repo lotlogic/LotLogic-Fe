@@ -48,6 +48,8 @@ export default function ZoneMap() {
   // Modal state from Zustand
   const { showFloorPlanModal, showFacadeModal } = useModalStore();
 
+
+
   // Data
   const { data: lotsData, isLoading: isLoadingLots, error: lotsError } = useLots();
 
@@ -56,6 +58,10 @@ export default function ZoneMap() {
 
   // Keep sidebar open ref in sync
   useEffect(() => { sidebarOpenRef.current = !!selectedLot; }, [selectedLot]);
+
+
+
+
 
   // Lot details for sidebar
   const lotId = selectedLot?.properties?.ID?.toString() || null;
@@ -354,8 +360,8 @@ export default function ZoneMap() {
         activeOverlays={activeOverlays}
       />
 
-      {/* Lot Sidebar - only show on desktop */}
-      {!isMobile && selectedLot && (
+      {/* Lot Sidebar - show on both desktop and mobile */}
+      {selectedLot && (
         <LotSidebar
           open={!!selectedLot}
           onClose={handleCloseSidebar}
