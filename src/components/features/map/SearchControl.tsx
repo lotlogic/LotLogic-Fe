@@ -3,7 +3,7 @@ import { Search, X } from 'lucide-react';
 import axios from 'axios';
 import type { SearchControlProps, SearchResult } from '@/types/ui';
 import { getColorClass } from '@/constants/content';
-import { trackSearch } from '@/lib/analytics/segment';
+import { trackSearch } from '@/lib/analytics/mixpanel';
 
 export function SearchControl({ onResultSelect }: SearchControlProps) {
   const [query, setQuery] = useState('');

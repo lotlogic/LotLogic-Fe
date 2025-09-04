@@ -197,16 +197,6 @@ export const trackQuoteFormInteraction = (action: string, formData: Record<strin
   }
 };
 
-// Track map layer interactions
-export const trackMapLayerToggle = (layerType: string, enabled: boolean) => {
-  const analytics = getAnalytics();
-  if (analytics) {
-    analytics.track('Map Layer Toggled', {
-      layerType,
-      enabled,
-    });
-  }
-};
 
 // Track sidebar interactions
 export const trackSidebarInteraction = (sidebarType: string, action: string) => {

@@ -31,13 +31,6 @@ export interface LayersButtonProps {
   isActive?: boolean;
 }
 
-export interface ZoningLayersSidebarProps {
-  open: boolean;
-  onClose: () => void;
-  mapInstance?: mapboxgl.Map | null;
-  onOverlayToggle?: (overlayType: string, enabled: boolean) => void;
-  activeOverlays?: Set<string>;
-}
 
 export interface SavedButtonProps {
   onClick: () => void;

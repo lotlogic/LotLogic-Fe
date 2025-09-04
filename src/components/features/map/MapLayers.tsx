@@ -33,26 +33,12 @@ interface MapLayersProps {
   showFloorPlanModal: boolean;
   showFacadeModal: boolean;
   setSValuesMarkers: (markers: mapboxgl.Marker[]) => void;
-  activeOverlays?: Set<string>;
 }
 
 // -----------------------------
 // Utility Functions
 // -----------------------------
 
-// Remove overlay layers and sources
-const removeOverlayLayers = (map: mapboxgl.Map) => {
-  const overlayTypes = ['bushfire', 'flood', 'heritage'];
-  overlayTypes.forEach(type => {
-    const layerId = `${type}-overlay-layer`;
-    const borderLayerId = `${type}-overlay-layer-border`;
-    const sourceId = `${type}-source`;
-    
-    if (map.getLayer(borderLayerId)) map.removeLayer(borderLayerId);
-    if (map.getLayer(layerId)) map.removeLayer(layerId);
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
-  });
-};
 
 // Calculate house dimensions and positioning
 const calculateHouseBoundary = (
@@ -153,7 +139,6 @@ export function MapLayers({
   showFloorPlanModal,
   showFacadeModal,
   setSValuesMarkers,
-  activeOverlays = new Set()
 }: MapLayersProps) {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
@@ -224,62 +209,6 @@ export function MapLayers({
     };
   }, [map, selectedFloorPlan]);
 
-  // Zoning Overlays using Mapbox Tilesets
-  useEffect(() => {
-    if (!map) return;
-
-    removeOverlayLayers(map);
-
-    const colors = {
-      bushfire: '#FF9800',
-      flood: '#FF0000',
-      heritage: '#15cf04'
-    };
-
-    activeOverlays.forEach(overlayType => {
-      const layerId = `${overlayType}-overlay-layer`;
-      const sourceId = `${overlayType}-source`;
-
-      try {
-        if (overlayType === 'bushfire') {
-          map.addSource(sourceId, {
-            type: 'vector',
-            url: `mapbox://beyondhimalayatech.6e6keodk`
-          });
-
-          map.addLayer({
-            id: layerId,
-            type: 'fill',
-            source: sourceId,
-            'source-layer': '79216d97-ae47-4e7b-97b4-3b304-29mkcu',
-            paint: {
-              'fill-color': colors[overlayType as keyof typeof colors],
-              'fill-opacity': 0.4,
-              'fill-outline-color': colors[overlayType as keyof typeof colors]
-            }
-          });
-
-          map.addLayer({
-            id: `${layerId}-border`,
-            type: 'line',
-            source: sourceId,
-            'source-layer': '79216d97-ae47-4e7b-97b4-3b304-29mkcu',
-            paint: {
-              'line-color': colors[overlayType as keyof typeof colors],
-              'line-width': 2,
-              'line-opacity': 0.8
-            }
-          });
-        }
-      } catch (error) {
-        console.error(`Error adding ${overlayType} overlay layer:`, error);
-      }
-    });
-
-    return () => {
-      removeOverlayLayers(map);
-    };
-  }, [map, activeOverlays]);
 
   // S values + Setbacks + FSR boundary
   useEffect(() => {
