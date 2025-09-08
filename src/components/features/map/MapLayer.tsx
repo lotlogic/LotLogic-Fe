@@ -5,9 +5,7 @@ import type { MapboxGeoJSONFeature } from 'mapbox-gl';
 // const LotSidebar = lazy(() => import("../lots/LotSidebar").then(module => ({ default: module.LotSidebar })));
 import { LotSidebar } from "../lots/LotSidebar";
 const SearchControl = lazy(() => import("./SearchControl").then(module => ({ default: module.SearchControl })));
-const LayersButton = lazy(() => import("./LayersButton").then(module => ({ default: module.LayersButton })));
 const SavedButton = lazy(() => import("./SavedButton").then(module => ({ default: module.SavedButton })));
-const ZoningLayersSidebar = lazy(() => import("./ZoningLayerSidebar").then(module => ({ default: module.ZoningLayersSidebar })));
 const SavedPropertiesSidebar = lazy(() => import("./SavedPropertiesSidebar").then(module => ({ default: module.SavedPropertiesSidebar })));
 
 // Import optimized components
@@ -161,29 +159,10 @@ export default function ZoneMap() {
   };
 
   // UI state
-      const [isZoningSidebarOpen, setIsZoningSidebarOpen] = useState(false);
     const [isSavedSidebarOpen, setIsSavedSidebarOpen] = useState(false);
-   
-    // Overlay filter states
-    const [activeOverlays, setActiveOverlays] = useState<Set<string>>(new Set());
-
-    // Handle overlay toggle
-    const handleOverlayToggle = (overlayType: string, enabled: boolean) => {
-
-      setActiveOverlays(prev => {
-        const newSet = new Set(prev);
-        if (enabled) {
-          newSet.add(overlayType);
-        } else {
-          newSet.delete(overlayType);
-        }
-
-        return newSet;
-      });
-    };
 
   // Initialize map using custom hook
-  const { map: mapRef, isLoading, initialView: mapInitialView, setInitialView } = useMapInitialization(mapContainer, estateLots, activeOverlays);
+  const { map: mapRef, isLoading, initialView: mapInitialView, setInitialView } = useMapInitialization(mapContainer, estateLots);
 
   // Set initial view when lots data is available
   useEffect(() => {
@@ -240,16 +219,6 @@ export default function ZoneMap() {
       }
     };
 
-    const handleGetOverlayState = () => {
-      window.dispatchEvent(new CustomEvent('overlay-state-response', {
-        detail: { activeOverlays }
-      }));
-    };
-
-    const handleOverlayToggleEvent = (event: CustomEvent) => {
-      const { overlayType, enabled } = event.detail;
-      handleOverlayToggle(overlayType, enabled);
-    };
 
     // Only add event listeners once
     if (!eventListenersAddedRef.current) {
@@ -258,8 +227,6 @@ export default function ZoneMap() {
         window.addEventListener('search-result-selected', handleMobileSearchResult as EventListener);
       }
       window.addEventListener('recenter-map', handleRecenter);
-      window.addEventListener('get-overlay-state', handleGetOverlayState);
-      window.addEventListener('overlay-toggle', handleOverlayToggleEvent as EventListener);
       
       eventListenersAddedRef.current = true;
     }
@@ -269,11 +236,9 @@ export default function ZoneMap() {
         window.removeEventListener('search-result-selected', handleMobileSearchResult as EventListener);
       }
       window.removeEventListener('recenter-map', handleRecenter);
-      window.removeEventListener('get-overlay-state', handleGetOverlayState);
-      window.removeEventListener('overlay-toggle', handleOverlayToggleEvent as EventListener);
       eventListenersAddedRef.current = false;
     };
-  }, [mapRef, mapInitialView, isMobile, activeOverlays]);
+  }, [mapRef, mapInitialView, isMobile]);
 
   return (
     <div className="relative h-full w-full">
@@ -298,13 +263,8 @@ export default function ZoneMap() {
             </Suspense>
           </div>
 
-          <div className="absolute top-45 right-5 z-10">
-            <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>}>
-              <LayersButton onClick={() => setIsZoningSidebarOpen(true)} isActive={isZoningSidebarOpen} />
-            </Suspense>
-          </div>
 
-          <div className="absolute top-57 right-5 z-10">
+          <div className="absolute top-45 right-5 z-10">
             <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>}>
               <SavedButton onClick={() => setIsSavedSidebarOpen(true)} isActive={isSavedSidebarOpen} />
             </Suspense>
@@ -317,15 +277,6 @@ export default function ZoneMap() {
       {/* Sidebars - only show on desktop since mobile uses bottom navigation */}
       {!isMobile && (
         <>
-          <Suspense fallback={<div className="hidden"></div>}>
-            <ZoningLayersSidebar
-              open={isZoningSidebarOpen}
-              onClose={() => setIsZoningSidebarOpen(false)}
-              onOverlayToggle={handleOverlayToggle}
-              activeOverlays={activeOverlays}
-            />
-          </Suspense>
-
           <Suspense fallback={<div className="hidden"></div>}>
             <SavedPropertiesSidebar
               open={isSavedSidebarOpen}
@@ -357,7 +308,6 @@ export default function ZoneMap() {
         showFloorPlanModal={showFloorPlanModal}
         showFacadeModal={showFacadeModal}
         setSValuesMarkers={setSValuesMarkers}
-        activeOverlays={activeOverlays}
       />
 
       {/* Lot Sidebar - show on both desktop and mobile */}

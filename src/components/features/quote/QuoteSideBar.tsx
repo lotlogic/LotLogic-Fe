@@ -9,7 +9,7 @@ import { quote, formatContent, getColorClass } from "@/constants/content";
 import { Input } from '@/components/ui/input';
 import { getImageUrl, submitEnquiry } from '@/lib/api/lotApi';
 import { useBuilders, convertBuildersToOptions } from '@/hooks/useBuilders';
-import { trackQuoteFormInteraction, trackEnquirySubmitted } from '@/lib/analytics/segment';
+import { trackQuoteFormInteraction, trackEnquirySubmitted } from '@/lib/analytics/mixpanel';
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);

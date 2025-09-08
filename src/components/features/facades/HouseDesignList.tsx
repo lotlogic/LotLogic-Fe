@@ -7,7 +7,7 @@ import { getImageUrl } from "@/lib/api/lotApi";
 import type { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
-import { trackHouseDesignInteraction, trackPropertySaved } from "@/lib/analytics/segment";
+import { trackHouseDesignInteraction, trackPropertySaved } from "@/lib/analytics/mixpanel";
 import { useSavedPropertiesStore } from "@/stores/savedPropertiesStore";
 
 
