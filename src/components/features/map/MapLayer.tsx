@@ -264,7 +264,7 @@ export default function ZoneMap() {
           </div>
 
 
-          <div className="absolute top-57 right-5 z-10">
+          <div className="absolute top-45 right-5 z-10">
             <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>}>
               <SavedButton onClick={() => setIsSavedSidebarOpen(true)} isActive={isSavedSidebarOpen} />
             </Suspense>
