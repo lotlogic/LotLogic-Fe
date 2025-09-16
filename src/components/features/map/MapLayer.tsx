@@ -5,15 +5,14 @@ import type { MapboxGeoJSONFeature } from 'mapbox-gl';
 // const LotSidebar = lazy(() => import("../lots/LotSidebar").then(module => ({ default: module.LotSidebar })));
 import { LotSidebar } from "../lots/LotSidebar";
 const SearchControl = lazy(() => import("./SearchControl").then(module => ({ default: module.SearchControl })));
-const LayersButton = lazy(() => import("./LayersButton").then(module => ({ default: module.LayersButton })));
 const SavedButton = lazy(() => import("./SavedButton").then(module => ({ default: module.SavedButton })));
-const ZoningLayersSidebar = lazy(() => import("./ZoningLayerSidebar").then(module => ({ default: module.ZoningLayersSidebar })));
 const SavedPropertiesSidebar = lazy(() => import("./SavedPropertiesSidebar").then(module => ({ default: module.SavedPropertiesSidebar })));
 
 // Import optimized components
 import { MapLayers } from './MapLayers';
 import { MapControls } from './MapControls';
 import { useMapInitialization } from '@/hooks/useMapInitialization';
+import { useMobile } from '@/hooks/useMobile';
 
 import '../map/MapControls.css';
 import { useLotDetails } from "@/hooks/useLotDetails";
@@ -26,17 +25,12 @@ import type { LotProperties } from "@/types/lot";
 import type { FloorPlan } from "@/types/houseDesign";
 
 
-// -----------------------------
-// Types
-// -----------------------------
-
-// -----------------------------
-// Component
-// -----------------------------
 export default function ZoneMap() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const selectedIdRef = useRef<string | null>(null);
   const sidebarOpenRef = useRef<boolean>(false);
+  const isMobile = useMobile();
+  const eventListenersAddedRef = useRef<boolean>(false);
 
   const [selectedLot, setSelectedLot] = useState<MapboxGeoJSONFeature & { properties: LotProperties } | null>(null);
   const [selectedFloorPlan, setSelectedFloorPlan] = useState<FloorPlan | null>(null);
@@ -52,6 +46,8 @@ export default function ZoneMap() {
   // Modal state from Zustand
   const { showFloorPlanModal, showFacadeModal } = useModalStore();
 
+
+
   // Data
   const { data: lotsData, isLoading: isLoadingLots, error: lotsError } = useLots();
 
@@ -61,9 +57,13 @@ export default function ZoneMap() {
   // Keep sidebar open ref in sync
   useEffect(() => { sidebarOpenRef.current = !!selectedLot; }, [selectedLot]);
 
+
+
+
+
   // Lot details for sidebar
   const lotId = selectedLot?.properties?.ID?.toString() || null;
-  const { data: lotApiData, isLoading: isLoadingLotData, error: lotApiError } = useLotDetails(lotId);
+  const { data: lotApiData } = useLotDetails(lotId);
   const [setbackValues, setSetbackValues] = useState<SetbackValues>({ front: 4, side: 3, rear: 3 });
 
   // Handle zoning data updates from LotSidebar
@@ -159,29 +159,10 @@ export default function ZoneMap() {
   };
 
   // UI state
-      const [isZoningSidebarOpen, setIsZoningSidebarOpen] = useState(false);
     const [isSavedSidebarOpen, setIsSavedSidebarOpen] = useState(false);
-   
-    // Overlay filter states
-    const [activeOverlays, setActiveOverlays] = useState<Set<string>>(new Set());
-
-    // Handle overlay toggle
-    const handleOverlayToggle = (overlayType: string, enabled: boolean) => {
-
-      setActiveOverlays(prev => {
-        const newSet = new Set(prev);
-        if (enabled) {
-          newSet.add(overlayType);
-        } else {
-          newSet.delete(overlayType);
-        }
-
-        return newSet;
-      });
-    };
 
   // Initialize map using custom hook
-  const { map: mapRef, isLoading, initialView: mapInitialView, setInitialView } = useMapInitialization(mapContainer, estateLots, activeOverlays);
+  const { map: mapRef, isLoading, initialView: mapInitialView, setInitialView } = useMapInitialization(mapContainer, estateLots);
 
   // Set initial view when lots data is available
   useEffect(() => {
@@ -215,6 +196,50 @@ export default function ZoneMap() {
     if (mapRef) mapRef.flyTo({ center: coordinates, zoom: 15 });
   }, [mapRef]);
 
+  // Add event listeners for mobile search and recenter
+  useEffect(() => {
+    const handleMobileSearchResult = (event: CustomEvent) => {
+      const { coordinates } = event.detail;
+      if (mapRef && coordinates) {
+        mapRef.flyTo({
+          center: coordinates,
+          zoom: 16,
+          duration: 1000
+        });
+      }
+    };
+
+    const handleRecenter = () => {
+      if (mapRef && mapInitialView) {
+        mapRef.flyTo({
+          center: mapInitialView.center,
+          zoom: mapInitialView.zoom,
+          duration: 1000
+        });
+      }
+    };
+
+
+    // Only add event listeners once
+    if (!eventListenersAddedRef.current) {
+      // Only add mobile event listeners if on mobile
+      if (isMobile) {
+        window.addEventListener('search-result-selected', handleMobileSearchResult as EventListener);
+      }
+      window.addEventListener('recenter-map', handleRecenter);
+      
+      eventListenersAddedRef.current = true;
+    }
+
+    return () => {
+      if (isMobile) {
+        window.removeEventListener('search-result-selected', handleMobileSearchResult as EventListener);
+      }
+      window.removeEventListener('recenter-map', handleRecenter);
+      eventListenersAddedRef.current = false;
+    };
+  }, [mapRef, mapInitialView, isMobile]);
+
   return (
     <div className="relative h-full w-full">
       {(isLoading || isLoadingLots) && (
@@ -229,44 +254,42 @@ export default function ZoneMap() {
         </div>
       )}
 
-      <div className="absolute top-4 right-5 z-10">
-        <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>}>
-          <SearchControl onResultSelect={handleSearchResult} />
-        </Suspense>
-      </div>
+      {/* Only show these controls on desktop */}
+      {!isMobile && (
+        <>
+          <div className="absolute top-4 right-5 z-10">
+            <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>}>
+              <SearchControl onResultSelect={handleSearchResult} />
+            </Suspense>
+          </div>
 
-      <div className="absolute top-45 right-5 z-10">
-        <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>}>
-          <LayersButton onClick={() => setIsZoningSidebarOpen(true)} isActive={isZoningSidebarOpen} />
-        </Suspense>
-      </div>
 
-      <div className="absolute top-57 right-5 z-10">
-        <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>}>
-          <SavedButton onClick={() => setIsSavedSidebarOpen(true)} isActive={isSavedSidebarOpen} />
-        </Suspense>
-      </div>
+          <div className="absolute top-45 right-5 z-10">
+            <Suspense fallback={<div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>}>
+              <SavedButton onClick={() => setIsSavedSidebarOpen(true)} isActive={isSavedSidebarOpen} />
+            </Suspense>
+          </div>
+        </>
+      )}
 
-      <Suspense fallback={<div className="hidden"></div>}>
-        <ZoningLayersSidebar
-          open={isZoningSidebarOpen}
-          onClose={() => setIsZoningSidebarOpen(false)}
-          onOverlayToggle={handleOverlayToggle}
-          activeOverlays={activeOverlays}
-        />
-      </Suspense>
 
-      <Suspense fallback={<div className="hidden"></div>}>
-        <SavedPropertiesSidebar
-          open={isSavedSidebarOpen}
-          onClose={() => setIsSavedSidebarOpen(false)}
-          onViewDetails={handleViewDetails}
-        />
-      </Suspense>
+
+      {/* Sidebars - only show on desktop since mobile uses bottom navigation */}
+      {!isMobile && (
+        <>
+          <Suspense fallback={<div className="hidden"></div>}>
+            <SavedPropertiesSidebar
+              open={isSavedSidebarOpen}
+              onClose={() => setIsSavedSidebarOpen(false)}
+              onViewDetails={handleViewDetails}
+            />
+          </Suspense>
+        </>
+      )}
 
       <div ref={mapContainer} className="h-full w-full" />
 
-      {/* Map Controls Component */}
+      {/* Map Controls Component - only zoom controls, no duplicate functionality */}
       <MapControls
         map={mapRef}
         setSelectedLot={setSelectedLot}
@@ -285,43 +308,48 @@ export default function ZoneMap() {
         showFloorPlanModal={showFloorPlanModal}
         showFacadeModal={showFacadeModal}
         setSValuesMarkers={setSValuesMarkers}
-        activeOverlays={activeOverlays}
       />
 
+      {/* Lot Sidebar - show on both desktop and mobile */}
       {selectedLot && (
-        <Suspense fallback={
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="text-gray-600 mt-2">Loading sidebar...</p>
-            </div>
-          </div>
-        }>
-          <LotSidebar
-            open={!!selectedLot}
-            onClose={handleCloseSidebar}
-            isLoadingApiData={isLoadingLotData}
-            apiError={lotApiError}
-            lot={{
-              id: selectedLot.properties.databaseId || selectedLot.properties.ID,
-              suburb: selectedLot.properties.DISTRICT_NAME || '',
-              address: selectedLot.properties.ADDRESSES || '',
-              size: selectedLot.properties.BLOCK_DERIVED_AREA,
-              type: selectedLot.properties.TYPE,
-              zoning: selectedLot.properties.LAND_USE_POLICY_ZONES,
-              overlays: selectedLot.properties.OVERLAY_PROVISION_ZONES,
-              apiDimensions: {
-                width: selectedLot.properties.width,
-                depth: selectedLot.properties.depth,
-              },
-              apiZoning: lotApiData?.zoning,
-              apiMatches: [],
-            }}
-            geometry={selectedLot.geometry}
-            onSelectFloorPlan={setSelectedFloorPlan}
-            onZoningDataUpdate={handleZoningDataUpdate}
-          />
-        </Suspense>
+        <LotSidebar
+          open={!!selectedLot}
+          onClose={handleCloseSidebar}
+          lot={{
+            id: selectedLot.properties.ID?.toString() || selectedLot.properties.databaseId,
+            suburb: selectedLot.properties.DISTRICT_NAME || '',
+            address: selectedLot.properties.ADDRESSES || '',
+            size: selectedLot.properties.BLOCK_DERIVED_AREA,
+            type: selectedLot.properties.TYPE,
+            zoning: selectedLot.properties.LAND_USE_POLICY_ZONES,
+            overlays: selectedLot.properties.OVERLAY_PROVISION_ZONES,
+            width: selectedLot.properties.width,
+            depth: selectedLot.properties.depth,
+            frontageType: selectedLot.properties.frontageType,
+            planningId: selectedLot.properties.planningId,
+            maxHeight: selectedLot.properties.maxHeight,
+            maxSize: selectedLot.properties.maxSize,
+            maxFSR: selectedLot.properties.maxFSR,
+            maxStories: selectedLot.properties.maxStories,
+            minArea: selectedLot.properties.minArea,
+            minDepth: selectedLot.properties.minDepth,
+            frontYardSetback: selectedLot.properties.frontYardSetback,
+            sideYardMinSetback: selectedLot.properties.sideYardMinSetback,
+            rearYardMinSetback: selectedLot.properties.rearYardMinSetback,
+            exampleArea: selectedLot.properties.exampleArea,
+            exampleLotSize: selectedLot.properties.exampleLotSize,
+            maxFSRUpper: selectedLot.properties.maxFSRUpper,
+            apiDimensions: {
+              width: selectedLot.properties.width || 0,
+              depth: selectedLot.properties.depth || 0,
+            },
+            apiZoning: selectedLot.properties.apiZoning,
+            apiMatches: selectedLot.properties.apiMatches || [],
+          }}
+          geometry={selectedLot.geometry}
+          onSelectFloorPlan={setSelectedFloorPlan}
+          onZoningDataUpdate={handleZoningDataUpdate}
+        />
       )}
     </div>
   );

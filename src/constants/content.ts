@@ -87,27 +87,11 @@ export const APP_CONTENT = {
   // Map content
   map: {
     searchPlaceholder: "Search for lots...",
-    layers: "Layers",
-    zoningLayers: "Zoning Layers",
-    exploringInfo: "Exploring information and property details",
-    floodRiskAreas: "Flood Risk Areas",
-    floodRiskDescription: "Properties with elevated flood risk requiring special consideration",
-    bushfireRisk: "Bushfire Risk",
-    bushfireRiskDescription: "Areas prone to bushfire with special building requirements",
-    heritage: "Heritage",
-    heritageDescription: "Electricity Network",
-    heritageSubDescription: "Power grid infrastructure and transmission lines",
     savedProperties: "Your Shortlist",
     savedPropertiesDescription: "List of properties that you've shortlisted.",
     noSavedProperties: "No saved properties",
     noSavedPropertiesDescription: "Start exploring properties and save them to your shortlist.",
     viewDetails: "View Details",
-    // Map layer colors
-    layerColors: {
-      flood: "#FF0000",
-      bushfire: "#FF9800", 
-      heritage: "#15cf04",
-    },
   },
 
   // Filter content
@@ -231,9 +215,6 @@ export const APP_CONTENT = {
       top: "80px",
       left: "20px",
       maxHeight: "calc(100vh-100px)",
-    },
-    zoningSidebar: {
-      width: "350px",
     },
     savedPropertiesSidebar: {
       width: "450px",
