@@ -78,6 +78,9 @@ export function SavedPropertiesSidebar({
             setDrawerHeight('100vh');
         } else if (deltaY < -threshold && startHeight === '100vh') {
             setDrawerHeight('50vh');
+        } else if (deltaY < -threshold && startHeight === '50vh') {
+            // From half height, dragging down beyond threshold closes the drawer
+            onClose();
         }
     };
 

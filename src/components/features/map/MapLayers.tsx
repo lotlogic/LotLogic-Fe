@@ -166,11 +166,15 @@ export function MapLayers({
         if (houseBoundaryData.data && typeof houseBoundaryData.data === 'object' && 'geometry' in houseBoundaryData.data) {
           const houseBoundaryCoords = (houseBoundaryData.data as any).geometry.coordinates[0];
           
+          // Mapbox image coordinates must be provided in this order:
+          // [top-left, top-right, bottom-right, bottom-left]. Our polygon
+          // coordinates are in ring order starting from bottom-left, so we
+          // reorder to avoid mirrored imagery.
           const floorPlanCoordinates: [[number, number], [number, number], [number, number], [number, number]] = [
-            houseBoundaryCoords[0],
-            houseBoundaryCoords[1],  
-            houseBoundaryCoords[2],
-            houseBoundaryCoords[3]
+            houseBoundaryCoords[1], // top-left
+            houseBoundaryCoords[0], // top-right
+            houseBoundaryCoords[3], // bottom-right
+            houseBoundaryCoords[2]  // bottom-left
           ];
           
           map.addSource(sourceId, { 
@@ -181,10 +185,19 @@ export function MapLayers({
         }
       } else {
         // Fallback to original coordinates
+        // Fallback assumes coordinates are provided in ring order starting
+        // from bottom-left. Reorder to the required Mapbox order.
+        const fp = selectedFloorPlan.coordinates;
+        const reordered: [[number, number], [number, number], [number, number], [number, number]] = [
+          fp[1], // top-left
+          fp[0], // top-right
+          fp[3], // bottom-right
+          fp[2]  // bottom-left
+        ];
         map.addSource(sourceId, { 
           type: 'image', 
           url: proxiedImageUrl, 
-          coordinates: selectedFloorPlan.coordinates 
+          coordinates: reordered 
         });
       }
       
