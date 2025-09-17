@@ -352,3 +352,53 @@ export const SingleImageModal: React.FC<SingleImageModalProps> = ({
     </Dialog>
   );
 };
+
+// Text Content Modal
+interface TextModalProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  content: React.ReactNode;
+}
+
+export const TextModal: React.FC<TextModalProps> = ({
+  open,
+  onClose,
+  title,
+  content
+}) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  const dialogPaperProps = useMemo(() => ({
+    sx: {
+      borderRadius: '16px',
+      maxHeight: isMobile ? '70vh' : '80vh',
+      width: isMobile ? '92vw' : '720px',
+      margin: '16px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      overflow: 'hidden'
+    }
+  }), [isMobile]);
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={dialogPaperProps}
+    >
+      <ModalTitle title={title} onClose={onClose} />
+
+      <DialogContent
+        sx={{
+          padding: '20px',
+          overflow: 'auto'
+        }}
+      >
+        {content}
+      </DialogContent>
+    </Dialog>
+  );
+};

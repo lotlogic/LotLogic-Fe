@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { TextModal } from '@/components/ui/DynamicModal';
+import { colors } from '@/constants/content';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 
 interface MobileQuoteFormProps {
@@ -38,6 +40,7 @@ export function MobileQuoteForm({
     additionalComments: '',
     termsAccepted: false
   });
+  const [showTerms, setShowTerms] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +75,7 @@ export function MobileQuoteForm({
               <ArrowLeft className="h-5 w-5 text-gray-600" />
             </button>
           )}
-          <h1 className="text-xl font-bold text-gray-900">Get Your Quote</h1>
+          <h1 className="text-xl font-bold text-gray-900">Get Building Cost Estimate</h1>
         </div>
         <button
           onClick={onClose}
@@ -88,8 +91,17 @@ export function MobileQuoteForm({
         <div className="space-y-6">
           {/* Description */}
           <p className="text-gray-600 text-sm">
-            Select builders and get quotes for your dream home
+            Select builders and get cost estimates for your dream home
           </p>
+
+          {/* Estimated Cost Banner (static example) */}
+          {selectedDesign?.size && (
+            <div className="rounded-2xl p-4" style={{ backgroundColor: '#BFCDCE' }}>
+              <div className="text-gray-900 font-semibold text-base">Estimated Building Cost</div>
+              <div className={"mt-1 text-2xl font-extrabold"} style={{ color: colors.primary }}>$100 – $150/sq ft</div>
+              <div className="text-gray-500 text-sm mt-1">Average construction costs range</div>
+            </div>
+          )}
 
           {/* Builder Selection */}
           <div className="space-y-3">
@@ -172,7 +184,7 @@ export function MobileQuoteForm({
               />
               <span className="text-sm text-gray-700">
                 I agree to the{' '}
-                <a href="#" className="text-blue-600 hover:underline">
+                <a href="#" className="text-blue-600 hover:underline" onClick={(e) => { e.preventDefault(); setShowTerms(true); }}>
                   Terms & Conditions
                 </a>
               </span>
@@ -189,9 +201,27 @@ export function MobileQuoteForm({
           disabled={!formData.termsAccepted}
           className="w-full bg-gray-800 text-white text-lg font-medium py-3 px-4 rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Get Quote
+          Get Cost Estimates
         </button>
       </div>
+
+      <TextModal
+        open={showTerms}
+        onClose={() => setShowTerms(false)}
+        title="Terms & Conditions"
+        content={(
+          <div className="prose max-w-none text-gray-700">
+            <p>
+              This is a sample Terms & Conditions placeholder.
+            </p>
+            <ul className="list-disc pl-5">
+              <li>Quotes are indicative and subject to change.</li>
+              <li>Availability of lots and designs may vary.</li>
+              <li>Your data will be handled per our privacy policy.</li>
+            </ul>
+          </div>
+        )}
+      />
     </div>
   );
 }
