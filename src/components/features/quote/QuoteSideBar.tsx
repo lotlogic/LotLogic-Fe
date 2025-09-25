@@ -11,12 +11,21 @@ import { getImageUrl, submitEnquiry } from '@/lib/api/lotApi';
 import { useBuilders, convertBuildersToOptions } from '@/hooks/useBuilders';
 import { trackQuoteFormInteraction, trackEnquirySubmitted } from '@/lib/analytics/mixpanel';
 import { TextModal } from '@/components/ui/DynamicModal';
+import { PrivacyPolicyContent } from '@/components/ui/PrivacyPolicyContent';
+import { useUIStore } from '@/stores/uiStore';
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
     const [showThankYou, setShowThankYou] = useState(false);
     const [lotSecured, setLotSecured] = useState(false);
     const [agreeToTerms, setAgreeToTerms] = useState(false);
+    const { setHideRotationControls } = useUIStore();
+
+    // Hide rotation controls when thank-you or lot-secured screens are visible
+    React.useEffect(() => {
+        setHideRotationControls(showThankYou || lotSecured);
+        return () => setHideRotationControls(false);
+    }, [showThankYou, lotSecured, setHideRotationControls]);
     const [showTerms, setShowTerms] = useState(false);
     // Fetch builders from backend
     const { data: builders, isLoading: buildersLoading, error: buildersError } = useBuilders();
@@ -272,9 +281,6 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                 <div className={`mt-1 text-2xl sm:text-3xl font-extrabold`} style={{ color: colors.primary }}>
                                     {`${formatCurrency(areaSqFt * COST_MIN_PER_SQFT)} – ${formatCurrency(areaSqFt * COST_MAX_PER_SQFT)}`}
                                 </div>
-                                <div className="text-gray-500 text-sm mt-1">
-                                    Average construction costs: ${COST_MIN_PER_SQFT} – ${COST_MAX_PER_SQFT}/sq ft
-                                </div>
                             </div>
                         )}
                         <div>
@@ -421,18 +427,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
             open={showTerms}
             onClose={() => setShowTerms(false)}
             title="Terms & Conditions"
-            content={(
-                <div className="prose max-w-none text-gray-700">
-                    <p>
-                        This is a sample Terms & Conditions placeholder. Replace with your actual policy text.
-                    </p>
-                    <ul className="list-disc pl-5">
-                        <li>Quotes are indicative and subject to change.</li>
-                        <li>Availability of lots and designs may vary.</li>
-                        <li>Your data will be handled per our privacy policy.</li>
-                    </ul>
-                </div>
-            )}
+            content={<PrivacyPolicyContent />}
         />
         </>
     );

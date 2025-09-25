@@ -339,6 +339,7 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
 
       {/* Floor Plan Modal */}
       <SingleImageModal
+        key={`floorplan-${lot.id}-${selectedHouseDesignForModals?.id ?? 'none'}`}
         open={showFloorPlanModal && !!selectedHouseDesignForModals}
         onClose={() => setShowFloorPlanModal(false)}
         title={`Lot ID: ${lot.id}, ${selectedHouseDesignForModals?.title || ''}`}
@@ -349,14 +350,25 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
 
         {/* Facade Modal */}
         <ImageCarouselModal
+         key={`facades-${lot.id}-${selectedHouseDesignForModals?.id ?? 'none'}`}
          open={showFacadeModal && !!selectedHouseDesignForModals}
          onClose={() => { setShowFacadeModal(false); setCurrentModalFacadeIdx(0); }}
          title={`${selectedHouseDesignForModals?.title || ''} - Facades`}
-         images={(selectedHouseDesignForModals?.images || []).map((img, index) => ({
-           src: getImageUrl(img.src),
-           alt: `Facade ${index + 1}`,
-           label: img.faced || `Facade ${index + 1}`
-         }))}
+         images={(() => {
+           const imgs = (selectedHouseDesignForModals?.images || []).map((img, index) => ({
+             src: getImageUrl(img.src),
+             alt: `Facade ${index + 1}`,
+             label: img.faced || `Facade ${index + 1}`
+           }));
+           if (imgs.length === 0 && selectedHouseDesignForModals?.image) {
+             return [{
+               src: getImageUrl(selectedHouseDesignForModals.image),
+               alt: 'Facade 1',
+               label: 'Facade'
+             }];
+           }
+           return imgs;
+         })()}
          currentIndex={currentModalFacadeIdx}
          onIndexChange={setCurrentModalFacadeIdx}
          showThumbnails={true}

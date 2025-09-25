@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import App from './App.tsx'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import { APP_CONTENT } from '@/constants/content.ts'
 import { getCurrentBrand } from '@/lib/api/lotApi.ts'
 import { initializeMixpanel } from '@/lib/analytics/mixpanel.ts'
@@ -52,7 +53,9 @@ async function bootstrap() {
   const root = createRoot(container);
   root.render(
     <StrictMode>
-      <App />
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
     </StrictMode>
   );
 }
