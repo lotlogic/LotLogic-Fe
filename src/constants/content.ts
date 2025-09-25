@@ -92,6 +92,7 @@ export const APP_CONTENT = {
     noSavedProperties: "No saved properties",
     noSavedPropertiesDescription: "Start exploring properties and save them to your shortlist.",
     viewDetails: "View Details",
+    floorplanRotation: "Floorplan Rotation",
   },
 
   // Filter content

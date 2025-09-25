@@ -167,9 +167,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
     }
   }), [isMobile]);
 
-  if (!currentImage) {
-    return null;
-  }
+
 
   return (
     <Dialog
@@ -191,89 +189,107 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
           overflow: 'auto'
         }}
       >
-        {/* Main Image Container */}
-        <Box
-          sx={{
-            position: 'relative',
-            width: '100%',
-            height: isMobile ? '50vh' : '430px',
-            marginBottom: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <img
-            src={currentImage.src}
-            alt={currentImage.alt}
-            loading="eager"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: isMobile ? 'contain' : 'cover',
-              borderRadius: '8px'
-            }}
-          />
-          
-          {/* Image Label Overlay */}
-          {currentImage.label && (
-            <Box
-              sx={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                color: 'white',
-                padding: '6px',
-                borderRadius: '8px 8px 0 0',
-                textAlign: 'center'
-              }}
-            >
-              <Typography variant="body2">
-                {currentImage.label}
-              </Typography>
-            </Box>
-          )}
-
-          {/* Navigation Arrows */}
-          {hasMultipleImages && (
-            <>
-              <NavigationArrow
-                direction="prev"
-                onClick={handlePrevious}
-                position={{ left: '8px' }}
-              />
-              <NavigationArrow
-                direction="next"
-                onClick={handleNext}
-                position={{ right: '8px' }}
-              />
-            </>
-          )}
-        </Box>
-
-        {/* Thumbnails */}
-        {(showThumbnails || hasMultipleImages) && (
+        {images.length === 0 || !currentImage ? (
           <Box
             sx={{
               display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px',
-              overflowX: 'auto',
-              paddingBottom: '6px'
+              width: '100%',
+              height: isMobile ? '50vh' : '530px'
             }}
           >
-            {images.map((image, index) => (
-              <Thumbnail
-                key={index}
-                image={image}
-                index={index}
-                isActive={index === currentIndex}
-                onClick={() => onIndexChange(index)}
-              />
-            ))}
+            <Typography variant="body1" color="text.secondary">
+              No facade images available.
+            </Typography>
           </Box>
+        ) : (
+          <>
+            {/* Main Image Container */}
+            <Box
+              sx={{
+                position: 'relative',
+                width: '100%',
+                height: isMobile ? '50vh' : 'calc(100vh - 280px)',
+                marginBottom: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <img
+                src={currentImage.src}
+                alt={currentImage.alt}
+                loading="eager"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: isMobile ? 'contain' : 'cover',
+                  borderRadius: '8px'
+                }}
+              />
+              
+              {/* Image Label Overlay */}
+              {currentImage.label && (
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                    color: 'white',
+                    padding: '6px',
+                    borderRadius: '8px 8px 0 0',
+                    textAlign: 'center'
+                  }}
+                >
+                  <Typography variant="body2">
+                    {currentImage.label}
+                  </Typography>
+                </Box>
+              )}
+
+              {/* Navigation Arrows */}
+              {hasMultipleImages && (
+                <>
+                  <NavigationArrow
+                    direction="prev"
+                    onClick={handlePrevious}
+                    position={{ left: '8px' }}
+                  />
+                  <NavigationArrow
+                    direction="next"
+                    onClick={handleNext}
+                    position={{ right: '8px' }}
+                  />
+                </>
+              )}
+            </Box>
+
+            {/* Thumbnails */}
+            {(showThumbnails || hasMultipleImages) && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  overflowX: 'auto',
+                  paddingBottom: '6px'
+                }}
+              >
+                {images.map((image, index) => (
+                  <Thumbnail
+                    key={index}
+                    image={image}
+                    index={index}
+                    isActive={index === currentIndex}
+                    onClick={() => onIndexChange(index)}
+                  />
+                ))}
+              </Box>
+            )}
+          </>
         )}
       </DialogContent>
     </Dialog>
@@ -338,8 +354,8 @@ export const SingleImageModal: React.FC<SingleImageModalProps> = ({
             alt={imageAlt}
             loading="eager"
             style={{
-              maxWidth: '100%',
-              maxHeight: isMobile ? '55vh' : 'calc(100vh - 220px)',
+              maxWidth: '90%',
+              maxHeight: isMobile ? '50vh' : 'calc(100vh - 280px)',
               objectFit: 'contain'
             }}
           />
