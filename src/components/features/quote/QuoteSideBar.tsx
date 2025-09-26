@@ -5,17 +5,28 @@ import { MultiSelect } from "@/components/ui/MultiSelect";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { GetYourQuoteSidebarProps, QuoteFormData } from "@/types/houseDesign";
 import { quoteFormSchema } from "@/types/houseDesign";
-import { quote, formatContent, getColorClass } from "@/constants/content";
+import { quote, formatContent, getColorClass, getContent, colors } from "@/constants/content";
 import { Input } from '@/components/ui/input';
 import { getImageUrl, submitEnquiry } from '@/lib/api/lotApi';
 import { useBuilders, convertBuildersToOptions } from '@/hooks/useBuilders';
 import { trackQuoteFormInteraction, trackEnquirySubmitted } from '@/lib/analytics/mixpanel';
+import { TextModal } from '@/components/ui/DynamicModal';
+import { PrivacyPolicyContent } from '@/components/ui/PrivacyPolicyContent';
+import { useUIStore } from '@/stores/uiStore';
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
     const [showThankYou, setShowThankYou] = useState(false);
     const [lotSecured, setLotSecured] = useState(false);
     const [agreeToTerms, setAgreeToTerms] = useState(false);
+    const { setHideRotationControls } = useUIStore();
+
+    // Hide rotation controls when thank-you or lot-secured screens are visible
+    React.useEffect(() => {
+        setHideRotationControls(showThankYou || lotSecured);
+        return () => setHideRotationControls(false);
+    }, [showThankYou, lotSecured, setHideRotationControls]);
+    const [showTerms, setShowTerms] = useState(false);
     // Fetch builders from backend
     const { data: builders, isLoading: buildersLoading, error: buildersError } = useBuilders();
     const builderOptions = builders ? convertBuildersToOptions(builders) : [];
@@ -57,6 +68,19 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
     if (!open) return null;
 
     const facedOption = selectedHouseDesign?.images[0]?.faced || 'N/A';
+
+    // Simple cost estimate based on area and a per-sqft range
+    const parseAreaSqFt = (areaStr?: string): number | null => {
+        if (!areaStr) return null;
+        const digits = areaStr.toString().replace(/[^0-9.]/g, '');
+        const value = parseFloat(digits);
+        return Number.isFinite(value) ? value : null;
+    };
+
+    const areaSqFt = parseAreaSqFt(selectedHouseDesign?.area);
+    const COST_MIN_PER_SQFT = 100;
+    const COST_MAX_PER_SQFT = 150;
+    const formatCurrency = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 
     // Handle form field changes
     const handleInputChange = (field: keyof QuoteFormData, value: string) => {
@@ -187,6 +211,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
     );
 
     return (
+        <>
         <Sidebar 
             open={open} 
             onClose={onClose}
@@ -250,6 +275,14 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 // Initial form screen
                 <form onSubmit={handleSubmit}>
                     <div className='space-y-4 p-6'>
+                        {areaSqFt && (
+                            <div className={"rounded-2xl p-5"} style={{ backgroundColor: getContent('colors.background.accent') }}>
+                                <div className="text-gray-900 font-semibold text-lg">Estimated Building Cost</div>
+                                <div className={`mt-1 text-2xl sm:text-3xl font-extrabold`} style={{ color: colors.primary }}>
+                                    {`${formatCurrency(areaSqFt * COST_MIN_PER_SQFT)} – ${formatCurrency(areaSqFt * COST_MAX_PER_SQFT)}`}
+                                </div>
+                            </div>
+                        )}
                         <div>
                             <label htmlFor="yourName" className="block text-sm font-medium text-gray-700 mb-1">{quote.yourName}</label>
                             <Input
@@ -369,6 +402,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                     className={`${getColorClass('primary', 'text')} underline hover:${getColorClass('accent', 'text')} transition-colors`}
                                     onClick={(e) => {
                                         e.preventDefault();
+                                        setShowTerms(true);
                                     }}
                                 >
                                     Terms & Conditions
@@ -383,11 +417,18 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                             className={`w-full text-lg py-3 rounded-lg ${getColorClass('primary')} text-white disabled:opacity-50 disabled:cursor-not-allowed`}
                             disabled={isSubmitting || !agreeToTerms}
                         >
-                            {isSubmitting ? quote.submitting : "Get Quote"}
+                            {isSubmitting ? quote.submitting : "Get Cost Estimates"}
                         </Button>
                     </div>
                 </form>
             )}
         </Sidebar>
+        <TextModal
+            open={showTerms}
+            onClose={() => setShowTerms(false)}
+            title="Terms & Conditions"
+            content={<PrivacyPolicyContent />}
+        />
+        </>
     );
 }

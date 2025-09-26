@@ -64,7 +64,7 @@ export const APP_CONTENT = {
 
   // Quote sidebar content
   quote: {
-    title: "Get Your Quote",
+    title: "Get Building Cost Estimate",
     subtitle: "Select builders and get quotes for your dream home",
     yourName: "Your Name",
     emailAddress: "Email Address",
@@ -92,6 +92,7 @@ export const APP_CONTENT = {
     noSavedProperties: "No saved properties",
     noSavedPropertiesDescription: "Start exploring properties and save them to your shortlist.",
     viewDetails: "View Details",
+    floorplanRotation: "Floorplan Rotation",
   },
 
   // Filter content
