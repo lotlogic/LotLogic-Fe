@@ -15,10 +15,13 @@ import { SummaryView } from "./SummaryView";
 import { HouseDesignList } from "../facades/HouseDesignList";
 import { Diamond } from "lucide-react";
 import { getImageUrl } from "@/lib/api/lotApi";
+import { useRotationStore } from "@/stores/rotationStore";
 import { useModalStore } from "@/stores/modalStore";
 import { useHouseDesigns } from "@/hooks/useHouseDesigns";
 
 export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, onZoningDataUpdate }: LotSidebarProps) {
+  // Rotation store to ensure new selections start at 0°
+  const { setManualRotation } = useRotationStore();
 
   const { lotSidebar } = useContent();
   const { showFloorPlanModal, showFacadeModal, setShowFloorPlanModal, setShowFacadeModal } = useModalStore();
@@ -141,6 +144,8 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
     setSelectedHouseDesignForModals(design);
 
     if (design && onSelectFloorPlan && design.floorPlanImage && geometry && geometry.type === 'Polygon') {
+      // Reset rotation BEFORE selecting a new floorplan to avoid race conditions
+      setManualRotation(0);
       const ring = geometry.coordinates[0];
       if (ring && ring.length >= 4) {
         const houseArea = design.area ? parseFloat(design.area.toString()) : 0;
@@ -172,8 +177,8 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
           url: floorPlanUrl,
           coordinates,
           houseArea: houseArea,
-          houseWidth: design.minLotWidth,
-          houseDepth: design.minLotDepth
+          houseWidth: design.minLotWidth ?? 0,
+          houseDepth: design.minLotDepth ?? 0
         });
       }
     } else if (!design && onSelectFloorPlan) {

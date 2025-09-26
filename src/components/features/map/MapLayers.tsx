@@ -164,6 +164,18 @@ export function MapLayers({
     setManualRotation(0);
   }, [selectedLot?.properties?.ID, selectedFloorPlan?.url]);
 
+  // Additional reset when selectedFloorPlan changes (more immediate)
+  useEffect(() => {
+    if (selectedFloorPlan) {
+      setManualRotation(0);
+    }
+  }, [selectedFloorPlan, setManualRotation]);
+
+  // Reset FSR violation toast state when switching lots or floorplans
+  useEffect(() => {
+    prevExceedsFSRRef.current = false;
+  }, [selectedLot?.properties?.ID, selectedFloorPlan?.url]);
+
   // Separate useEffect for immediate rotation updates
   useEffect(() => {
     if (!map || !selectedFloorPlan) return;
@@ -347,41 +359,41 @@ export function MapLayers({
             // let lotFrontB: [number, number] | undefined;
             
             // Check for explicit frontageCoordinate property (from backend)
-            const frontageData = selectedLot?.properties?.frontageCoordinate;
+            // const frontageData = selectedLot?.properties?.frontageCoordinate;
             // console.log("Raw frontageData from backend:", frontageData);
             
-            if (frontageData) {
-              let parsedFrontage: [number, number][] | null = null;
+            // if (frontageData) {
+            //   let parsedFrontage: [number, number][] | null = null;
               
-              // Handle JSON string format (like the one you provided)
-              if (typeof frontageData === 'string' && frontageData.startsWith('{"type":"LineString"')) {
-                try {
-                  const parsed = JSON.parse(frontageData);
-                  if (parsed.type === 'LineString' && parsed.coordinates) {
-                    parsedFrontage = parsed.coordinates as [number, number][];
-                    // console.log("Parsed JSON string frontage coordinates:", parsedFrontage);
-                  }
-                } catch (e) {
-                  console.error("Error parsing JSON frontageCoordinate:", e);
-                }
-              }
-              // Handle WKT string format
-              // else if (typeof frontageData === 'string' && frontageData.startsWith('LINESTRING')) {
-              //   parsedFrontage = parseWKTLineString(frontageData);
-              //   console.log("Parsed WKT frontage coordinates:", parsedFrontage);
-              // }
-              // Handle GeoJSON object format
-              else if (typeof frontageData === 'object' && frontageData.type === 'LineString' && frontageData.coordinates) {
-                parsedFrontage = frontageData.coordinates as [number, number][];
-                // console.log("Parsed GeoJSON frontage coordinates:", parsedFrontage);
-              }
+            //   // Handle JSON string format (like the one you provided)
+            //   if (typeof frontageData === 'string' && frontageData.startsWith('{"type":"LineString"')) {
+            //     try {
+            //       const parsed = JSON.parse(frontageData);
+            //       if (parsed.type === 'LineString' && parsed.coordinates) {
+            //         parsedFrontage = parsed.coordinates as [number, number][];
+            //         // console.log("Parsed JSON string frontage coordinates:", parsedFrontage);
+            //       }
+            //     } catch (e) {
+            //       console.error("Error parsing JSON frontageCoordinate:", e);
+            //     }
+            //   }
+            //   // Handle WKT string format
+            //   // else if (typeof frontageData === 'string' && frontageData.startsWith('LINESTRING')) {
+            //   //   parsedFrontage = parseWKTLineString(frontageData);
+            //   //   console.log("Parsed WKT frontage coordinates:", parsedFrontage);
+            //   // }
+            //   // Handle GeoJSON object format
+            //   else if (typeof frontageData === 'object' && frontageData.type === 'LineString' && frontageData.coordinates) {
+            //     parsedFrontage = frontageData.coordinates as [number, number][];
+            //     // console.log("Parsed GeoJSON frontage coordinates:", parsedFrontage);
+            //   }
               
-              // if (parsedFrontage && parsedFrontage.length >= 2) {
-              //   lotFrontA = parsedFrontage[0];
-              //   lotFrontB = parsedFrontage[1];
-                // console.log("Using frontageCoordinate from backend:", lotFrontA, lotFrontB);
-              // }
-            }
+            //   // if (parsedFrontage && parsedFrontage.length >= 2) {
+            //   //   lotFrontA = parsedFrontage[0];
+            //   //   lotFrontB = parsedFrontage[1];
+            //     // console.log("Using frontageCoordinate from backend:", lotFrontA, lotFrontB);
+            //   // }
+            // }
             
             // Manual rotation only - user controls the floorplan direction
             const delta = manualRotation;
@@ -465,7 +477,93 @@ export function MapLayers({
       if (map.getLayer(layerId)) map.removeLayer(layerId);
       if (map.getSource(sourceId)) map.removeSource(sourceId);
     };
-  }, [map, selectedFloorPlan]);
+  }, [map, selectedFloorPlan, manualRotation]);
+
+
+  // Check FSR/Boundary exceedance on any relevant change, not only during rotation
+  useEffect(() => {
+    if (!map || !selectedFloorPlan || !selectedLot) return;
+
+    // Use a small delay to ensure house boundary source is created by the S values effect
+    const timeoutId = setTimeout(() => {
+      const houseBoundarySource = map.getSource('house-area-boundary-source');
+      if (!houseBoundarySource || houseBoundarySource.type !== 'geojson') return;
+
+      const houseBoundaryData = (houseBoundarySource as mapboxgl.GeoJSONSource).serialize();
+      if (!houseBoundaryData.data || typeof houseBoundaryData.data !== 'object' || !('geometry' in houseBoundaryData.data)) return;
+
+      const houseBoundaryCoords = (houseBoundaryData.data as any).geometry.coordinates[0] as [number, number][];
+      if (!houseBoundaryCoords || houseBoundaryCoords.length < 4) return;
+
+      // Build rotated house polygon based on current manualRotation
+      const closedRing: [number, number][] = [
+        houseBoundaryCoords[0],
+        houseBoundaryCoords[1],
+        houseBoundaryCoords[2],
+        houseBoundaryCoords[3],
+        houseBoundaryCoords[0],
+      ];
+      const housePoly = turf.polygon([closedRing]);
+      const pivot = turf.centroid(housePoly).geometry.coordinates as [number, number];
+      const rotated = turf.transformRotate(housePoly, manualRotation, { pivot });
+
+      // Build setback and FSR boundary
+      const geometry = selectedLot.geometry as GeoJSON.Polygon;
+      const coordinates = geometry.coordinates[0] as [number, number][];
+      const innerLL = insetQuadPerSideLL(coordinates, {
+        front: setbackValues.front,
+        side: setbackValues.side,
+        rear: setbackValues.rear,
+      });
+      if (!innerLL || innerLL.length < 5) return;
+
+      const innerPoly = turf.polygon([innerLL]);
+      const innerArea = turf.area(innerPoly);
+      const desired = Math.min(fsrBuildableArea, innerArea);
+      const scale = Math.sqrt(desired / innerArea);
+      const innerCenter = turf.center(innerPoly);
+      const fsrBoundary = turf.transformScale(innerPoly, scale, { origin: innerCenter });
+
+      // Ensure the FSR boundary source exists for rendering
+      if (!map.getSource('fsr-boundary-source')) {
+        map.addSource('fsr-boundary-source', { type: 'geojson', data: fsrBoundary });
+      } else {
+        (map.getSource('fsr-boundary-source') as mapboxgl.GeoJSONSource).setData(fsrBoundary as any);
+      }
+
+      // Evaluate exceedance
+      const exceedsFSR = !turf.booleanWithin(rotated, fsrBoundary);
+
+      // Toast once per violation state transition
+      if (exceedsFSR && !prevExceedsFSRRef.current) {
+        toast.warning("⚠️ Outside FSR. Rotate or pick another design.", {
+          position: "bottom-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
+      prevExceedsFSRRef.current = exceedsFSR;
+
+      // Toggle red FSR boundary layer visibility
+      if (exceedsFSR) {
+        if (!map.getLayer('fsr-boundary-layer')) {
+          map.addLayer({
+            id: 'fsr-boundary-layer',
+            type: 'line',
+            source: 'fsr-boundary-source',
+            paint: { 'line-color': '#FF0000', 'line-width': 1.5, 'line-dasharray': [4, 4] }
+          });
+        }
+      } else if (map.getLayer('fsr-boundary-layer')) {
+        map.removeLayer('fsr-boundary-layer');
+      }
+    }, 100); // Small delay to ensure house boundary source is ready
+
+    return () => clearTimeout(timeoutId);
+  }, [map, selectedLot, selectedFloorPlan, setbackValues, fsrBuildableArea, manualRotation]);
 
 
   // S values + Setbacks + FSR boundary
