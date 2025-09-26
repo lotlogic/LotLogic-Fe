@@ -9,7 +9,7 @@ import type { FloorPlan } from '@/types/houseDesign';
 import { useRotationStore } from '@/stores/rotationStore';
 import { colors, getContent } from '@/constants/content';
 import { useUIStore } from '@/stores/uiStore';
-import { toast } from 'react-toastify';
+// import { toast } from 'react-toastify';
 
 
 
@@ -253,6 +253,8 @@ export function MapLayers({
             // console.log(`🎯 Rotation: ${manualRotation}° | Exceeds FSR: ${exceedsFSR} | Exceeds Lot: ${exceedsLot}`);
             
             // Show toast when FSR is exceeded (only once per violation)
+            // COMMENTED OUT: Toast warning for FSR exceedance
+            /*
             if (exceedsFSR && !prevExceedsFSRRef.current) {
               toast.warning("⚠️ Outside FSR. Rotate or pick another design.", {
                 position: "bottom-right",
@@ -263,6 +265,7 @@ export function MapLayers({
                 draggable: true,
               });
             }
+            */
             
             // Update previous state
             prevExceedsFSRRef.current = exceedsFSR;
@@ -481,6 +484,8 @@ export function MapLayers({
 
 
   // Check FSR/Boundary exceedance on any relevant change, not only during rotation
+  // COMMENTED OUT: FSR boundary area detection and toast message functionality
+  /*
   useEffect(() => {
     if (!map || !selectedFloorPlan || !selectedLot) return;
 
@@ -564,6 +569,7 @@ export function MapLayers({
 
     return () => clearTimeout(timeoutId);
   }, [map, selectedLot, selectedFloorPlan, setbackValues, fsrBuildableArea, manualRotation]);
+  */
 
 
   // S values + Setbacks + FSR boundary

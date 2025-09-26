@@ -177,8 +177,8 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
           url: floorPlanUrl,
           coordinates,
           houseArea: houseArea,
-          houseWidth: design.minLotWidth ?? 0,
-          houseDepth: design.minLotDepth ?? 0
+          houseWidth: design.minLotWidth,
+          houseDepth: design.minLotDepth
         });
       }
     } else if (!design && onSelectFloorPlan) {
