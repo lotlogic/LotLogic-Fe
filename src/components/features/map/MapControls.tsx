@@ -5,6 +5,36 @@ import { debounce } from '@/lib/utils/geometry';
 import type { LotProperties } from '@/types/lot';
 import { trackLotSelected } from '@/lib/analytics/mixpanel';
 import { useMobile } from '@/hooks/useMobile';
+import * as turf from '@turf/turf';
+import { setGlobalLotFrontageMidpoint } from './MapLayers';
+
+// -----------------------------
+// Helper Functions
+// -----------------------------
+const addFrontageMidpointMarker = (map: Map, coordinates: [number, number]) => {
+  // Remove existing frontage midpoint marker if it exists
+  const existingMarker = document.getElementById('frontage-midpoint-marker');
+  if (existingMarker) {
+    existingMarker.remove();
+  }
+
+  // Create a custom marker element
+  const markerEl = document.createElement('div');
+  markerEl.id = 'frontage-midpoint-marker';
+  // markerEl.style.width = '20px';
+  // markerEl.style.height = '20px';
+  // markerEl.style.borderRadius = '50%';
+  // markerEl.style.backgroundColor = '#ff0000';
+  // markerEl.style.border = '3px solid #ffffff';
+  // markerEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+  // markerEl.style.cursor = 'pointer';
+  markerEl.title = 'Frontage Midpoint';
+
+  // Create and add the marker
+  new mapboxgl.Marker(markerEl)
+    .setLngLat(coordinates)
+    .addTo(map);
+};
 
 // -----------------------------
 // Props
@@ -60,11 +90,11 @@ export function MapControls({
     // Use a timeout to ensure the compass button is available after map loads
     const timeoutId = setTimeout(() => {
       const compassButton = map.getContainer().querySelector('.mapboxgl-ctrl-compass');
-      console.log('Compass button found:', !!compassButton);
+      // console.log('Compass button found:', !!compassButton);
       
       if (compassButton) {
         const handleCompassClick = () => {
-          console.log('Compass button clicked, dispatching recenter event');
+          // console.log('Compass button clicked, dispatching recenter event');
           // Use the same event system as mobile
           window.dispatchEvent(new CustomEvent('recenter-map'));
         };
@@ -128,6 +158,64 @@ export function MapControls({
       selectedIdRef.current = id;
 
       setSelectedLot(f as MapboxGeoJSONFeature & { properties: LotProperties });
+      
+      // Calculate and log frontage midpoint
+      const frontageData = (f.properties as Record<string, unknown>)?.frontageCoordinate;
+      // console.log("🔍 Raw frontage data:", frontageData);
+      
+      if (frontageData && typeof frontageData === 'string') {
+        try {
+          // Parse GeoJSON format: "{\"type\":\"LineString\",\"coordinates\":[[148.9246407,-34.8503355],[148.924815,-34.8504019]]}"
+          const parsedFrontage = JSON.parse(frontageData);
+          if (parsedFrontage.type === 'LineString' && parsedFrontage.coordinates && parsedFrontage.coordinates.length >= 2) {
+            const coord1 = parsedFrontage.coordinates[0] as [number, number];
+            const coord2 = parsedFrontage.coordinates[1] as [number, number];
+            const frontageMidpoint = turf.midpoint(turf.point(coord1), turf.point(coord2)).geometry.coordinates as [number, number];
+            // console.log("🏘️ Lot Frontage Midpoint (from API):", frontageMidpoint);
+            
+            // Add marker to map to show frontage midpoint
+            addFrontageMidpointMarker(map, frontageMidpoint);
+            
+            // Set global lot frontage midpoint for distance calculations
+            setGlobalLotFrontageMidpoint(frontageMidpoint);
+          } else {
+            console.log("❌ Invalid LineString format in frontage data");
+          }
+        } catch (error) {
+          console.log("❌ Error parsing frontage JSON:", error);
+        }
+      } else {
+        // Fallback: Calculate lot frontage midpoint (midpoint of the longest side)
+        const geometry = f.geometry as GeoJSON.Polygon;
+        const coordinates = geometry.coordinates[0] as [number, number][];
+        
+        const side1 = turf.distance(coordinates[0], coordinates[1], { units: 'meters' });
+        const side2 = turf.distance(coordinates[1], coordinates[2], { units: 'meters' });
+        const side3 = turf.distance(coordinates[2], coordinates[3], { units: 'meters' });
+        const side4 = turf.distance(coordinates[3], coordinates[0], { units: 'meters' });
+        
+        const sides = [side1, side2, side3, side4];
+        const maxSideIndex = sides.indexOf(Math.max(...sides));
+        
+        let frontageMidpoint: [number, number] = [0, 0];
+        if (maxSideIndex === 0) {
+          frontageMidpoint = turf.midpoint(turf.point(coordinates[0]), turf.point(coordinates[1])).geometry.coordinates as [number, number];
+        } else if (maxSideIndex === 1) {
+          frontageMidpoint = turf.midpoint(turf.point(coordinates[1]), turf.point(coordinates[2])).geometry.coordinates as [number, number];
+        } else if (maxSideIndex === 2) {
+          frontageMidpoint = turf.midpoint(turf.point(coordinates[2]), turf.point(coordinates[3])).geometry.coordinates as [number, number];
+        } else {
+          frontageMidpoint = turf.midpoint(turf.point(coordinates[3]), turf.point(coordinates[0])).geometry.coordinates as [number, number];
+        }
+        
+        // console.log("🏘️ Lot Frontage Midpoint (fallback):", frontageMidpoint);
+        
+        // Add marker to map to show frontage midpoint (fallback)
+        addFrontageMidpointMarker(map, frontageMidpoint);
+        
+        // Set global lot frontage midpoint for distance calculations
+        setGlobalLotFrontageMidpoint(frontageMidpoint);
+      }
       
       // Track lot selection in Segment
       trackLotSelected(id, f.properties as Record<string, unknown>);

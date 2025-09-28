@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { useMobile } from '@/hooks/useMobile';
+// import { useMobile } from '@/hooks/useMobile';
 import mapboxgl from 'mapbox-gl';
 import * as turf from '@turf/turf';
 import { insetQuadPerSideLL, createSValueLabel, mapSValuesToSides, type Pt, type SetbackValues } from '@/lib/utils/geometry';
@@ -7,8 +7,8 @@ import type { LotProperties } from '@/types/lot';
 import { getImageUrlWithCorsProxy } from '@/lib/api/lotApi';
 import type { FloorPlan } from '@/types/houseDesign';
 import { useRotationStore } from '@/stores/rotationStore';
-import { colors, getContent } from '@/constants/content';
-import { useUIStore } from '@/stores/uiStore';
+// import { colors, getContent } from '@/constants/content';
+// import { useUIStore } from '@/stores/uiStore';
 // import { toast } from 'react-toastify';
 
 
@@ -46,6 +46,149 @@ interface MapLayersProps {
 // Utility Functions
 // -----------------------------
 
+// Add marker for edge midpoint
+// const addEdgeMidpointMarker = (map: mapboxgl.Map, coordinates: [number, number], edgeLabel: string) => {
+//   // Remove existing edge midpoint marker if it exists
+//   const existingMarker = document.getElementById(`edge-midpoint-${edgeLabel}`);
+//   if (existingMarker) {
+//     existingMarker.remove();
+//   }
+
+//   // Create a custom marker element
+//   const markerEl = document.createElement('div');
+//   markerEl.id = `edge-midpoint-${edgeLabel}`;
+//   markerEl.style.width = '25px';
+//   markerEl.style.height = '25px';
+//   markerEl.style.borderRadius = '50%';
+//   markerEl.style.backgroundColor = '#00ff00';
+//   markerEl.style.border = '3px solid #ffffff';
+//   markerEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+//   markerEl.style.display = 'flex';
+//   markerEl.style.alignItems = 'center';
+//   markerEl.style.justifyContent = 'center';
+//   markerEl.style.fontSize = '12px';
+//   markerEl.style.fontWeight = 'bold';
+//   markerEl.style.color = '#ffffff';
+//   markerEl.textContent = edgeLabel;
+//   markerEl.title = `Edge ${edgeLabel} Midpoint`;
+
+//   // Create and add the marker
+//   new mapboxgl.Marker(markerEl)
+//     .setLngLat(coordinates)
+//     .addTo(map);
+// };
+
+// Calculate distances and compare, auto-rotate if needed
+const calculateAndCompareDistances = (_map: mapboxgl.Map, midpoint01: [number, number], midpoint23: [number, number]) => {
+  // Get the lot frontage midpoint from the red marker
+  const lotFrontageMarker = document.getElementById('frontage-midpoint-marker');
+  if (!lotFrontageMarker) {
+    // console.log("❌ Lot frontage midpoint marker not found");
+    return;
+  }
+
+  // Get the lot frontage midpoint coordinates from the marker's position
+  // We need to get this from the map marker's lngLat
+  const lotFrontageMidpoint = getLotFrontageMidpointFromMarker();
+  if (!lotFrontageMidpoint) {
+    // console.log("❌ Could not get lot frontage midpoint coordinates");
+    return;
+  }
+
+  // Calculate distances from lot frontage midpoint to house boundary edge midpoints
+  const distance01 = turf.distance(turf.point(lotFrontageMidpoint), turf.point(midpoint01), { units: 'meters' });
+  const distance23 = turf.distance(turf.point(lotFrontageMidpoint), turf.point(midpoint23), { units: 'meters' });
+
+  // console.log("📏 Distance from lot frontage to house edge 0-1:", distance01.toFixed(2), "meters");
+  // console.log("📏 Distance from lot frontage to house edge 2-3:", distance23.toFixed(2), "meters");
+
+  // Check if 0-1 distance is greater than 2-3 distance
+  if (distance01 > distance23) {
+    // console.log("🔄 Distance 0-1 > 2-3, rotating floorplan 180°");
+    // Use the existing rotation store
+    const { setManualRotation } = useRotationStore.getState();
+    setManualRotation(180);
+  } else {
+    // console.log("✅ Distance 0-1 <= 2-3, no rotation needed");
+  }
+};
+
+// Global variable to store lot frontage midpoint
+let globalLotFrontageMidpoint: [number, number] | null = null;
+
+// Helper function to get lot frontage midpoint
+const getLotFrontageMidpointFromMarker = (): [number, number] | null => {
+  return globalLotFrontageMidpoint;
+};
+
+// Function to set the global lot frontage midpoint (called from MapControls)
+export const setGlobalLotFrontageMidpoint = (coordinates: [number, number]) => {
+  globalLotFrontageMidpoint = coordinates;
+};
+
+// Show house boundary points with labels (0, 1, 2, 3)
+const showHouseBoundaryPoints = (map: mapboxgl.Map, coordinates: [number, number][]) => {
+  // Remove existing house boundary point markers
+  for (let i = 0; i < 4; i++) {
+    const existingMarker = document.getElementById(`house-boundary-point-${i}`);
+    if (existingMarker) {
+      existingMarker.remove();
+    }
+  }
+
+  // Create markers for each point with labels - COMMENTED OUT (visual only)
+  // coordinates.forEach((coord, index) => {
+  //   // Create a custom marker element
+  //   const markerEl = document.createElement('div');
+  //   markerEl.id = `house-boundary-point-${index}`;
+  //   markerEl.style.width = '30px';
+  //   markerEl.style.height = '30px';
+  //   markerEl.style.borderRadius = '50%';
+  //   markerEl.style.backgroundColor = '#ff6b35';
+  //   markerEl.style.border = '3px solid #ffffff';
+  //   markerEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+  //   markerEl.style.display = 'flex';
+  //   markerEl.style.alignItems = 'center';
+  //   markerEl.style.justifyContent = 'center';
+  //   markerEl.style.fontSize = '14px';
+  //   markerEl.style.fontWeight = 'bold';
+  //   markerEl.style.color = '#ffffff';
+  //   markerEl.textContent = index.toString();
+  //   markerEl.title = `House Boundary Point ${index}`;
+
+  //   // Create and add the marker
+  //   new mapboxgl.Marker(markerEl)
+  //     .setLngLat(coord)
+  //     .addTo(map);
+  // });
+
+  // Log the coordinates for each point
+  // console.log("🏠 House Boundary Points:");
+  coordinates.forEach((coord, index) => {
+    console.log(`  Point ${index}: [${coord[0]}, ${coord[1]}]`);
+  });
+  
+  // Log the edges
+  // console.log("🏠 House Boundary Edges:");
+  // console.log(`  Edge 0-1: Point 0 to Point 1`);
+  // console.log(`  Edge 1-2: Point 1 to Point 2`);
+  // console.log(`  Edge 2-3: Point 2 to Point 3`);
+  // console.log(`  Edge 3-0: Point 3 to Point 0`);
+  
+  // Calculate and show midpoints for edges 0-1 and 2-3
+  const midpoint01 = turf.midpoint(turf.point(coordinates[0]), turf.point(coordinates[1])).geometry.coordinates as [number, number];
+  const midpoint23 = turf.midpoint(turf.point(coordinates[2]), turf.point(coordinates[3])).geometry.coordinates as [number, number];
+  
+  // console.log("🏠 Edge 0-1 Midpoint:", midpoint01);
+  // console.log("🏠 Edge 2-3 Midpoint:", midpoint23);
+  
+  // Add markers for the midpoints - COMMENTED OUT (visual only)
+  // addEdgeMidpointMarker(map, midpoint01, "0-1");
+  // addEdgeMidpointMarker(map, midpoint23, "2-3");
+  
+  // Calculate distances from lot frontage midpoint to house boundary edge midpoints
+  calculateAndCompareDistances(map, midpoint01, midpoint23);
+};
 
 // Calculate house dimensions and positioning
 const calculateHouseBoundary = (
@@ -150,26 +293,28 @@ export function MapLayers({
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   
   // Manual rotation state from Zustand
-  const { manualRotation, setManualRotation } = useRotationStore();
-  const { hideRotationControls } = useUIStore();
+  const { manualRotation, pendingRotation, setManualRotation, setPendingRotation, applyPendingRotation, setIsCalculating } = useRotationStore();
+  // const { hideRotationControls } = useUIStore();
   
   // Track previous FSR violation state to show toast only once
   const prevExceedsFSRRef = useRef(false);
 
   // Responsive position for rotation panel using existing hook
-  const isMobileView = useMobile();
+  // const isMobileView = useMobile();
 
   // Reset manual rotation when switching lots or floorplans
   useEffect(() => {
     setManualRotation(0);
-  }, [selectedLot?.properties?.ID, selectedFloorPlan?.url]);
+    setPendingRotation(null);
+  }, [selectedLot?.properties?.ID, selectedFloorPlan?.url, setManualRotation, setPendingRotation]);
 
   // Additional reset when selectedFloorPlan changes (more immediate)
   useEffect(() => {
     if (selectedFloorPlan) {
       setManualRotation(0);
+      setPendingRotation(null);
     }
-  }, [selectedFloorPlan, setManualRotation]);
+  }, [selectedFloorPlan, setManualRotation, setPendingRotation]);
 
   // Reset FSR violation toast state when switching lots or floorplans
   useEffect(() => {
@@ -180,20 +325,34 @@ export function MapLayers({
   useEffect(() => {
     if (!map || !selectedFloorPlan) return;
     
-    // console.log("🎯 Zustand rotation update:", manualRotation);
+    // console.log("🎯 Rotation effect triggered - manualRotation:", manualRotation, "pendingRotation:", pendingRotation);
     
     const sourceId = 'floorplan-image';
     const layerId = 'floorplan-layer';
     
-    // Only update if the layer exists
-    if (!map.getLayer(layerId)) return;
+    // Check if layer exists, if not, store pending rotation and show loader
+    // console.log("🔍 Checking if floorplan layer exists:", map.getLayer(layerId));
+    if (!map.getLayer(layerId)) {
+      // console.log("❌ Floorplan layer not found, storing pending rotation:", manualRotation);
+      setPendingRotation(manualRotation);
+      setIsCalculating(true);
+      return;
+    }
     
-    // Get the current house boundary data
-    const houseBoundarySource = map.getSource('house-area-boundary-source');
-    if (houseBoundarySource && houseBoundarySource.type === 'geojson') {
-      const houseBoundaryData = (houseBoundarySource as mapboxgl.GeoJSONSource).serialize();
-      if (houseBoundaryData.data && typeof houseBoundaryData.data === 'object' && 'geometry' in houseBoundaryData.data) {
-        const houseBoundaryCoords = (houseBoundaryData.data as any).geometry.coordinates[0];
+    // Determine the rotation to apply (use pending rotation if available, otherwise use current)
+    let rotationToApply = manualRotation;
+    if (pendingRotation !== null) {
+      // console.log("🔄 Applying pending rotation:", pendingRotation);
+      applyPendingRotation();
+      rotationToApply = pendingRotation; // Use the pending rotation value for this execution
+    }
+      
+      // Get the current house boundary data
+      const houseBoundarySource = map.getSource('house-area-boundary-source');
+      if (houseBoundarySource && houseBoundarySource.type === 'geojson') {
+        const houseBoundaryData = (houseBoundarySource as mapboxgl.GeoJSONSource).serialize();
+        if (houseBoundaryData.data && typeof houseBoundaryData.data === 'object' && 'geometry' in houseBoundaryData.data) {
+          const houseBoundaryCoords = (houseBoundaryData.data as any).geometry.coordinates[0];
         
         // Apply rotation
         const closedRing: [number, number][] = [
@@ -205,9 +364,13 @@ export function MapLayers({
         ];
         const housePoly = turf.polygon([closedRing]);
         const pivot = turf.centroid(housePoly).geometry.coordinates as [number, number];
-        const rotated = turf.transformRotate(housePoly, manualRotation, { pivot });
+        const rotated = turf.transformRotate(housePoly, rotationToApply, { pivot });
         const rCoordsFull = rotated.geometry.coordinates[0] as [number, number][];
         const rCoords = rCoordsFull.slice(0, 4);
+        
+        // console.log("🔄 Applying rotation:", rotationToApply, "° to floorplan coordinates");
+        // console.log("📍 Original coords:", houseBoundaryCoords);
+        // console.log("📍 Rotated coords:", rCoords);
         
         // Update coordinates for Mapbox
         const floorPlanCoordinates: [[number, number], [number, number], [number, number], [number, number]] = [
@@ -219,7 +382,31 @@ export function MapLayers({
         
         // Update the existing source
         if (map.getSource(sourceId)) {
+          // console.log("✅ Updating floorplan source coordinates");
           (map.getSource(sourceId) as mapboxgl.ImageSource).setCoordinates(floorPlanCoordinates);
+        } else {
+          console.log("❌ Floorplan source not found");
+        }
+
+        // Auto-rotation logic: Check if we should rotate 180° based on distance to lot frontage
+        if (globalLotFrontageMidpoint && manualRotation === 0) {
+          // Calculate midpoints of the rotated house boundary edges
+          const rotatedMidpoint01 = turf.midpoint(turf.point(rCoords[0]), turf.point(rCoords[1])).geometry.coordinates as [number, number];
+          const rotatedMidpoint23 = turf.midpoint(turf.point(rCoords[2]), turf.point(rCoords[3])).geometry.coordinates as [number, number];
+          
+          // Calculate distances from lot frontage midpoint to rotated house boundary edge midpoints
+          const distance01 = turf.distance(turf.point(globalLotFrontageMidpoint), turf.point(rotatedMidpoint01), { units: 'meters' });
+          const distance23 = turf.distance(turf.point(globalLotFrontageMidpoint), turf.point(rotatedMidpoint23), { units: 'meters' });
+          
+          // console.log("🔄 Auto-rotation check - Distance 0-1:", distance01.toFixed(2), "m, Distance 2-3:", distance23.toFixed(2), "m");
+          
+          // If distance to edge 0-1 is greater than distance to edge 2-3, rotate 180°
+          if (distance01 > distance23) {
+            // console.log("🔄 Auto-rotating to 180° because distance01 > distance23");
+            setManualRotation(180);
+          } else {
+            console.log("🔄 Keeping 0° rotation because distance01 <= distance23");
+          }
         }
         
         // Check if rotated floorplan exceeds boundaries and log results
@@ -291,11 +478,27 @@ export function MapLayers({
         }
       }
     }
-  }, [manualRotation, map, selectedFloorPlan]);
+  }, [manualRotation, pendingRotation, map, selectedFloorPlan, setPendingRotation, applyPendingRotation]);
+
+  // Handle pending rotations when layer becomes available
+  useEffect(() => {
+    if (!map || !selectedFloorPlan || pendingRotation === null) return;
+    
+    const layerId = 'floorplan-layer';
+    if (map.getLayer(layerId)) {
+      // console.log("🔄 Layer now available, applying pending rotation:", pendingRotation);
+      applyPendingRotation();
+    }
+  }, [map, selectedFloorPlan, pendingRotation, applyPendingRotation]);
 
   // Floorplan overlay
   useEffect(() => {
     if (!map || !selectedFloorPlan) return;
+    
+    // console.log("🏗️ Floorplan overlay effect triggered - manualRotation:", manualRotation);
+    
+    // Show loader while calculating
+    setIsCalculating(true);
     
     const sourceId = 'floorplan-image';
     const layerId = 'floorplan-layer';
@@ -303,7 +506,9 @@ export function MapLayers({
     if (map.getLayer(layerId)) map.removeLayer(layerId);
     if (map.getSource(sourceId)) map.removeSource(sourceId);
 
-    const proxiedImageUrl = getImageUrlWithCorsProxy(selectedFloorPlan.url);
+    // Delay floorplan creation to allow rotation calculations to complete
+    const createFloorplan = () => {
+      const proxiedImageUrl = getImageUrlWithCorsProxy(selectedFloorPlan.url);
     
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -431,6 +636,14 @@ export function MapLayers({
                 rCoords[0], // BL
           ];
           
+              // Remove existing layer and source if they exist
+              if (map.getLayer(layerId)) {
+                map.removeLayer(layerId);
+              }
+              if (map.getSource(sourceId)) {
+                map.removeSource(sourceId);
+              }
+              
               map.addSource(sourceId, {
                 type: 'image',
                 url: proxiedImageUrl,
@@ -467,18 +680,40 @@ export function MapLayers({
         source: sourceId, 
         paint: { 'raster-opacity': 0.8 } 
       });
+      
+      // console.log("✅ Floorplan layer created successfully");
+      
+      // Apply any pending rotation now that the layer exists
+      if (pendingRotation !== null) {
+        // console.log("🔄 Applying pending rotation after layer creation:", pendingRotation);
+        applyPendingRotation();
+      }
+      
+      // Hide loader when layer is ready
+      setIsCalculating(false);
     };
     
     img.onerror = () => {
+      // console.log("❌ Image failed to load");
       if (map.getLayer(layerId)) map.removeLayer(layerId);
       if (map.getSource(sourceId)) map.removeSource(sourceId);
+      setIsCalculating(false);
     };
     
-    img.src = proxiedImageUrl;
+      img.src = proxiedImageUrl;
+    };
+
+    // Delay floorplan creation to allow rotation calculations to complete
+    const timeoutId = setTimeout(() => {
+      createFloorplan();
+    }, 500); // 500ms delay to allow rotation calculations
 
     return () => {
-      if (map.getLayer(layerId)) map.removeLayer(layerId);
-      if (map.getSource(sourceId)) map.removeSource(sourceId);
+      clearTimeout(timeoutId);
+      if (map) {
+        if (map.getLayer(layerId)) map.removeLayer(layerId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+      }
     };
   }, [map, selectedFloorPlan, manualRotation]);
 
@@ -679,6 +914,10 @@ export function MapLayers({
         //   paint: { 'line-color': '#15cf04', 'line-width': 2, 'line-dasharray': [4, 4] }
         // });
 
+        // Show house boundary points with labels (0, 1, 2, 3)
+        const houseBoundaryCoords = houseBoundary.geometry.coordinates[0] as [number, number][];
+        showHouseBoundaryPoints(map, houseBoundaryCoords);
+
         // House area label
         if (!selectedFloorPlan && !showFloorPlanModal && !showFacadeModal) {
           const houseAreaLabel = new mapboxgl.Marker({
@@ -737,69 +976,134 @@ export function MapLayers({
 
     return () => {
       newMarkers.forEach(m => m.remove());
-      if (map.getLayer('setback-boundary-layer')) map.removeLayer('setback-boundary-layer');
-      if (map.getSource('setback-boundary-source')) map.removeSource('setback-boundary-source');
-      if (map.getLayer('fsr-boundary-layer')) map.removeLayer('fsr-boundary-layer');
-      if (map.getSource('fsr-boundary-source')) map.removeSource('fsr-boundary-source');
-      if (map.getLayer('house-area-boundary-layer')) map.removeLayer('house-area-boundary-layer');
-      if (map.getSource('house-area-boundary-source')) map.removeSource('house-area-boundary-source');
+      if (map) {
+        if (map.getLayer('setback-boundary-layer')) map.removeLayer('setback-boundary-layer');
+        if (map.getSource('setback-boundary-source')) map.removeSource('setback-boundary-source');
+        if (map.getLayer('fsr-boundary-layer')) map.removeLayer('fsr-boundary-layer');
+        if (map.getSource('fsr-boundary-source')) map.removeSource('fsr-boundary-source');
+        if (map.getLayer('house-area-boundary-layer')) map.removeLayer('house-area-boundary-layer');
+        if (map.getSource('house-area-boundary-source')) map.removeSource('house-area-boundary-source');
+      }
+      // Clean up house boundary point markers
+      for (let i = 0; i < 4; i++) {
+        const existingMarker = document.getElementById(`house-boundary-point-${i}`);
+        if (existingMarker) {
+          existingMarker.remove();
+        }
+      }
+      // Clean up edge midpoint markers
+      const edgeMidpoint01 = document.getElementById('edge-midpoint-0-1');
+      if (edgeMidpoint01) edgeMidpoint01.remove();
+      const edgeMidpoint23 = document.getElementById('edge-midpoint-2-3');
+      if (edgeMidpoint23) edgeMidpoint23.remove();
     };
   }, [map, selectedLot, setbackValues, fsrBuildableArea, selectedFloorPlan, showFloorPlanModal, showFacadeModal, setSValuesMarkers]);
 
-  // Rotation Controls UI
-  if (!selectedFloorPlan || hideRotationControls) return null;
+  // Rotation Controls UI - COMMENTED OUT (visual only)
+  // if (!selectedFloorPlan || hideRotationControls) return null;
+  
+  // return (
+  //   <>
+  //     <style>
+  //       {`
+  //         @keyframes spin {
+  //           0% { transform: rotate(0deg); }
+  //           100% { transform: rotate(360deg); }
+  //         }
+  //       `}
+  //     </style>
+  //     <div style={{
+  //     position: 'absolute',
+  //     top: isMobileView ? '10px' : '20px',
+  //     right: isMobileView ? '10px' : '70px',
+  //     background: 'white',
+  //     padding: '15px',
+  //     borderRadius: '8px',
+  //     boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+  //     zIndex: 1000,
+  //     minWidth: '250px'
+  //   }}>
+  //     <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>{getContent('map.floorplanRotation', 'Floorplan Rotation')}</h4>
+      
+  //     <div>
+  //       <label style={{ fontSize: '12px', display: 'block', marginBottom: '5px' }}>
+  //         Rotation: {manualRotation.toFixed(0)}°
+  //       </label>
+  //       <input
+  //         type="range"
+  //         min="0"
+  //         max="360"
+  //         value={manualRotation}
+  //         onChange={(e) => setManualRotation(Number(e.target.value))}
+  //         style={{ width: '100%', marginBottom: '10px', accentColor: colors.primary }}
+  //       />
+        
+  //       <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+  //         {[0, 90, 180, 270].map(angle => (
+  //           <button
+  //             key={angle}
+  //             onClick={() => {
+  //               setManualRotation(angle);
+  //             }}
+  //             style={{
+  //               padding: '4px 8px',
+  //               fontSize: '10px',
+  //               border: '1px solid #ccc',
+  //               borderRadius: '4px',
+  //               background: manualRotation === angle ? colors.primary : 'white',
+  //               color: manualRotation === angle ? 'white' : 'black',
+  //               cursor: 'pointer'
+  //             }}
+  //           >
+  //             {angle}°
+  //           </button>
+  //         ))}
+  //       </div>
+  //     </div>
+      
+  //   </div>
+  //   </>
+  // );
+
+  return null; 
+}
+
+// Separate loader component that overlays the map
+export function MapLoader({ isCalculating, map, selectedLot }: { 
+  isCalculating: boolean; 
+  map: mapboxgl.Map | null; 
+  selectedLot: any;
+}) {
+  if (!isCalculating || !map || !selectedLot) return null;
   
   return (
-    <div style={{
-      position: 'absolute',
-      top: isMobileView ? '10px' : '20px',
-      right: isMobileView ? '10px' : '70px',
-      background: 'white',
-      padding: '15px',
-      borderRadius: '8px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-      zIndex: 1000,
-      minWidth: '250px'
-    }}>
-      <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>{getContent('map.floorplanRotation', 'Floorplan Rotation')}</h4>
-      
-      {/* Manual Rotation Controls */}
-      <div>
-        <label style={{ fontSize: '12px', display: 'block', marginBottom: '5px' }}>
-          Rotation: {manualRotation.toFixed(0)}°
-        </label>
-        <input
-          type="range"
-          min="0"
-          max="360"
-          value={manualRotation}
-          onChange={(e) => setManualRotation(Number(e.target.value))}
-          style={{ width: '100%', marginBottom: '10px', accentColor: colors.primary }}
-        />
-        
-        {/* Quick preset buttons */}
-        <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-          {[0, 90, 180, 270].map(angle => (
-            <button
-              key={angle}
-              onClick={() => {
-                setManualRotation(angle);
-              }}
-              style={{
-                padding: '4px 8px',
-                fontSize: '10px',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                background: manualRotation === angle ? colors.primary : 'white',
-                color: manualRotation === angle ? 'white' : 'black',
-                cursor: 'pointer'
-              }}
-            >
-              {angle}°
-            </button>
-          ))}
-        </div>
+    <>
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
+      <div style={{
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 9999,
+        pointerEvents: 'none'
+      }}>
+        <div style={{
+          width: '32px',
+          height: '32px',
+          border: '4px solid rgba(255, 255, 255, 0.3)',
+          borderTop: '4px solid #007bff',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+        }}></div>
       </div>
-    </div>
-  ); 
+    </>
+  );
 }

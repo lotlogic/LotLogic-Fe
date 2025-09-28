@@ -331,7 +331,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                       className={`border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:${getColorClass('primary')} hover:text-white hover:${getColorClass('primary', 'border')} transition-colors w-full flex items-center justify-center gap-2 cursor-pointer`}
                     >
                       <MailQuestionMark className="h-4 w-4" />
-                      Enquire Now
+                      Get Cost Estimates
                     </Button>
                   </div>
                 </div>
