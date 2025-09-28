@@ -51,7 +51,7 @@ export const APP_CONTENT = {
     filter: "Filter",
     reset: "Reset",
     showHouseDesign: "Show House Design",
-    enquireNow: "Enquire Now",
+    enquireNow: "Get Cost Estimates",
     bedrooms: "Bedrooms",
     bathrooms: "Bathrooms",
     cars: "Cars",

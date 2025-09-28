@@ -417,7 +417,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                             className={`w-full text-lg py-3 rounded-lg ${getColorClass('primary')} text-white disabled:opacity-50 disabled:cursor-not-allowed`}
                             disabled={isSubmitting || !agreeToTerms}
                         >
-                            {isSubmitting ? quote.submitting : "Get Cost Estimates"}
+                            {isSubmitting ? quote.submitting : "Enquire Now"}
                         </Button>
                     </div>
                 </form>

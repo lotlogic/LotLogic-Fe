@@ -9,7 +9,7 @@ const SavedButton = lazy(() => import("./SavedButton").then(module => ({ default
 const SavedPropertiesSidebar = lazy(() => import("./SavedPropertiesSidebar").then(module => ({ default: module.SavedPropertiesSidebar })));
 
 // Import optimized components
-import { MapLayers } from './MapLayers';
+import { MapLayers, MapLoader } from './MapLayers';
 import { MapControls } from './MapControls';
 import { useMapInitialization } from '@/hooks/useMapInitialization';
 import { useMobile } from '@/hooks/useMobile';
@@ -20,6 +20,7 @@ import type { SavedProperty } from "@/types/ui";
 import { useLots, convertLotsToGeoJSON } from "@/hooks/useLots";
 import { getImageUrl } from "@/lib/api/lotApi";
 import { useModalStore } from "@/stores/modalStore";
+import { useRotationStore } from "@/stores/rotationStore";
 import type { SetbackValues } from '@/lib/utils/geometry';
 import type { LotProperties } from "@/types/lot";
 import type { FloorPlan } from "@/types/houseDesign";
@@ -45,6 +46,9 @@ export default function ZoneMap() {
 
   // Modal state from Zustand
   const { showFloorPlanModal, showFacadeModal } = useModalStore();
+  
+  // Rotation state from Zustand
+  const { isCalculating } = useRotationStore();
 
 
 
@@ -288,6 +292,9 @@ export default function ZoneMap() {
       )}
 
       <div ref={mapContainer} className="h-full w-full" />
+
+      {/* Map Loader - shows over the entire map */}
+      <MapLoader isCalculating={isCalculating} map={mapRef} selectedLot={selectedLot} />
 
       {/* Map Controls Component - only zoom controls, no duplicate functionality */}
       <MapControls
