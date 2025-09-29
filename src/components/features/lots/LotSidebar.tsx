@@ -45,6 +45,23 @@ export function LotSidebar({ open, onClose, lot, geometry, onSelectFloorPlan, on
 
   // Get house designs and zoning data for dynamic FSR - only when user clicks "Show House Designs"
   const lotId = lot.id?.toString() || null;
+
+  // Reset sidebar state when lot changes
+  useEffect(() => {
+    setShowFilter(false);
+    setShowHouseDesigns(false);
+    setSelectedHouseDesignForModals(null);
+    setBedroom([]);
+    setBathroom([]);
+    setCar([]);
+    setDesign({
+      rumpus: false,
+      alfresco: false,
+      pergola: false,
+    });
+    setMinSize(NaN);
+    setMaxSize(NaN);
+  }, [lot.id]);
   
   // Only create filters object if any filters are actually set
   const hasAnyFilters = bedroom.length > 0 || bathroom.length > 0 || car.length > 0 || 

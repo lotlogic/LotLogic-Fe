@@ -61,6 +61,11 @@ export default function ZoneMap() {
   // Keep sidebar open ref in sync
   useEffect(() => { sidebarOpenRef.current = !!selectedLot; }, [selectedLot]);
 
+  // Clear floor plan when switching lots
+  useEffect(() => {
+    setSelectedFloorPlan(null);
+  }, [selectedLot?.properties?.ID]);
+
 
 
 
@@ -303,6 +308,8 @@ export default function ZoneMap() {
         selectedIdRef={selectedIdRef}
         sidebarOpenRef={sidebarOpenRef}
         initialView={mapInitialView}
+        showFloorPlanModal={showFloorPlanModal}
+        showFacadeModal={showFacadeModal}
       />
 
       {/* Map Layers Component */}
