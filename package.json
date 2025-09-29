@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "upload": "aws s3 sync ./dist s3://dev.blockplanner.com.au --delete",
     "clear": "aws cloudfront create-invalidation --distribution-id EPAVQRHYCIFEE --paths '/*' ",
-    "deploy": "yarn build && yarn upload && yarn clear"
+    "deploy": "yarn build && yarn upload && yarn clear",
+    "prepare": "husky"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -46,6 +47,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",
+    "husky": "^9.1.7",
     "typescript": "~5.8.3",
     "vite": "^7.0.4"
   }
