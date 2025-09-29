@@ -87,7 +87,7 @@ function App() {
   };
 
   const handleSearch = (query: string) => {
-    console.log('Search query:', query);
+    // console.log('Search query:', query);
     setShowSearch(false);
     // Implement search functionality here
   };
@@ -138,7 +138,7 @@ function App() {
             open={showSaved}
             onClose={() => setShowSaved(false)}
             onViewDetails={(property) => {
-              console.log('Viewing property details:', property);
+              // console.log('Viewing property details:', property);
               // TODO: Implement property details view
               setShowSaved(false);
             }}

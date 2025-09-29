@@ -165,7 +165,7 @@ const showHouseBoundaryPoints = (map: mapboxgl.Map, coordinates: [number, number
   // Log the coordinates for each point
   // console.log("🏠 House Boundary Points:");
   coordinates.forEach((coord, index) => {
-    console.log(`  Point ${index}: [${coord[0]}, ${coord[1]}]`);
+    // console.log(`  Point ${index}: [${coord[0]}, ${coord[1]}]`);
   });
   
   // Log the edges
