@@ -1,15 +1,15 @@
-import React, { useCallback, useMemo } from 'react';
+import { Close, NavigateBefore, NavigateNext } from '@mui/icons-material';
 import {
+  Box,
   Dialog,
-  DialogTitle,
   DialogContent,
+  DialogTitle,
   IconButton,
   Typography,
-  Box,
-  useTheme,
-  useMediaQuery
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
-import { Close, NavigateBefore, NavigateNext } from '@mui/icons-material';
+import React, { useCallback, useMemo } from 'react';
 
 // Common Dialog Title Component
 const ModalTitle: React.FC<{ title: string; onClose: () => void }> = ({ title, onClose }) => (
@@ -186,6 +186,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
           margin: 0,
           display: 'flex',
           flexDirection: 'column',
+          maxHeight: '70%',
           overflow: 'auto'
         }}
       >
@@ -196,7 +197,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
               alignItems: 'center',
               justifyContent: 'center',
               width: '100%',
-              height: isMobile ? '50vh' : '530px'
+              height: isMobile ? '50vh' : '630px'
             }}
           >
             <Typography variant="body1" color="text.secondary">
@@ -210,7 +211,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
               sx={{
                 position: 'relative',
                 width: '100%',
-                height: isMobile ? '50vh' : 'calc(100vh - 280px)',
+                height: isMobile ? '50vh' : 'calc(100vh - 340px)',
                 marginBottom: '10px',
                 display: 'flex',
                 alignItems: 'center',
@@ -274,7 +275,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
                   display: 'flex',
                   justifyContent: 'center',
                   gap: '8px',
-                  overflowX: 'auto',
+                  // overflowX: 'auto',
                   paddingBottom: '6px'
                 }}
               >
