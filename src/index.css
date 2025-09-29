@@ -234,3 +234,55 @@
 .Toastify__toast-icon {
   display: none !important;
 }
+
+/* Mobile zoom controls styling */
+.mapboxgl-ctrl-zoom-mobile {
+  position: absolute !important;
+  top: 12px !important;
+  right: 12px !important;
+  z-index: 1 !important;
+  background: white !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  overflow: hidden !important;
+}
+
+.mapboxgl-ctrl-zoom-mobile button {
+  width: 36px !important;
+  height: 36px !important;
+  border: none !important;
+  background: white !important;
+  cursor: pointer !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  color: #333 !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.mapboxgl-ctrl-zoom-mobile button:hover {
+  background-color: #f5f5f5 !important;
+}
+
+.mapboxgl-ctrl-zoom-mobile button:active {
+  background-color: #e5e5e5 !important;
+}
+
+/* Hide default mapbox controls on mobile only */
+@media (max-width: 768px) {
+  .mapboxgl-ctrl-group:not(.mapboxgl-ctrl-zoom-mobile) {
+    display: none !important;
+  }
+  
+  /* Ensure proper spacing for mobile viewports */
+  .mapboxgl-ctrl-zoom-mobile {
+    top: 16px !important;
+    right: 16px !important;
+  }
+  
+  /* Adjust button sizes for better touch targets on mobile */
+  .mapboxgl-ctrl-zoom-mobile button {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 20px !important;
+  }
+}

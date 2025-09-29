@@ -1,21 +1,32 @@
+import { Button } from "@/components/ui/Button";
+import { TextModal } from '@/components/ui/DynamicModal';
+import { MultiSelect } from "@/components/ui/MultiSelect";
+import { PrivacyPolicyContent } from '@/components/ui/PrivacyPolicyContent';
+import { Sidebar } from "@/components/ui/Sidebar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from '@/components/ui/input';
+import { colors, formatContent, getColorClass, getContent, quote } from "@/constants/content";
+import { convertBuildersToOptions, useBuilders } from '@/hooks/useBuilders';
+import { trackEnquirySubmitted, trackQuoteFormInteraction } from '@/lib/analytics/mixpanel';
+import { getImageUrl, submitEnquiry } from '@/lib/api/lotApi';
+import { useUIStore } from '@/stores/uiStore';
+import type { GetYourQuoteSidebarProps, QuoteFormData } from "@/types/houseDesign";
+import { quoteFormSchema } from "@/types/houseDesign";
 import React, { useState } from 'react';
-import { Button } from "../../ui/Button";
-import { Sidebar } from "../../ui/Sidebar";
-import { MultiSelect } from "../../ui/MultiSelect";
-import { Checkbox } from "../../ui/checkbox";
-import type { GetYourQuoteSidebarProps, QuoteFormData } from "../../../types/houseDesign";
-import { quoteFormSchema } from "../../../types/houseDesign";
-import { quote, formatContent, getColorClass } from "../../../constants/content";
-import { Input } from '../../ui/input';
-import { getImageUrl, submitEnquiry } from '../../../lib/api/lotApi';
-import { useBuilders, convertBuildersToOptions } from '../../../hooks/useBuilders';
-import { trackQuoteFormInteraction, trackEnquirySubmitted } from '../../../lib/analytics/segment';
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
     const [showThankYou, setShowThankYou] = useState(false);
     const [lotSecured, setLotSecured] = useState(false);
     const [agreeToTerms, setAgreeToTerms] = useState(false);
+    const { setHideRotationControls } = useUIStore();
+
+    // Hide rotation controls when thank-you or lot-secured screens are visible
+    React.useEffect(() => {
+        setHideRotationControls(showThankYou || lotSecured);
+        return () => setHideRotationControls(false);
+    }, [showThankYou, lotSecured, setHideRotationControls]);
+    const [showTerms, setShowTerms] = useState(false);
     // Fetch builders from backend
     const { data: builders, isLoading: buildersLoading, error: buildersError } = useBuilders();
     const builderOptions = builders ? convertBuildersToOptions(builders) : [];
@@ -57,6 +68,19 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
     if (!open) return null;
 
     const facedOption = selectedHouseDesign?.images[0]?.faced || 'N/A';
+
+    // Simple cost estimate based on area and a per-sqft range
+    const parseAreaSqFt = (areaStr?: string): number | null => {
+        if (!areaStr) return null;
+        const digits = areaStr.toString().replace(/[^0-9.]/g, '');
+        const value = parseFloat(digits);
+        return Number.isFinite(value) ? value : null;
+    };
+
+    const areaSqMeter = parseAreaSqFt(selectedHouseDesign?.area);
+    const COST_MIN_PER_SQFT = 2800;
+    const COST_MAX_PER_SQFT = 5500;
+    const formatCurrency = (n: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(n);
 
     // Handle form field changes
     const handleInputChange = (field: keyof QuoteFormData, value: string) => {
@@ -128,7 +152,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 
                 setErrors(fieldErrors);
             } else {
-                console.error('Form submission error:', error);
+                // console.error('Form submission error:', error);
                 // Show user-friendly error message
                 setErrors({
                     additionalComments: 'Failed to submit enquiry. Please try again.'
@@ -187,6 +211,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
     );
 
     return (
+        <>
         <Sidebar 
             open={open} 
             onClose={onClose}
@@ -231,7 +256,28 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                         <div className={`text-3xl font-bold ${getColorClass('primary', 'text')}`}>{quote.deposit}</div>
                         <div className="flex flex-col gap-3 pt-2">
                             <Button
-                                onClick={() => setLotSecured(true)}
+                                onClick={async () => {
+                                    // Mark lot as secured in UI
+                                    setLotSecured(true);
+
+                                    // Resend enquiry as HOT LEAD to builders
+                                    try {
+                                        const enquiryData = {
+                                            name: formData.yourName,
+                                            email: formData.emailAddress,
+                                            number: formData.phoneNumber,
+                                            builders: formData.selectedBuilders,
+                                            comments: `[HOT LEAD] User secured this lot. ${formData.additionalComments || ''}`.trim(),
+                                            lot_id: parseInt(lotDetails.id.toString()),
+                                            house_design_id: selectedHouseDesign?.id || '',
+                                            facade_id: '',
+                                            hot_lead: true,
+                                        };
+                                        await submitEnquiry(enquiryData);
+                                    } catch (err) {
+                                        // Silently fail to avoid blocking UI; optionally we could surface a toast
+                                    }
+                                }}
                                 className={`${getColorClass('primary')} text-white py-3 px-6 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors`}
                             >
                                 {quote.secureThisLot}
@@ -250,6 +296,14 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 // Initial form screen
                 <form onSubmit={handleSubmit}>
                     <div className='space-y-4 p-6'>
+                        {areaSqMeter && (
+                            <div className={"rounded-2xl p-5"} style={{ backgroundColor: getContent('colors.background.accent') }}>
+                                <div className="text-gray-900 font-semibold text-lg">Estimated Building Cost</div>
+                                <div className={`mt-1 text-2xl sm:text-3xl font-extrabold`} style={{ color: colors.primary }}>
+                                    {`${formatCurrency(areaSqMeter * COST_MIN_PER_SQFT)} – ${formatCurrency(areaSqMeter * COST_MAX_PER_SQFT)}`}
+                                </div>
+                            </div>
+                        )}
                         <div>
                             <label htmlFor="yourName" className="block text-sm font-medium text-gray-700 mb-1">{quote.yourName}</label>
                             <Input
@@ -347,7 +401,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                         />
                                         <div className="flex-1">
                                             <div className="text-gray-900 text-sm">Lot {lotDetails.id}, {lotDetails.suburb}</div>
-                                            <div className="text-gray-900 text-sm">Floor Plan: {selectedHouseDesign.title} ({selectedHouseDesign.area} ft²)</div>
+                                            <div className="text-gray-900 text-sm">Floor Plan: {selectedHouseDesign.title} ({selectedHouseDesign.area} m²)</div>
                                             <div className="text-gray-900 text-sm">Faced: {facedOption}</div>
                                         </div>
                                     </div>
@@ -369,6 +423,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                     className={`${getColorClass('primary', 'text')} underline hover:${getColorClass('accent', 'text')} transition-colors`}
                                     onClick={(e) => {
                                         e.preventDefault();
+                                        setShowTerms(true);
                                     }}
                                 >
                                     Terms & Conditions
@@ -383,11 +438,18 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                             className={`w-full text-lg py-3 rounded-lg ${getColorClass('primary')} text-white disabled:opacity-50 disabled:cursor-not-allowed`}
                             disabled={isSubmitting || !agreeToTerms}
                         >
-                            {isSubmitting ? quote.submitting : "Get Quote"}
+                            {isSubmitting ? quote.submitting : "Enquire Now"}
                         </Button>
                     </div>
                 </form>
             )}
         </Sidebar>
+        <TextModal
+            open={showTerms}
+            onClose={() => setShowTerms(false)}
+            title="Terms & Conditions"
+            content={<PrivacyPolicyContent />}
+        />
+        </>
     );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, X } from 'lucide-react';
-import type { MultiSelectProps } from '../../types/ui';
-import { colors, getColorClass } from '../../constants/content';
+import type { MultiSelectProps } from '@/types/ui';
+import { colors, getColorClass } from '@/constants/content';
 
 export function MultiSelect({ 
   options, 
@@ -31,6 +31,7 @@ export function MultiSelect({
       : [...selectedOptions, optionId];
     onSelectionChange(newSelection);
   };
+
 
   const selectedOptionsData = options.filter(option => selectedOptions.includes(option.id));
   const displayText = selectedOptions.length > 0 
@@ -125,10 +126,13 @@ export function MultiSelect({
         {selectedOptionsData.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-2">
             {selectedOptionsData.map((option) => (
-              <div
-                key={option.id}
-                className={`inline-flex items-center gap-2 px-3 py-1 ${getColorClass('primary')} text-white rounded-full text-sm`}
-              >
+                <div
+                  key={option.id}
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm text-white"
+                  style={{
+                    backgroundColor: colors.primary
+                  }}
+                >
                 <span>{option.label}</span>
                 <button
                   type="button"
@@ -136,7 +140,7 @@ export function MultiSelect({
                     e.stopPropagation();
                     handleOptionToggle(option.id);
                   }}
-                  className={`hover:${getColorClass('accent')} rounded-full p-0.5`}
+                  className="hover:bg-black/20 rounded-full p-0.5"
                 >
                   <X className="h-3 w-3" />
                 </button>

@@ -1,14 +1,14 @@
+import { Button } from "@/components/ui/Button";
+import { showToast } from "@/components/ui/Toast";
+import { colors, filter as filterContent, getColorClass, houseDesign, lotSidebar } from "@/constants/content";
+import { useHouseDesigns } from "@/hooks/useHouseDesigns";
+import { trackHouseDesignInteraction, trackPropertySaved } from "@/lib/analytics/mixpanel";
+import type { HouseDesignFilterRequest } from "@/lib/api/lotApi";
+import { getImageUrl } from "@/lib/api/lotApi";
+import { useSavedPropertiesStore } from "@/stores/savedPropertiesStore";
+import type { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
 import { Bath, BedDouble, Bookmark, Car, Funnel, MailQuestionMark } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { colors, filter as filterContent, houseDesign, lotSidebar, getColorClass } from "../../../constants/content";
-import { useHouseDesigns } from "../../../hooks/useHouseDesigns";
-import type { HouseDesignFilterRequest } from "../../../lib/api/lotApi";
-import { getImageUrl } from "../../../lib/api/lotApi";
-import type { HouseDesignItem, HouseDesignListProps } from "../../../types/houseDesign";
-import { Button } from "../../ui/Button";
-import { showToast } from "../../ui/Toast";
-import { trackHouseDesignInteraction, trackPropertySaved } from "../../../lib/analytics/segment";
-import { useSavedPropertiesStore } from "../../../stores/savedPropertiesStore";
 
 
 
@@ -233,7 +233,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                     <div className="min-w-0 pr-2">
                       <div className="font-bold text-lg mb-1 truncate">{house.title}</div>
                       <div className="text-black text-sm whitespace-nowrap overflow-hidden text-ellipsis">
-                        {lotSidebar.singleStorey} {houseDesign.area}: {house.area} {houseDesign.ft}
+                        {lotSidebar.singleStorey} {houseDesign.area}: {house.area} {houseDesign.m2}
                       </div>
                     </div>
                     <Bookmark
@@ -331,7 +331,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                       className={`border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:${getColorClass('primary')} hover:text-white hover:${getColorClass('primary', 'border')} transition-colors w-full flex items-center justify-center gap-2 cursor-pointer`}
                     >
                       <MailQuestionMark className="h-4 w-4" />
-                      Enquire Now
+                      Get Cost Estimates
                     </Button>
                   </div>
                 </div>

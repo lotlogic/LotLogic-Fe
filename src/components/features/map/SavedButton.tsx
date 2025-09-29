@@ -1,7 +1,7 @@
 import React from 'react';
 import { Bookmark } from 'lucide-react';
-import type { SavedButtonProps } from '../../../types/ui';
-import { colors } from '../../../constants/content';
+import type { SavedButtonProps } from '@/types/ui';
+import { colors } from '@/constants/content';
 
 export function SavedButton({ onClick, isActive = false }: SavedButtonProps) {
     return (

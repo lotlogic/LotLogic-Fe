@@ -69,8 +69,6 @@ npm run build
 # Preview production build
 npm run preview
 
-# Lint code
-npm run lint
 ```
 
 ---
@@ -237,8 +235,6 @@ The build process creates optimized chunks:
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-- `npm run type-check` - TypeScript type checking
 
 ---
 

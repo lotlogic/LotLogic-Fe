@@ -1,7 +1,7 @@
 // Button.tsx
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { cn } from "../../lib/utils"; // use cn (clsx + tailwind-merge)
-import { colors } from "../../constants/content";
+import { cn } from "@/lib/utils"; // use cn (clsx + tailwind-merge)
+import { colors } from "@/constants/content";
 
 const BRAND = {
   base: colors.primary,

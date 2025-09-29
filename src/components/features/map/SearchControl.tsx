@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Search, X } from 'lucide-react'; 
 import axios from 'axios';
-import type { SearchControlProps, SearchResult } from '../../../types/ui';
-import { getColorClass } from '../../../constants/content';
-import { trackSearch } from '../../../lib/analytics/segment';
+import type { SearchControlProps, SearchResult } from '@/types/ui';
+import { getColorClass } from '@/constants/content';
+import { trackSearch } from '@/lib/analytics/mixpanel';
 
 export function SearchControl({ onResultSelect }: SearchControlProps) {
   const [query, setQuery] = useState('');
@@ -51,7 +51,7 @@ export function SearchControl({ onResultSelect }: SearchControlProps) {
 
       setResults(response.data.features || []);
     } catch (error) {
-      console.error('Search error:', error);
+      // console.error('Search error:', error);
       setResults([]);
     } finally {
       setIsLoading(false);

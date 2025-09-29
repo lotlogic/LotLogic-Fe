@@ -1,7 +1,7 @@
 import { toast } from 'react-toastify';
 import type { ToastOptions } from 'react-toastify';
 import { Check, X, AlertTriangle } from 'lucide-react';
-import { getColorClass, colors } from '../../constants/content';
+import { getColorClass, colors } from '@/constants/content';
 import 'react-toastify/dist/ReactToastify.css';
 
 type ToastType = 'success' | 'error' | 'warning';

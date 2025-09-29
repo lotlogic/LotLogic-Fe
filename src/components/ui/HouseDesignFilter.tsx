@@ -3,10 +3,10 @@ import { BedDouble, Bath, Car, Building2 } from 'lucide-react';
 import { Checkbox } from './checkbox';
 import { Input } from './input';
 import { Button } from './Button';
-import type { DesignRowProps, FilterRowProps, FilterSectionProps, HouseSizeInputRowProps } from "../../types/houseDesign";
-import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "../../constants/houseDesigns";
-import { getColorClass } from "../../constants/content";
-import { trackFilterApplied } from "../../lib/analytics/segment";
+import type { DesignRowProps, FilterRowProps, FilterSectionProps, HouseSizeInputRowProps } from "@/types/houseDesign";
+import { FILTER_CONFIGS, INITIAL_FILTER_RANGES } from "@/constants/houseDesigns";
+import { getColorClass } from "@/constants/content";
+import { trackFilterApplied } from "@/lib/analytics/mixpanel";
 
 const FilterRow = React.memo(({
   icon,

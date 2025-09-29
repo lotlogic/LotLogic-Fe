@@ -51,20 +51,21 @@ export const APP_CONTENT = {
     filter: "Filter",
     reset: "Reset",
     showHouseDesign: "Show House Design",
-    enquireNow: "Enquire Now",
+    enquireNow: "Get Cost Estimates",
     bedrooms: "Bedrooms",
     bathrooms: "Bathrooms",
     cars: "Cars",
     storeys: "Storeys",
     area: "Area",
     ft: "ft",
+    m2: "m2",
     selectImage: "Select image",
     thumbnail: "Thumbnail",
   },
 
   // Quote sidebar content
   quote: {
-    title: "Get Your Quote",
+    title: "Get Building Cost Estimate",
     subtitle: "Select builders and get quotes for your dream home",
     yourName: "Your Name",
     emailAddress: "Email Address",
@@ -87,27 +88,12 @@ export const APP_CONTENT = {
   // Map content
   map: {
     searchPlaceholder: "Search for lots...",
-    layers: "Layers",
-    zoningLayers: "Zoning Layers",
-    exploringInfo: "Exploring information and property details",
-    floodRiskAreas: "Flood Risk Areas",
-    floodRiskDescription: "Properties with elevated flood risk requiring special consideration",
-    bushfireRisk: "Bushfire Risk",
-    bushfireRiskDescription: "Areas prone to bushfire with special building requirements",
-    heritage: "Heritage",
-    heritageDescription: "Electricity Network",
-    heritageSubDescription: "Power grid infrastructure and transmission lines",
     savedProperties: "Your Shortlist",
     savedPropertiesDescription: "List of properties that you've shortlisted.",
     noSavedProperties: "No saved properties",
     noSavedPropertiesDescription: "Start exploring properties and save them to your shortlist.",
     viewDetails: "View Details",
-    // Map layer colors
-    layerColors: {
-      flood: "#FF0000",
-      bushfire: "#FF9800", 
-      heritage: "#15cf04",
-    },
+    floorplanRotation: "Floorplan Rotation",
   },
 
   // Filter content
@@ -231,9 +217,6 @@ export const APP_CONTENT = {
       top: "80px",
       left: "20px",
       maxHeight: "calc(100vh-100px)",
-    },
-    zoningSidebar: {
-      width: "350px",
     },
     savedPropertiesSidebar: {
       width: "450px",

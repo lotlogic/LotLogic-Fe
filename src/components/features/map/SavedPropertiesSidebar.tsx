@@ -1,13 +1,13 @@
 import  { useState, useRef, useEffect } from 'react';
 import { X, BedDouble, Bath, Car, ExternalLink, Bookmark } from 'lucide-react';
-import type { SavedPropertiesSidebarProps } from '../../../types/ui';
-import { getZoningColor } from '../../../lib/utils/zoning';
-import { getOverlaysColor } from '../../../lib/utils/overlays';
-import { getImageUrl } from '../../../lib/api/lotApi';
-import { getColorClass, colors } from '../../../constants/content';
-import { useSavedPropertiesStore } from '../../../stores/savedPropertiesStore';
-import { Button } from '../../ui/Button';
-
+import type { SavedPropertiesSidebarProps } from '@/types/ui';
+import { getZoningColor } from '@/lib/utils/zoning';
+import { getOverlaysColor } from '@/lib/utils/overlays';
+import { getImageUrl } from '@/lib/api/lotApi';
+import { getColorClass, colors } from '@/constants/content';
+import { useSavedPropertiesStore } from '@/stores/savedPropertiesStore';
+import { Button } from '@/components/ui/Button';
+import { useMobile } from '@/hooks/useMobile';
 export function SavedPropertiesSidebar({ 
     open, 
     onClose, 
@@ -15,6 +15,12 @@ export function SavedPropertiesSidebar({
 }: Omit<SavedPropertiesSidebarProps, 'savedProperties'>) {
     const sidebarRef = useRef<HTMLDivElement>(null);
     const [isClient, setIsClient] = useState(false);
+    const isMobile = useMobile();
+    const [drawerHeight, setDrawerHeight] = useState<'50vh' | '100vh'>('50vh');
+    const [isDragging, setIsDragging] = useState(false);
+    const [startY, setStartY] = useState(0);
+    const [startHeight, setStartHeight] = useState<'50vh' | '100vh'>('50vh');
+    const drawerRef = useRef<HTMLDivElement>(null);
     
     // Use Zustand store for saved properties
     const { savedProperties: storeSavedProperties, removeFromSaved } = useSavedPropertiesStore();
@@ -52,12 +58,194 @@ export function SavedPropertiesSidebar({
 
     }, [open, onClose]);
 
+    // Touch handlers for drawer functionality
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (!isMobile) return;
+        setIsDragging(true);
+        setStartY(e.touches[0].clientY);
+        setStartHeight(drawerHeight);
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (!isMobile || !isDragging) return;
+        e.preventDefault();
+        
+        const currentY = e.touches[0].clientY;
+        const deltaY = startY - currentY;
+        const threshold = 80; // pixels to trigger height change
+        
+        if (deltaY > threshold && startHeight === '50vh') {
+            setDrawerHeight('100vh');
+        } else if (deltaY < -threshold && startHeight === '100vh') {
+            setDrawerHeight('50vh');
+        } else if (deltaY < -threshold && startHeight === '50vh') {
+            // From half height, dragging down beyond threshold closes the drawer
+            onClose();
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (!isMobile) return;
+        setIsDragging(false);
+    };
+
+    // Reset height when opening
+    useEffect(() => {
+        if (open && isMobile) {
+            setDrawerHeight('50vh');
+        }
+    }, [open, isMobile]);
+
+     if (!open) return null;
+
+    // Mobile: Use drawer functionality
+    if (isMobile) {
+        return (
+            <div
+                ref={drawerRef}
+                className="fixed bottom-16 left-0 right-0 bg-white shadow-2xl z-50 transition-all duration-300 ease-in-out"
+                style={{
+                    height: drawerHeight === '100vh' ? 'calc(100vh - 4rem)' : '70vh',
+                    borderTopLeftRadius: '16px',
+                    borderTopRightRadius: '16px',
+                }}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+            >
+                {/* Drawer Handle */}
+                <div 
+                    className="flex justify-center pt-2 pb-1 cursor-pointer"
+                    onClick={() => setDrawerHeight(drawerHeight === '50vh' ? '100vh' : '50vh')}
+                >
+                    <div className="w-12 h-1 bg-gray-300 rounded-full" />
+                </div>
+
+                {/* Header */}
+                <div className="flex items-start border-b border-gray-200 bg-white rounded-t-2xl p-4 pb-3">
+                    <div className="flex-grow">
+                        <h2 className="text-xl font-bold text-gray-900">Your Shortlist</h2>
+                        <p className="text-sm text-gray-600 mt-1">List of properties that you&apos;ve shortlisted.</p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                        aria-label="Close"
+                    >
+                        <X className="h-6 w-6" />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="flex-grow overflow-y-auto min-h-0 p-4">
+                    {!isClient ? (
+                        <div className="flex items-center justify-center h-32">
+                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                        </div>
+                    ) : storeSavedProperties.length === 0 ? (
+                        <div className="text-center py-8">
+                            <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">No saved properties yet</h3>
+                            <p className="text-gray-500">Start exploring lots and save your favorite house designs!</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {storeSavedProperties.map((property, index) => (
+                                <div key={`${property.lotId}-${property.houseDesign.id}-${index}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                    {/* Lot Info Header */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-xs text-black">
+                                            Lot ID: {property.lotId}, {property.suburb}, {property.address}
+                                        </div>
+                                        <Bookmark
+                                            className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${getColorClass('primary', 'text')} ${
+                                                property.houseDesign.isFavorite ? 'fill-current' : "fill-white"
+                                            }`}
+                                            style={{
+                                            color: property.houseDesign.isFavorite ? colors.primary : undefined,
+                                            }}
+                                            onClick={() => {
+                                                removeFromSaved(property.lotId, property.houseDesign.id);
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Lot Details */}
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="flex items-center gap-1 text-xs text-black">
+                                            <ExternalLink className="h-4 w-4" />
+                                            {property.size}m²
+                                        </div>
+                                        {property.zoning && 
+                                            <span className="text-xs px-4 py-2 rounded-full text-black items-center justify-between"
+                                                style={{ backgroundColor: getZoningColor(property.zoning) }}>{property.zoning}
+                                            </span>
+                                        }
+                                        {property.overlays && (
+                                            <span className="px-2 py-1 text-black text-xs rounded-full items-center justify-between"
+                                                style={{ backgroundColor: getOverlaysColor(property.overlays) }}>
+                                                {property.overlays}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* House Design */}
+                                    <div className="flex gap-4">
+                                        <img 
+                                            src={getImageUrl(property.houseDesign.floorPlanImage) || getImageUrl(property.houseDesign.images?.[0]?.src) || property.houseDesign.image} 
+                                            alt={property.houseDesign.title}
+                                            className="w-16 h-16 rounded-lg object-cover"
+                                        />
+                                        <div className="flex-1">
+                                            <h4 className="font-semibold text-black text-sm">
+                                                {property.houseDesign.title}
+                                            </h4>
+                                            <p className="text-xs text-black mb-2">Single Storey</p>
+                                            <div className="flex items-center gap-3 text-xs text-black">
+                                                <span className="flex items-center gap-1">
+                                                    <BedDouble className="h-3 w-3" />
+                                                    {property.houseDesign.bedrooms}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <Bath className="h-3 w-3" />
+                                                    {property.houseDesign.bathrooms}
+                                                </span>
+                                                <span className="flex items-center gap-1">
+                                                    <Car className="h-3 w-3" />
+                                                    {property.houseDesign.cars}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            variant="primary"
+                                            // onClick={() => onViewDetails(property)}
+                                            className={`${getColorClass('primary')} px-1 py-2.5 rounded-md text-sm font-medium hover:${getColorClass('accent')} transition-colors w-30 h-9 mt-12`}
+                                        >
+                                            View Details
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Desktop: Use original sidebar implementation
     return (
         <div
             ref={sidebarRef}
-            className={`absolute top-0 right-0 h-full w-[450px] bg-white shadow-lg z-30 transition-transform duration-300 ease-in-out
-                ${open ? 'translate-x-0' : 'translate-x-full'}`}
+            className={`absolute bg-white shadow-lg z-30 transition-transform duration-300 ease-in-out
+                bottom-0 left-0 right-0 h-[70vh] w-full
+                        md:bottom-auto md:left-auto md:top-0 md:right-0 md:h-full md:w-[350px]`}
         >
+            {/* Draggable Handle - Only show on mobile */}
+            <div className="flex justify-center pt-3 pb-2 md:hidden">
+                <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+            </div>
+
             {/* Header */}
             <div className="p-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">

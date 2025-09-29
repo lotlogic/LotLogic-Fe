@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import App from './App.tsx'
-import { APP_CONTENT } from './constants/content.ts'
-import { getCurrentBrand } from './lib/api/lotApi.ts'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
+import { APP_CONTENT } from '@/constants/content.ts'
+import { getCurrentBrand } from '@/lib/api/lotApi.ts'
+import { initializeMixpanel } from '@/lib/analytics/mixpanel.ts'
 
 function setFavicon(url: string) {
   let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement | null;
@@ -44,11 +46,16 @@ async function bootstrap() {
     console.error("Brand init failed", err);
   }
 
+  // Initialize Mixpanel analytics
+  initializeMixpanel();
+
   const container = document.getElementById("root")!;
   const root = createRoot(container);
   root.render(
     <StrictMode>
-      <App />
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
     </StrictMode>
   );
 }
