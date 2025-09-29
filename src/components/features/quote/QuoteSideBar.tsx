@@ -80,7 +80,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
     const areaSqMeter = parseAreaSqFt(selectedHouseDesign?.area);
     const COST_MIN_PER_SQFT = 2800;
     const COST_MAX_PER_SQFT = 5500;
-    const formatCurrency = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+    const formatCurrency = (n: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(n);
 
     // Handle form field changes
     const handleInputChange = (field: keyof QuoteFormData, value: string) => {
@@ -256,7 +256,28 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                         <div className={`text-3xl font-bold ${getColorClass('primary', 'text')}`}>{quote.deposit}</div>
                         <div className="flex flex-col gap-3 pt-2">
                             <Button
-                                onClick={() => setLotSecured(true)}
+                                onClick={async () => {
+                                    // Mark lot as secured in UI
+                                    setLotSecured(true);
+
+                                    // Resend enquiry as HOT LEAD to builders
+                                    try {
+                                        const enquiryData = {
+                                            name: formData.yourName,
+                                            email: formData.emailAddress,
+                                            number: formData.phoneNumber,
+                                            builders: formData.selectedBuilders,
+                                            comments: `[HOT LEAD] User secured this lot. ${formData.additionalComments || ''}`.trim(),
+                                            lot_id: parseInt(lotDetails.id.toString()),
+                                            house_design_id: selectedHouseDesign?.id || '',
+                                            facade_id: '',
+                                            hot_lead: true,
+                                        };
+                                        await submitEnquiry(enquiryData);
+                                    } catch (err) {
+                                        // Silently fail to avoid blocking UI; optionally we could surface a toast
+                                    }
+                                }}
                                 className={`${getColorClass('primary')} text-white py-3 px-6 rounded-lg font-medium hover:${getColorClass('accent')} transition-colors`}
                             >
                                 {quote.secureThisLot}
