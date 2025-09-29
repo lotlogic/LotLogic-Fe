@@ -86,8 +86,8 @@ function App() {
     // Add other tab handlers as needed
   };
 
-  const handleSearch = (query: string) => {
-    // console.log('Search query:', query);
+  const handleSearch = (_query: string) => {
+    // console.log('Search query:', _query);
     setShowSearch(false);
     // Implement search functionality here
   };
@@ -137,8 +137,8 @@ function App() {
           <SavedPropertiesSidebar
             open={showSaved}
             onClose={() => setShowSaved(false)}
-            onViewDetails={(property) => {
-              // console.log('Viewing property details:', property);
+            onViewDetails={(_property) => {
+              // console.log('Viewing property details:', _property);
               // TODO: Implement property details view
               setShowSaved(false);
             }}
