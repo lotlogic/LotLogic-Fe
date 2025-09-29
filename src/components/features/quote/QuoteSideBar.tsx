@@ -1,18 +1,18 @@
-import React, { useState } from 'react';
 import { Button } from "@/components/ui/Button";
-import { Sidebar } from "@/components/ui/Sidebar";
+import { TextModal } from '@/components/ui/DynamicModal';
 import { MultiSelect } from "@/components/ui/MultiSelect";
+import { PrivacyPolicyContent } from '@/components/ui/PrivacyPolicyContent';
+import { Sidebar } from "@/components/ui/Sidebar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from '@/components/ui/input';
+import { colors, formatContent, getColorClass, getContent, quote } from "@/constants/content";
+import { convertBuildersToOptions, useBuilders } from '@/hooks/useBuilders';
+import { trackEnquirySubmitted, trackQuoteFormInteraction } from '@/lib/analytics/mixpanel';
+import { getImageUrl, submitEnquiry } from '@/lib/api/lotApi';
+import { useUIStore } from '@/stores/uiStore';
 import type { GetYourQuoteSidebarProps, QuoteFormData } from "@/types/houseDesign";
 import { quoteFormSchema } from "@/types/houseDesign";
-import { quote, formatContent, getColorClass, getContent, colors } from "@/constants/content";
-import { Input } from '@/components/ui/input';
-import { getImageUrl, submitEnquiry } from '@/lib/api/lotApi';
-import { useBuilders, convertBuildersToOptions } from '@/hooks/useBuilders';
-import { trackQuoteFormInteraction, trackEnquirySubmitted } from '@/lib/analytics/mixpanel';
-import { TextModal } from '@/components/ui/DynamicModal';
-import { PrivacyPolicyContent } from '@/components/ui/PrivacyPolicyContent';
-import { useUIStore } from '@/stores/uiStore';
+import React, { useState } from 'react';
 
 export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign, lotDetails }: GetYourQuoteSidebarProps) {
     const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
@@ -77,9 +77,9 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
         return Number.isFinite(value) ? value : null;
     };
 
-    const areaSqFt = parseAreaSqFt(selectedHouseDesign?.area);
-    const COST_MIN_PER_SQFT = 100;
-    const COST_MAX_PER_SQFT = 150;
+    const areaSqMeter = parseAreaSqFt(selectedHouseDesign?.area);
+    const COST_MIN_PER_SQFT = 2800;
+    const COST_MAX_PER_SQFT = 5500;
     const formatCurrency = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
 
     // Handle form field changes
@@ -275,11 +275,11 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                 // Initial form screen
                 <form onSubmit={handleSubmit}>
                     <div className='space-y-4 p-6'>
-                        {areaSqFt && (
+                        {areaSqMeter && (
                             <div className={"rounded-2xl p-5"} style={{ backgroundColor: getContent('colors.background.accent') }}>
                                 <div className="text-gray-900 font-semibold text-lg">Estimated Building Cost</div>
                                 <div className={`mt-1 text-2xl sm:text-3xl font-extrabold`} style={{ color: colors.primary }}>
-                                    {`${formatCurrency(areaSqFt * COST_MIN_PER_SQFT)} – ${formatCurrency(areaSqFt * COST_MAX_PER_SQFT)}`}
+                                    {`${formatCurrency(areaSqMeter * COST_MIN_PER_SQFT)} – ${formatCurrency(areaSqMeter * COST_MAX_PER_SQFT)}`}
                                 </div>
                             </div>
                         )}
@@ -380,7 +380,7 @@ export function GetYourQuoteSidebar({ open, onClose, onBack, selectedHouseDesign
                                         />
                                         <div className="flex-1">
                                             <div className="text-gray-900 text-sm">Lot {lotDetails.id}, {lotDetails.suburb}</div>
-                                            <div className="text-gray-900 text-sm">Floor Plan: {selectedHouseDesign.title} ({selectedHouseDesign.area} ft²)</div>
+                                            <div className="text-gray-900 text-sm">Floor Plan: {selectedHouseDesign.title} ({selectedHouseDesign.area} m²)</div>
                                             <div className="text-gray-900 text-sm">Faced: {facedOption}</div>
                                         </div>
                                     </div>
