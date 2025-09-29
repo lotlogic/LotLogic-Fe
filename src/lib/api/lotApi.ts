@@ -150,7 +150,6 @@ export const getImageUrlWithCorsProxy = (imagePath: string | null | undefined): 
 // Function for non-CORS issues
 export const getImageUrl = (imagePath: string | null | undefined): string => {
   if (!imagePath) return '';
-  
   // If it's already a full URL, return as-is
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
@@ -169,6 +168,8 @@ export interface EnquiryRequest {
   lot_id: number;
   house_design_id: string;
   facade_id: string;
+  // Optional flags/metadata
+  hot_lead?: boolean;
 }
 
 export const submitEnquiry = async (enquiryData: EnquiryRequest): Promise<{ message: string }> => {
@@ -196,7 +197,6 @@ export const lotApi = {
       const response = await axios.get(`${getApiBaseUrl()}/lot`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching lots:', error);
       throw error;
     }
   },
@@ -207,7 +207,6 @@ export const lotApi = {
       const response = await axios.get(`${getApiBaseUrl()}/lot/${lotId}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching lot by ID:', error);
       throw error;
     }
   },
@@ -235,7 +234,6 @@ export const lotApi = {
       
       return null;
     } catch (error) {
-      console.error('Error fetching lot dimensions:', error);
       return null;
     }
   },
@@ -286,7 +284,6 @@ export const lotApi = {
       
       return response.data;
     } catch (error) {
-      console.error('Error filtering house designs:', error);
       throw error;
     }
   },
@@ -297,7 +294,7 @@ export const lotApi = {
       const response = await axios.get(`${getApiBaseUrl()}/builders`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching builders:', error);
+   
       throw error;
     }
   }
