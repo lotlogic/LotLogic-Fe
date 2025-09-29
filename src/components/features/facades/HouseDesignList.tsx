@@ -1,14 +1,14 @@
-import { Bath, BedDouble, Bookmark, Car, Funnel, MailQuestionMark } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import { colors, filter as filterContent, houseDesign, lotSidebar, getColorClass } from "@/constants/content";
-import { useHouseDesigns } from "@/hooks/useHouseDesigns";
-import type { HouseDesignFilterRequest } from "@/lib/api/lotApi";
-import { getImageUrl } from "@/lib/api/lotApi";
-import type { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
 import { Button } from "@/components/ui/Button";
 import { showToast } from "@/components/ui/Toast";
+import { colors, filter as filterContent, getColorClass, houseDesign, lotSidebar } from "@/constants/content";
+import { useHouseDesigns } from "@/hooks/useHouseDesigns";
 import { trackHouseDesignInteraction, trackPropertySaved } from "@/lib/analytics/mixpanel";
+import type { HouseDesignFilterRequest } from "@/lib/api/lotApi";
+import { getImageUrl } from "@/lib/api/lotApi";
 import { useSavedPropertiesStore } from "@/stores/savedPropertiesStore";
+import type { HouseDesignItem, HouseDesignListProps } from "@/types/houseDesign";
+import { Bath, BedDouble, Bookmark, Car, Funnel, MailQuestionMark } from "lucide-react";
+import React, { useEffect, useState } from "react";
 
 
 
@@ -233,7 +233,7 @@ export function HouseDesignList({ filter, lot, onShowFilter, onDesignClick, onEn
                     <div className="min-w-0 pr-2">
                       <div className="font-bold text-lg mb-1 truncate">{house.title}</div>
                       <div className="text-black text-sm whitespace-nowrap overflow-hidden text-ellipsis">
-                        {lotSidebar.singleStorey} {houseDesign.area}: {house.area} {houseDesign.ft}
+                        {lotSidebar.singleStorey} {houseDesign.area}: {house.area} {houseDesign.m2}
                       </div>
                     </div>
                     <Bookmark
