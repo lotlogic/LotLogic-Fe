@@ -362,28 +362,51 @@ export const SingleImageModal: React.FC<SingleImageModalProps> = ({
           flex: 1,
           margin: 0,
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          flexDirection: 'column',
           overflow: 'hidden',
+          height: isMobile ? 'auto' : 'calc(100% - 80px)'
         }}
       >
         {imageSrc ? (
-          <img
-            src={imageSrc}
-            alt={imageAlt}
-            loading="eager"
-            style={{
-              maxWidth: '100%',
-              maxHeight: '100%',
-              width: 'auto',
-              height: 'auto',
-              objectFit: 'contain'
+          <Box
+            sx={{
+              position: 'relative',
+              width: '100%',
+              height: isMobile ? '50vh' : '450px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
             }}
-          />
+          >
+            <img
+              src={imageSrc}
+              alt={imageAlt}
+              loading="eager"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                borderRadius: '8px'
+              }}
+            />
+          </Box>
         ) : (
-          <Typography variant="body1" color="text.secondary">
-            Floor plan not available for this design.
-          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              height: isMobile ? '50vh' : '450px'
+            }}
+          >
+            <Typography variant="body1" color="text.secondary">
+              Floor plan not available for this design.
+            </Typography>
+          </Box>
         )}
       </DialogContent>
     </Dialog>
