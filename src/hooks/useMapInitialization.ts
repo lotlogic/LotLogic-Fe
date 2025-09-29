@@ -49,22 +49,14 @@ export function useMapInitialization(
           'fill-color': [
             'case',
             ['boolean', ['feature-state', 'selected'], false], '#FFFFFF',
-            ['boolean', ['feature-state', 'flood'], false], '#00FFFF',
-            ['boolean', ['feature-state', 'bushfire'], false], '#FF6347',
-            ['boolean', ['feature-state', 'heritage'], false], '#F3E5AB',
-            ['==', ['get', 'isRed'], true], '#2E5A1C',
-            '#A52A2A'
+            ['==', ['get', 'isRed'], true], '#b3bda8',
+            '#d09b9a'
           ],
           'fill-opacity': [
             'case',
-            ['boolean', ['feature-state', 'selected'], false], 0.9,
-            ['any', 
-              ['boolean', ['feature-state', 'flood'], false],
-              ['boolean', ['feature-state', 'bushfire'], false],
-              ['boolean', ['feature-state', 'heritage'], false]
-            ], 0.7,
-            ['==', ['get', 'isRed'], true], 0.3,
-            0.4
+            ['boolean', ['feature-state', 'selected'], false], 1,
+            ['==', ['get', 'isRed'], true], 1,
+            1
           ],
           'fill-outline-color': [
             'case',

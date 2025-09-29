@@ -3,11 +3,8 @@ import mixpanel from 'mixpanel-browser';
 // Initialize Mixpanel
 export const initializeMixpanel = () => {
   const mixpanelToken = import.meta.env.VITE_MIXPANEL_TOKEN;
-  
-  console.log('Mixpanel token:', mixpanelToken ? 'Found' : 'Not found');
-  
+    
   if (!mixpanelToken) {
-    console.warn('Mixpanel token not found. Analytics will be disabled.');
     console.warn('Please add VITE_MIXPANEL_TOKEN to your .env file');
     return false;
   }
@@ -19,7 +16,7 @@ export const initializeMixpanel = () => {
       persistence: 'localStorage',
       api_host: 'https://api.mixpanel.com', // Standard Mixpanel ingestion endpoint
       loaded: () => {
-        console.log('Mixpanel loaded successfully');
+        // console.log('Mixpanel loaded successfully');
       }
     });
 
@@ -27,7 +24,7 @@ export const initializeMixpanel = () => {
     const distinctId = generateDistinctId();
     mixpanel.identify(distinctId);
     
-    console.log('Mixpanel initialized successfully');
+    // console.log('Mixpanel initialized successfully');
     
     // Send a test event to verify integration
     setTimeout(() => {
@@ -78,14 +75,14 @@ export const identifyUser = (userId: string, traits: Record<string, unknown>) =>
     mixpanel.identify(userId);
     mixpanel.people.set(traits);
   } catch (error) {
-    console.error('Failed to identify user:', error);
+    // console.error('Failed to identify user:', error);
   }
 };
 
 // Track user events
 export const trackEvent = (event: string, properties?: Record<string, unknown>) => {
   if (!isMixpanelAvailable()) {
-    console.warn('Mixpanel not available for event:', event);
+    // console.warn('Mixpanel not available for event:', event);
     return;
   }
   

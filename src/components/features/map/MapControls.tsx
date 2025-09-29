@@ -45,6 +45,8 @@ interface MapControlsProps {
   selectedIdRef: React.MutableRefObject<string | null>;
   sidebarOpenRef: React.MutableRefObject<boolean>;
   initialView: { center: [number, number]; zoom: number } | null;
+  showFloorPlanModal: boolean;
+  showFacadeModal: boolean;
 }
 
 // -----------------------------
@@ -55,7 +57,9 @@ export function MapControls({
   setSelectedLot,
   selectedIdRef,
   sidebarOpenRef,
-  initialView
+  initialView,
+  showFloorPlanModal,
+  showFacadeModal
 }: MapControlsProps) {
   const isMobile = useMobile();
   const handleResize = debounce(() => map?.resize(), 250);
@@ -125,8 +129,8 @@ export function MapControls({
       const f = map.queryRenderedFeatures(e.point, { layers: ['demo-lot-layer'] })[0] as MapboxGeoJSONFeature | undefined;
       if (!f) return;
       const isRed = !!(f.properties as Record<string, unknown>)?.isRed;
-      const isSidebarOpen = sidebarOpenRef.current;
-      map.getCanvas().style.cursor = (isRed && !isSidebarOpen) ? 'pointer' : 'not-allowed';
+      const isModalOpen = showFloorPlanModal || showFacadeModal;
+      map.getCanvas().style.cursor = (isRed && !isModalOpen) ? 'pointer' : 'not-allowed';
     };
 
     const handleMouseLeave = () => {
@@ -142,7 +146,8 @@ export function MapControls({
       if (!isRed) {
         return;
       }
-      if (sidebarOpenRef.current) {
+      // Only block lot selection when modals are open, not when sidebar is open
+      if (showFloorPlanModal || showFacadeModal) {
         return;
       }
 

@@ -186,8 +186,8 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
           margin: 0,
           display: 'flex',
           flexDirection: 'column',
-          maxHeight: '70%',
-          overflow: 'auto'
+          overflow: 'hidden',
+          height: isMobile ? 'auto' : 'calc(100% - 80px)'
         }}
       >
         {images.length === 0 || !currentImage ? (
@@ -205,17 +205,24 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
             </Typography>
           </Box>
         ) : (
-          <>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              height: '100%',
+              gap: '12px'
+            }}
+          >
             {/* Main Image Container */}
             <Box
               sx={{
                 position: 'relative',
                 width: '100%',
-                height: isMobile ? '50vh' : 'calc(100vh - 340px)',
-                marginBottom: '10px',
+                height: isMobile ? '50vh' : '450px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                flexShrink: 0
               }}
             >
               <img
@@ -223,9 +230,11 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
                 alt={currentImage.alt}
                 loading="eager"
                 style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: isMobile ? 'contain' : 'cover',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  width: 'auto',
+                  height: 'auto',
+                  objectFit: 'contain',
                   borderRadius: '8px'
                 }}
               />
@@ -235,17 +244,27 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
                 <Box
                   sx={{
                     position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                    color: 'white',
-                    padding: '6px',
-                    borderRadius: '8px 8px 0 0',
-                    textAlign: 'center'
+                    top: '16px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    color: '#1f2937',
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    maxWidth: 'calc(100% - 32px)'
                   }}
                 >
-                  <Typography variant="body2">
+                  <Typography 
+                    variant="body2" 
+                    sx={{
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      letterSpacing: '0.025em'
+                    }}
+                  >
                     {currentImage.label}
                   </Typography>
                 </Box>
@@ -275,8 +294,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
                   display: 'flex',
                   justifyContent: 'center',
                   gap: '8px',
-                  // overflowX: 'auto',
-                  paddingBottom: '6px'
+                  flexShrink: 0
                 }}
               >
                 {images.map((image, index) => (
@@ -290,7 +308,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
                 ))}
               </Box>
             )}
-          </>
+          </Box>
         )}
       </DialogContent>
     </Dialog>
@@ -344,26 +362,51 @@ export const SingleImageModal: React.FC<SingleImageModalProps> = ({
           flex: 1,
           margin: 0,
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'auto',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          height: isMobile ? 'auto' : 'calc(100% - 80px)'
         }}
       >
         {imageSrc ? (
-          <img
-            src={imageSrc}
-            alt={imageAlt}
-            loading="eager"
-            style={{
-              maxWidth: '90%',
-              maxHeight: isMobile ? '50vh' : 'calc(100vh - 280px)',
-              objectFit: 'contain'
+          <Box
+            sx={{
+              position: 'relative',
+              width: '100%',
+              height: isMobile ? '50vh' : '450px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
             }}
-          />
+          >
+            <img
+              src={imageSrc}
+              alt={imageAlt}
+              loading="eager"
+              style={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain',
+                borderRadius: '8px'
+              }}
+            />
+          </Box>
         ) : (
-          <Typography variant="body1" color="text.secondary">
-            Floor plan not available for this design.
-          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              height: isMobile ? '50vh' : '450px'
+            }}
+          >
+            <Typography variant="body1" color="text.secondary">
+              Floor plan not available for this design.
+            </Typography>
+          </Box>
         )}
       </DialogContent>
     </Dialog>
