@@ -58,6 +58,7 @@ export const APP_CONTENT = {
     storeys: "Storeys",
     area: "Area",
     ft: "ft",
+    m2: "m2",
     selectImage: "Select image",
     thumbnail: "Thumbnail",
   },
