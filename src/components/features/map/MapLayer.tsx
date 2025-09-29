@@ -41,8 +41,8 @@ export default function ZoneMap() {
 
   
 
-  // FSR buildable area (m²) requested; will be capped by setbacks buildable area
-  const [fsrBuildableArea, setFsrBuildableArea] = useState(300);
+  // FSR buildable area (m²) - calculated dynamically
+  const [fsrBuildableArea, setFsrBuildableArea] = useState<number | null>(null);
 
   // Modal state from Zustand
   const { showFloorPlanModal, showFacadeModal } = useModalStore();
@@ -65,6 +65,23 @@ export default function ZoneMap() {
   useEffect(() => {
     setSelectedFloorPlan(null);
   }, [selectedLot?.properties?.ID]);
+
+  // Calculate FSR buildable area when lot is selected
+  useEffect(() => {
+    if (selectedLot) {
+      const lotSize = parseFloat(selectedLot.properties.BLOCK_DERIVED_AREA || '0');
+      const maxFSR = parseFloat(selectedLot.properties.maxFSR || '0.5');
+      
+      if (lotSize > 0 && maxFSR > 0) {
+        const calculatedFSR = lotSize * maxFSR;
+        setFsrBuildableArea(calculatedFSR);
+      } else {
+        setFsrBuildableArea(null);
+      }
+    } else {
+      setFsrBuildableArea(null);
+    }
+  }, [selectedLot?.properties?.ID, selectedLot?.properties?.BLOCK_DERIVED_AREA, selectedLot?.properties?.maxFSR]);
 
 
 

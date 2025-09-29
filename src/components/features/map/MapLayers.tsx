@@ -35,7 +35,7 @@ interface MapLayersProps {
   map: mapboxgl.Map | null;
   selectedLot: mapboxgl.MapboxGeoJSONFeature & { properties: LotProperties } | null;
   setbackValues: SetbackValues;
-  fsrBuildableArea: number;
+  fsrBuildableArea: number | null;
   selectedFloorPlan: FloorPlan | null;
   showFloorPlanModal: boolean;
   showFacadeModal: boolean;
@@ -424,7 +424,7 @@ export function MapLayers({
           if (innerLL && innerLL.length >= 5) {
             const innerPoly = turf.polygon([innerLL]);
             const innerArea = turf.area(innerPoly);
-            const desired = Math.min(fsrBuildableArea, innerArea);
+            const desired = fsrBuildableArea ? Math.min(fsrBuildableArea, innerArea) : innerArea;
             const scale = Math.sqrt(desired / innerArea);
             const innerCenter = turf.center(innerPoly);
             const fsrBoundary = turf.transformScale(innerPoly, scale, { origin: innerCenter });
@@ -759,7 +759,7 @@ export function MapLayers({
 
       const innerPoly = turf.polygon([innerLL]);
       const innerArea = turf.area(innerPoly);
-      const desired = Math.min(fsrBuildableArea, innerArea);
+      const desired = fsrBuildableArea ? Math.min(fsrBuildableArea, innerArea) : innerArea;
       const scale = Math.sqrt(desired / innerArea);
       const innerCenter = turf.center(innerPoly);
       const fsrBoundary = turf.transformScale(innerPoly, scale, { origin: innerCenter });
@@ -854,7 +854,7 @@ export function MapLayers({
 
       // FSR boundary
       const innerArea = turf.area(innerPoly);
-      const desired = Math.min(fsrBuildableArea, innerArea);
+      const desired = fsrBuildableArea ? Math.min(fsrBuildableArea, innerArea) : innerArea;
       const scale = Math.sqrt(desired / innerArea);
       const innerCenter = turf.center(innerPoly);
       const fsrBoundary = turf.transformScale(innerPoly, scale, { origin: innerCenter });
@@ -869,8 +869,8 @@ export function MapLayers({
       //   paint: { 'line-color': '#FF9800', 'line-width': 1.5, 'line-dasharray': [4, 4] }
       // });
 
-      // FSR area label
-      if (!selectedFloorPlan && !showFloorPlanModal && !showFacadeModal) {
+      // FSR area label - only show when we have a valid FSR value
+      if (fsrBuildableArea && !selectedFloorPlan && !showFloorPlanModal && !showFacadeModal) {
         const fsrAreaLabel = new mapboxgl.Marker({
           element: createSValueLabel(`${Math.round(desired)} m² FSR`, 'center'),
           anchor: 'center'
