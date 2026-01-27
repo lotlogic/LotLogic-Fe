@@ -2,6 +2,7 @@ import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { APP_CONTENT } from "@/constants/content.ts";
 import { initializeMixpanel } from "@/lib/analytics/mixpanel.ts";
 import { getCurrentBrand } from "@/lib/api/lotApi.ts";
+import { adminAuth } from "@/lib/auth/adminAuth.ts";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
@@ -57,6 +58,13 @@ async function bootstrap() {
       APP_CONTENT.typography.fontFamily.secondary;
   } catch (err) {
     console.error("Brand init failed", err);
+  }
+
+  try {
+    // Process MSAL redirect responses before routing drops the hash fragment.
+    await adminAuth.initialize();
+  } catch (err) {
+    console.error("Admin auth init failed", err);
   }
 
   // Initialize Mixpanel analytics

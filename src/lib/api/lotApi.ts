@@ -180,7 +180,7 @@ export const submitEnquiry = async (
 ): Promise<{ message: string }> => {
   try {
     const response = await axios.post(
-      `${getApiBaseUrl()}/enquiry`,
+      `${getApiBaseUrl()}/api/enquiry`,
       enquiryData
     );
     return response.data;
@@ -195,7 +195,7 @@ export const submitEnquiry = async (
 
 export const getCurrentBrand = async () => {
   try {
-    const response = await axios.get(`${getApiBaseUrl()}/brand`);
+    const response = await axios.get(`${getApiBaseUrl()}/api/brand`);
     return response.data;
   } catch (error) {
     return {};
@@ -206,7 +206,7 @@ export const lotApi = {
   // Fetch all lots from database
   async getAllLots(): Promise<DatabaseLot[]> {
     try {
-      const response = await axios.get(`${getApiBaseUrl()}/lot`);
+      const response = await axios.get(`${getApiBaseUrl()}/api/lot`);
       return response.data;
     } catch (error) {
       throw error;
@@ -216,7 +216,7 @@ export const lotApi = {
   // Fetch a single lot by ID
   async getLotById(lotId: string): Promise<DatabaseLot> {
     try {
-      const response = await axios.get(`${getApiBaseUrl()}/lot/${lotId}`);
+      const response = await axios.get(`${getApiBaseUrl()}/api/lot/${lotId}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -227,7 +227,7 @@ export const lotApi = {
   async calculateDesignsOnLot(lotId: string): Promise<LotCalculationResponse> {
     try {
       const response = await axios.get(
-        `${getApiBaseUrl()}/design-on-lot/calculate?lotId=${lotId}`
+        `${getApiBaseUrl()}/api/design-on-lot/calculate?lotId=${lotId}`
       );
       return response.data;
     } catch (error) {
@@ -292,7 +292,7 @@ export const lotApi = {
       }
 
       const response = await axios.get(
-        `${getApiBaseUrl()}/house-design/${lotId}?${params.toString()}`
+        `${getApiBaseUrl()}/api/house-design/${lotId}?${params.toString()}`
       );
 
       // Handle 204 No Content as a successful response with no results
@@ -312,7 +312,7 @@ export const lotApi = {
   // Fetch all builders from the backend
   async getBuilders(): Promise<Builder[]> {
     try {
-      const response = await axios.get(`${getApiBaseUrl()}/builders`);
+      const response = await axios.get(`${getApiBaseUrl()}/api/builders`);
       return response.data;
     } catch (error) {
       throw error;

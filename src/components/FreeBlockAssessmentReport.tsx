@@ -25,7 +25,7 @@ export const FreeBlockAssessmentReport = () => {
 
         const response = await fetch(
           import.meta.env.VITE_API_URL +
-            "/geo/act-zone?address=" +
+            "/api/geo/act-zone?address=" +
             searchParams.get("address")
         );
         if (!response.ok)
