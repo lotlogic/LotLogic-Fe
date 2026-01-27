@@ -326,6 +326,12 @@ export const adminApi = {
   async deleteUser<T = unknown>(id: AdminId): Promise<T> {
     return data(adminApiClient.delete<T>(idPath("users", id)));
   },
+  async disableUser<T = unknown>(id: AdminId): Promise<T> {
+    return data(adminApiClient.post<T>(`${idPath("users", id)}/disable`));
+  },
+  async enableUser<T = unknown>(id: AdminId): Promise<T> {
+    return data(adminApiClient.post<T>(`${idPath("users", id)}/enable`));
+  },
   async updateUserEstates<T = unknown>(
     id: AdminId,
     estateIds: string[]

@@ -97,7 +97,9 @@ const AdminUsersPage = () => {
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] =
     useState<(typeof roleOptions)[number]>("EDITOR");
-  const [editSaving, setEditSaving] = useState(false);
+  const [editAction, setEditAction] = useState<
+    "save" | "delete" | "disable" | "enable" | null
+  >(null);
   const [editErrorMessage, setEditErrorMessage] = useState<string | null>(null);
 
   const [showMapPanel, setShowMapPanel] = useState(false);
@@ -198,6 +200,11 @@ const AdminUsersPage = () => {
     });
   }, [filterText, users]);
 
+  const editBusy = editAction !== null;
+  const selectedUserStatusLabel = selectedUser?.status ?? "(unknown)";
+  const selectedUserStatus = selectedUserStatusLabel.toUpperCase();
+  const isSelectedUserDisabled = selectedUserStatus === "DISABLED";
+
   const handleRefreshWhoAmI = async () => {
     setWhoAmIRefreshing(true);
     setWhoAmIErrorMessage(null);
@@ -259,7 +266,7 @@ const AdminUsersPage = () => {
     if (!selectedUserId) {
       return;
     }
-    setEditSaving(true);
+    setEditAction("save");
     setEditErrorMessage(null);
     try {
       await adminApi.updateUser(selectedUserId, {
@@ -274,7 +281,7 @@ const AdminUsersPage = () => {
         error instanceof Error ? error.message : "Failed to update user.",
       );
     } finally {
-      setEditSaving(false);
+      setEditAction(null);
     }
   };
 
@@ -288,7 +295,7 @@ const AdminUsersPage = () => {
     if (!confirmed) {
       return;
     }
-    setEditSaving(true);
+    setEditAction("delete");
     setEditErrorMessage(null);
     try {
       await adminApi.deleteUser(selectedUserId);
@@ -300,7 +307,51 @@ const AdminUsersPage = () => {
         error instanceof Error ? error.message : "Failed to delete user.",
       );
     } finally {
-      setEditSaving(false);
+      setEditAction(null);
+    }
+  };
+
+  const handleDisableUser = async () => {
+    if (!selectedUserId) {
+      return;
+    }
+    const confirmed = window.confirm(
+      "Disable this user? They will not be able to sign in.",
+    );
+    if (!confirmed) {
+      return;
+    }
+    setEditAction("disable");
+    setEditErrorMessage(null);
+    try {
+      await adminApi.disableUser(selectedUserId);
+      await loadSelectedUser(selectedUserId);
+      await loadUsers();
+    } catch (error) {
+      setEditErrorMessage(
+        error instanceof Error ? error.message : "Failed to disable user.",
+      );
+    } finally {
+      setEditAction(null);
+    }
+  };
+
+  const handleEnableUser = async () => {
+    if (!selectedUserId) {
+      return;
+    }
+    setEditAction("enable");
+    setEditErrorMessage(null);
+    try {
+      await adminApi.enableUser(selectedUserId);
+      await loadSelectedUser(selectedUserId);
+      await loadUsers();
+    } catch (error) {
+      setEditErrorMessage(
+        error instanceof Error ? error.message : "Failed to enable user.",
+      );
+    } finally {
+      setEditAction(null);
     }
   };
 
@@ -604,17 +655,51 @@ const AdminUsersPage = () => {
                     ))}
                   </select>
                 </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Status</span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span
+                      className={
+                        isSelectedUserDisabled ? "text-amber-700" : "text-emerald-700"
+                      }
+                    >
+                      {selectedUserStatusLabel}
+                    </span>
+                  </div>
+                </div>
                 <div className="flex gap-2 flex-wrap items-center mt-2">
                   <Button
                     type="submit"
-                    disabled={editSaving}
-                    loading={editSaving}
+                    disabled={editBusy}
+                    loading={editAction === "save"}
                     label="Save"
                   />
+                  {isSelectedUserDisabled ? (
+                    <Button
+                      type="button"
+                      onClick={handleEnableUser}
+                      disabled={editBusy}
+                      loading={editAction === "enable"}
+                      variant="outline"
+                      className="hover:bg-emerald-600 hover:border-emerald-600"
+                      label="Enable"
+                    />
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={handleDisableUser}
+                      disabled={editBusy}
+                      loading={editAction === "disable"}
+                      variant="outline"
+                      className="text-destructive hover:bg-red-50 hover:text-destructive hover:border-red-200"
+                      label="Disable"
+                    />
+                  )}
                   <Button
                     type="button"
                     onClick={handleDeleteUser}
-                    disabled={editSaving}
+                    disabled={editBusy}
+                    loading={editAction === "delete"}
                     variant="ghost"
                     className="text-destructive hover:bg-red-50 hover:text-destructive"
                     label="Delete"
