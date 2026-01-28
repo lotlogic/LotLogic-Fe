@@ -5,14 +5,13 @@ import {
   BrowserRouter as Router,
   Routes,
 } from "react-router-dom";
-import AboutPage from "./pages/AboutPage";
-import AssessmentPage from "./pages/AssessmentPage";
-import FaqPage from "./pages/FaqPage";
 import HomePage from "./pages/Home";
+import NotFoundPage from "./pages/NotFoundPage";
 import PrototypePage from "./pages/PrototypePage";
 import { RequireAdminAuth } from "./components/auth/RequireAdminAuth";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminEstatesPage from "./pages/admin/AdminEstatesPage";
+import AdminEstatePage from "./pages/admin/AdminEstatePage";
 import AdminLotsPage from "./pages/admin/AdminLotsPage";
 import AdminZoningRulesPage from "./pages/admin/AdminZoningRulesPage";
 import AdminLotZoningRulesPage from "./pages/admin/AdminLotZoningRulesPage";
@@ -29,10 +28,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/assessment" element={<AssessmentPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/faq" element={<FaqPage />} />
           <Route path="/prototype" element={<PrototypePage />} />
+          <Route path="*" element={<NotFoundPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
           <Route
@@ -48,6 +45,14 @@ function App() {
             element={
               <RequireAdminAuth>
                 <AdminEstatesPage />
+              </RequireAdminAuth>
+            }
+          />
+          <Route
+            path="/admin/estates/:estateId"
+            element={
+              <RequireAdminAuth>
+                <AdminEstatePage />
               </RequireAdminAuth>
             }
           />

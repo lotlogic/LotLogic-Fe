@@ -71,20 +71,27 @@ const AdminLoginPage = () => {
   };
 
   return (
-    <div className="container max-w-lg py-20">
-      <h1 className="text-3xl font-bold mb-8">Admin Login</h1>
-      {state === "loading" && (
-        <p className="text-muted-foreground mb-4">Preparing login...</p>
-      )}
-      {state === "error" && (
-        <p className="text-destructive mb-4">{errorMessage}</p>
-      )}
-      <Button
-        onClick={handleLogin}
-        disabled={state === "loading"}
-        label="Sign in with Entra ID"
-      />
-    </div>
+    <main className="bg-stone-50 text-[var(--color-ink)]">
+      <section className="mt-0">
+        <div className="mx-auto max-w-lg py-20 text-center">
+          <h1 className="text-3xl font-bold mb-3">Admin Login</h1>
+          <p className="text-sm text-stone-500 mb-8">
+            Sign in with your Entra ID to manage LotCheck settings.
+          </p>
+          {state === "loading" && (
+            <p className="text-muted-foreground mb-4">Preparing login...</p>
+          )}
+          {state === "error" && (
+            <p className="text-destructive mb-4">{errorMessage}</p>
+          )}
+          <Button
+            onClick={handleLogin}
+            disabled={state === "loading"}
+            label="Sign in with Entra ID"
+          />
+        </div>
+      </section>
+    </main>
   );
 };
 

@@ -193,6 +193,33 @@ export const submitEnquiry = async (
   }
 };
 
+// Demo request API
+export interface DemoRequest {
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  message?: string;
+}
+
+export const submitDemoRequest = async (
+  demoRequest: DemoRequest
+): Promise<{ message: string }> => {
+  try {
+    const response = await axios.post(
+      `${getApiBaseUrl()}/api/demo-request`,
+      demoRequest
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      `Demo request failed: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`
+    );
+  }
+};
+
 export const getCurrentBrand = async () => {
   try {
     const response = await axios.get(`${getApiBaseUrl()}/api/brand`);

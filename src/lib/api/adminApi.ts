@@ -140,6 +140,9 @@ export const adminApi = {
   async getEstates<T = unknown>(params?: AdminQuery): Promise<T[]> {
     return data(adminApiClient.get<T[]>(basePath("estates"), { params }));
   },
+  async getEstateById<T = unknown>(id: AdminId): Promise<T> {
+    return data(adminApiClient.get<T>(idPath("estates", id)));
+  },
   async createEstate<T = unknown, B extends Record<string, unknown> = Record<string, unknown>>(
     payload: B
   ): Promise<T> {
@@ -169,6 +172,17 @@ export const adminApi = {
   },
   async deleteLot<T = unknown>(id: AdminId): Promise<T> {
     return data(adminApiClient.delete<T>(idPath("lots", id)));
+  },
+  async importEstateLotsDxf<T = unknown>(
+    estateId: AdminId,
+    payload: FormData
+  ): Promise<T> {
+    return data(
+      adminApiClient.post<T>(
+        `${idPath("estates", estateId)}/lots/import-dxf`,
+        payload
+      )
+    );
   },
 
   async getZoningRules<T = unknown>(params?: AdminQuery): Promise<T[]> {

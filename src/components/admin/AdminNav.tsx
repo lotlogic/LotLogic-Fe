@@ -8,7 +8,6 @@ const adminLinks: Array<{
 }> = [
   { to: "/admin/users", label: "Users", requiresAdmin: true },
   { to: "/admin/estates", label: "Estates" },
-  { to: "/admin/lots", label: "Lots" },
   { to: "/admin/zoning-rules", label: "Zoning Rules" },
   { to: "/admin/lot-zoning-rules", label: "Lot Zoning Rules" },
   { to: "/admin/floor-plans", label: "Floor Plans" },
@@ -28,7 +27,9 @@ export const AdminNav = () => {
       {adminLinks
         .filter((link) => !link.requiresAdmin || isAdmin)
         .map((link) => {
-          const isActive = location.pathname === link.to;
+          const isActive =
+            location.pathname === link.to ||
+            location.pathname.startsWith(`${link.to}/`);
           return (
             <Link
               key={link.to}
