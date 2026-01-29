@@ -61,6 +61,34 @@ type LotForm = {
   overlays: string;
   geojson: string;
   estateId: string;
+  lotType: string;
+  frontageType: string;
+  planningId: string;
+  maxHeight: string;
+  maxSize: string;
+  maxFSR: string;
+  maxFSRUpper: string;
+  maxStories: string;
+  minArea: string;
+  minDepth: string;
+  frontYardSetback: string;
+  sideYardMinSetback: string;
+  rearYardMinSetback: string;
+  exampleArea: string;
+  exampleLotSize: string;
+  apiZoning: string;
+  apiMatches: string;
+  frontageCoordinate: string;
+  width: string;
+  depth: string;
+  s1: string;
+  s2: string;
+  s3: string;
+  s4: string;
+  zoningFrontSetback: string;
+  zoningSideSetback: string;
+  zoningRearSetback: string;
+  highFall: boolean;
 };
 
 type DxfImportForm = {
@@ -111,6 +139,34 @@ const createEmptyLotForm = (estateIdValue: string): LotForm => ({
   overlays: "",
   geojson: "",
   estateId: estateIdValue,
+  lotType: "",
+  frontageType: "",
+  planningId: "",
+  maxHeight: "",
+  maxSize: "",
+  maxFSR: "",
+  maxFSRUpper: "",
+  maxStories: "",
+  minArea: "",
+  minDepth: "",
+  frontYardSetback: "",
+  sideYardMinSetback: "",
+  rearYardMinSetback: "",
+  exampleArea: "",
+  exampleLotSize: "",
+  apiZoning: "",
+  apiMatches: "",
+  frontageCoordinate: "",
+  width: "",
+  depth: "",
+  s1: "",
+  s2: "",
+  s3: "",
+  s4: "",
+  zoningFrontSetback: "",
+  zoningSideSetback: "",
+  zoningRearSetback: "",
+  highFall: false,
 });
 
 const createDxfImportForm = (estateIdValue: string): DxfImportForm => ({
@@ -192,20 +248,261 @@ const parseGeojson = (value: string) => {
 const stringifyValue = (value: unknown) =>
   value === null || value === undefined ? "" : String(value);
 
-const buildLotForm = (lot: AdminLot, estateIdValue: string): LotForm => ({
-  blockKey: stringifyValue(lot.blockKey ?? (lot as { BLOCK_KEY?: string }).BLOCK_KEY),
-  blockNumber: stringifyValue(lot.blockNumber),
-  sectionNumber: stringifyValue(lot.sectionNumber),
-  areaSqm: stringifyValue(lot.areaSqm),
-  zoning: stringifyValue(lot.zoning),
-  address: stringifyValue(lot.address),
-  district: stringifyValue(lot.district),
-  division: stringifyValue(lot.division),
-  lifecycleStage: stringifyValue(lot.lifecycleStage ?? lot.status),
-  overlays: Array.isArray(lot.overlays) ? lot.overlays.join(", ") : "",
-  geojson: lot.geojson ? JSON.stringify(lot.geojson, null, 2) : "",
-  estateId: stringifyValue(extractLotEstateId(lot) ?? estateIdValue),
-});
+const getGeojsonRecord = (
+  value: unknown
+): Record<string, unknown> | null => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+};
+
+const getGeojsonMetadata = (
+  geojson: Record<string, unknown> | null
+): Record<string, unknown> | null => {
+  if (!geojson) {
+    return null;
+  }
+  const metadata = geojson["lotMetadata"];
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+  return metadata as Record<string, unknown>;
+};
+
+const getGeojsonProperties = (
+  geojson: Record<string, unknown> | null
+): Array<Record<string, unknown>> => {
+  if (!geojson || !Array.isArray(geojson["properties"])) {
+    return [];
+  }
+  return geojson["properties"] as Array<Record<string, unknown>>;
+};
+
+const getGeojsonSValue = (
+  geojson: Record<string, unknown> | null,
+  key: "s1" | "s2" | "s3" | "s4"
+) => {
+  const props = getGeojsonProperties(geojson);
+  const match = props.find((item) => key in item);
+  return match ? (match as Record<string, unknown>)[key] : undefined;
+};
+
+const stringifyJsonValue = (value: unknown) => {
+  if (value === null || value === undefined || value === "") {
+    return "";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+};
+
+const parseLineString = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(trimmed) as {
+      type?: string;
+      coordinates?: unknown;
+    };
+    if (parsed?.type !== "LineString" || !Array.isArray(parsed.coordinates)) {
+      return null;
+    }
+    const coords = parsed.coordinates as unknown[];
+    if (
+      coords.length < 2 ||
+      !coords.every(
+        (coord) =>
+          Array.isArray(coord) &&
+          coord.length >= 2 &&
+          typeof coord[0] === "number" &&
+          typeof coord[1] === "number"
+      )
+    ) {
+      return null;
+    }
+    return coords.map((coord) => [coord[0], coord[1]] as [number, number]);
+  } catch {
+    return null;
+  }
+};
+
+const extractPolygonRing = (
+  geometry: Record<string, unknown>
+): [number, number][] | null => {
+  if (!geometry || typeof geometry !== "object") {
+    return null;
+  }
+  const type = geometry["type"];
+  if (type !== "Polygon") {
+    return null;
+  }
+  const coordinates = geometry["coordinates"];
+  if (!Array.isArray(coordinates)) {
+    return null;
+  }
+  const ring = coordinates[0];
+  if (!Array.isArray(ring) || ring.length < 3) {
+    return null;
+  }
+  return ring
+    .map((coord) =>
+      Array.isArray(coord) && coord.length >= 2
+        ? ([coord[0], coord[1]] as [number, number])
+        : null
+    )
+    .filter(Boolean) as [number, number][];
+};
+
+const coordsEqual = (
+  a: [number, number],
+  b: [number, number],
+  epsilon = 1e-6
+) => Math.abs(a[0] - b[0]) < epsilon && Math.abs(a[1] - b[1]) < epsilon;
+
+const isSameEdge = (
+  edge: [[number, number], [number, number]],
+  line: [number, number][]
+) => {
+  if (line.length < 2) {
+    return false;
+  }
+  const [a, b] = edge;
+  const [c, d] = line;
+  return (
+    (coordsEqual(a, c) && coordsEqual(b, d)) ||
+    (coordsEqual(a, d) && coordsEqual(b, c))
+  );
+};
+
+const isEdgeInLine = (
+  edge: [[number, number], [number, number]],
+  line: [number, number][] | null
+) => {
+  if (!line || line.length < 2) {
+    return false;
+  }
+  for (let i = 0; i < line.length - 1; i += 1) {
+    if (isSameEdge(edge, [line[i], line[i + 1]])) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const extendFrontageLine = (
+  current: [number, number][] | null,
+  edge: [[number, number], [number, number]]
+) => {
+  if (!current || current.length < 2) {
+    return [edge[0], edge[1]];
+  }
+  const first = current[0];
+  const last = current[current.length - 1];
+  const [start, end] = edge;
+
+  if (coordsEqual(last, start)) {
+    return [...current, end];
+  }
+  if (coordsEqual(last, end)) {
+    return [...current, start];
+  }
+  if (coordsEqual(first, start)) {
+    return [end, ...current];
+  }
+  if (coordsEqual(first, end)) {
+    return [start, ...current];
+  }
+
+  return [edge[0], edge[1]];
+};
+
+const coerceBoolean = (value: unknown) => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true" || normalized === "1" || normalized === "yes") {
+      return true;
+    }
+    if (normalized === "false" || normalized === "0" || normalized === "no") {
+      return false;
+    }
+  }
+  return false;
+};
+
+const buildLotForm = (lot: AdminLot, estateIdValue: string): LotForm => {
+  const geojsonRecord = getGeojsonRecord(lot.geojson);
+  const metadata = getGeojsonMetadata(geojsonRecord);
+  const readValue = (key: string) =>
+    (lot as Record<string, unknown>)[key] ??
+    metadata?.[key] ??
+    geojsonRecord?.[key];
+  const readMetadataOnly = (key: string) =>
+    (lot as Record<string, unknown>)[key] ?? metadata?.[key];
+  const zoningSetbacks = readValue("zoningSetbacks");
+  const zoningSetbacksRecord =
+    zoningSetbacks && typeof zoningSetbacks === "object" && !Array.isArray(zoningSetbacks)
+      ? (zoningSetbacks as Record<string, unknown>)
+      : null;
+
+  return {
+    blockKey: stringifyValue(
+      lot.blockKey ?? (lot as { BLOCK_KEY?: string }).BLOCK_KEY
+    ),
+    blockNumber: stringifyValue(lot.blockNumber),
+    sectionNumber: stringifyValue(lot.sectionNumber),
+    areaSqm: stringifyValue(lot.areaSqm),
+    zoning: stringifyValue(lot.zoning),
+    address: stringifyValue(lot.address),
+    district: stringifyValue(lot.district),
+    division: stringifyValue(lot.division),
+    lifecycleStage: stringifyValue(lot.lifecycleStage ?? lot.status),
+    overlays: Array.isArray(lot.overlays) ? lot.overlays.join(", ") : "",
+    geojson: lot.geojson ? JSON.stringify(lot.geojson, null, 2) : "",
+    estateId: stringifyValue(extractLotEstateId(lot) ?? estateIdValue),
+    lotType: stringifyValue(readMetadataOnly("type")),
+    frontageType: stringifyValue(readValue("frontageType")),
+    planningId: stringifyValue(readValue("planningId")),
+    maxHeight: stringifyValue(readValue("maxHeight")),
+    maxSize: stringifyValue(readValue("maxSize")),
+    maxFSR: stringifyValue(readValue("maxFSR")),
+    maxFSRUpper: stringifyValue(readValue("maxFSRUpper")),
+    maxStories: stringifyValue(readValue("maxStories")),
+    minArea: stringifyValue(readValue("minArea")),
+    minDepth: stringifyValue(readValue("minDepth")),
+    frontYardSetback: stringifyValue(readValue("frontYardSetback")),
+    sideYardMinSetback: stringifyValue(readValue("sideYardMinSetback")),
+    rearYardMinSetback: stringifyValue(readValue("rearYardMinSetback")),
+    exampleArea: stringifyValue(readValue("exampleArea")),
+    exampleLotSize: stringifyValue(readValue("exampleLotSize")),
+    apiZoning: stringifyValue(readValue("apiZoning")),
+    apiMatches: stringifyJsonValue(readValue("apiMatches")),
+    frontageCoordinate: stringifyJsonValue(readValue("frontageCoordinate")),
+    width: stringifyValue(readValue("width")),
+    depth: stringifyValue(readValue("depth")),
+    s1: stringifyValue(getGeojsonSValue(geojsonRecord, "s1")),
+    s2: stringifyValue(getGeojsonSValue(geojsonRecord, "s2")),
+    s3: stringifyValue(getGeojsonSValue(geojsonRecord, "s3")),
+    s4: stringifyValue(getGeojsonSValue(geojsonRecord, "s4")),
+    zoningFrontSetback: stringifyValue(zoningSetbacksRecord?.frontSetback),
+    zoningSideSetback: stringifyValue(zoningSetbacksRecord?.sideSetback),
+    zoningRearSetback: stringifyValue(zoningSetbacksRecord?.rearSetback),
+    highFall: coerceBoolean(readValue("highFall")),
+  };
+};
 
 const formatMetaValue = (value: unknown) => {
   if (value === null || value === undefined || value === "") {
@@ -293,6 +590,9 @@ const AdminEstatePage = () => {
   const [lotForm, setLotForm] = useState<LotForm>(() =>
     createEmptyLotForm(estateId ?? "")
   );
+  const [lotGeometry, setLotGeometry] = useState<Record<string, unknown> | null>(
+    null
+  );
   const [lotSaving, setLotSaving] = useState(false);
   const [lotDeleteId, setLotDeleteId] = useState<string | null>(null);
   const [lotFormError, setLotFormError] = useState<string | null>(null);
@@ -305,6 +605,72 @@ const AdminEstatePage = () => {
   const [dxfImporting, setDxfImporting] = useState(false);
   const [dxfError, setDxfError] = useState<string | null>(null);
   const [dxfResult, setDxfResult] = useState<DxfImportResult | null>(null);
+  const frontageLine = useMemo(
+    () => parseLineString(lotForm.frontageCoordinate),
+    [lotForm.frontageCoordinate]
+  );
+  const frontagePreview = useMemo(() => {
+    if (!lotGeometry) {
+      return { error: "Lot geometry not found.", ring: null };
+    }
+    const ring = extractPolygonRing(lotGeometry);
+    if (!ring || ring.length < 3) {
+      return { error: "Geometry polygon not found.", ring: null };
+    }
+    return { error: null, ring };
+  }, [lotGeometry]);
+  const frontageEdges = useMemo<{
+    edges: [[number, number], [number, number]][];
+    polygonPoints: string;
+    toSvg: (coord: [number, number]) => { x: number; y: number };
+    viewWidth: number;
+    viewHeight: number;
+  } | null>(() => {
+    if (!frontagePreview.ring) {
+      return null;
+    }
+    const ring = frontagePreview.ring;
+    const normalized =
+      ring.length > 3 && coordsEqual(ring[0], ring[ring.length - 1])
+        ? ring.slice(0, -1)
+        : ring;
+    const edges = normalized.map((point, index) => {
+      const next = normalized[(index + 1) % normalized.length];
+      return [point, next] as [[number, number], [number, number]];
+    });
+    const lngs = normalized.map((point) => point[0]);
+    const lats = normalized.map((point) => point[1]);
+    const minX = Math.min(...lngs);
+    const maxX = Math.max(...lngs);
+    const minY = Math.min(...lats);
+    const maxY = Math.max(...lats);
+    const width = maxX - minX || 1;
+    const height = maxY - minY || 1;
+    const padding = 12;
+    const viewWidth = 320;
+    const viewHeight = 220;
+    const scale = Math.min(
+      (viewWidth - padding * 2) / width,
+      (viewHeight - padding * 2) / height
+    );
+    const toSvg = ([lng, lat]: [number, number]) => ({
+      x: padding + (lng - minX) * scale,
+      y: padding + (maxY - lat) * scale,
+    });
+    const polygonPoints = normalized
+      .map((coord) => {
+        const point = toSvg(coord);
+        return `${point.x},${point.y}`;
+      })
+      .join(" ");
+    return {
+      edges,
+      polygonPoints,
+      toSvg,
+      viewWidth,
+      viewHeight,
+    };
+  }, [frontagePreview.ring]);
 
   const applyEstate = useCallback((data: AdminEstate) => {
     setEstate(data);
@@ -390,6 +756,7 @@ const AdminEstatePage = () => {
     }
     if (showLotForm) {
       setLotForm(createEmptyLotForm(estateId ?? ""));
+      setLotGeometry(null);
     }
   }, [editingLotId, estateId, showLotForm]);
 
@@ -404,6 +771,7 @@ const AdminEstatePage = () => {
   const openNewLotForm = useCallback(() => {
     setEditingLotId(null);
     setLotForm(createEmptyLotForm(estateId ?? ""));
+    setLotGeometry(null);
     setLotFormError(null);
     setLotFormSuccess(null);
     setShowLotForm(true);
@@ -591,6 +959,7 @@ const AdminEstatePage = () => {
   const closeLotForm = () => {
     setEditingLotId(null);
     setLotForm(createEmptyLotForm(estateId ?? ""));
+    setLotGeometry(null);
     setLotFormError(null);
     setLotFormSuccess(null);
     setShowLotForm(false);
@@ -599,6 +968,11 @@ const AdminEstatePage = () => {
   const handleEditLot = (lot: AdminLot) => {
     setEditingLotId(String(lot.id ?? ""));
     setLotForm(buildLotForm(lot, estateId ?? ""));
+    setLotGeometry(
+      ((lot as { geometry?: Record<string, unknown> }).geometry as
+        | Record<string, unknown>
+        | undefined) ?? null
+    );
     setLotFormError(null);
     setLotFormSuccess(null);
     setShowLotForm(true);
@@ -664,6 +1038,138 @@ const AdminEstatePage = () => {
       return;
     }
 
+    const parseOptionalNumberField = (value: string, label: string) => {
+      const parsed = normalizeOptionalNumber(value);
+      if (parsed === undefined) {
+        setLotFormError(`${label} must be a number.`);
+        return { ok: false, value: null as number | null };
+      }
+      return { ok: true, value: parsed };
+    };
+
+    const parseOptionalJsonField = (value: string, label: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) {
+        return { ok: true, value: null as unknown };
+      }
+      try {
+        return { ok: true, value: JSON.parse(trimmed) };
+      } catch (error) {
+        setLotFormError(
+          error instanceof Error
+            ? `${label} must be valid JSON. ${error.message}`
+            : `${label} must be valid JSON.`
+        );
+        return { ok: false, value: null as unknown };
+      }
+    };
+
+    const s1Result = parseOptionalNumberField(lotForm.s1, "S1");
+    if (!s1Result.ok) {
+      setLotSaving(false);
+      return;
+    }
+    const s2Result = parseOptionalNumberField(lotForm.s2, "S2");
+    if (!s2Result.ok) {
+      setLotSaving(false);
+      return;
+    }
+    const s3Result = parseOptionalNumberField(lotForm.s3, "S3");
+    if (!s3Result.ok) {
+      setLotSaving(false);
+      return;
+    }
+    const s4Result = parseOptionalNumberField(lotForm.s4, "S4");
+    if (!s4Result.ok) {
+      setLotSaving(false);
+      return;
+    }
+    const widthResult = parseOptionalNumberField(lotForm.width, "Width");
+    if (!widthResult.ok) {
+      setLotSaving(false);
+      return;
+    }
+    const depthResult = parseOptionalNumberField(lotForm.depth, "Depth");
+    if (!depthResult.ok) {
+      setLotSaving(false);
+      return;
+    }
+    const zoningFrontResult = parseOptionalNumberField(
+      lotForm.zoningFrontSetback,
+      "Zoning front setback"
+    );
+    if (!zoningFrontResult.ok) {
+      setLotSaving(false);
+      return;
+    }
+    const zoningSideResult = parseOptionalNumberField(
+      lotForm.zoningSideSetback,
+      "Zoning side setback"
+    );
+    if (!zoningSideResult.ok) {
+      setLotSaving(false);
+      return;
+    }
+    const zoningRearResult = parseOptionalNumberField(
+      lotForm.zoningRearSetback,
+      "Zoning rear setback"
+    );
+    if (!zoningRearResult.ok) {
+      setLotSaving(false);
+      return;
+    }
+    const apiMatchesResult = parseOptionalJsonField(
+      lotForm.apiMatches,
+      "API matches"
+    );
+    if (!apiMatchesResult.ok) {
+      setLotSaving(false);
+      return;
+    }
+
+    const hasZoningSetbacks =
+      zoningFrontResult.value !== null ||
+      zoningSideResult.value !== null ||
+      zoningRearResult.value !== null;
+
+    const lotMetadata = {
+      type: normalizeOptional(lotForm.lotType),
+      frontageType: normalizeOptional(lotForm.frontageType),
+      planningId: normalizeOptional(lotForm.planningId),
+      maxHeight: normalizeOptional(lotForm.maxHeight),
+      maxSize: normalizeOptional(lotForm.maxSize),
+      maxFSR: normalizeOptional(lotForm.maxFSR),
+      maxFSRUpper: normalizeOptional(lotForm.maxFSRUpper),
+      maxStories: normalizeOptional(lotForm.maxStories),
+      minArea: normalizeOptional(lotForm.minArea),
+      minDepth: normalizeOptional(lotForm.minDepth),
+      frontYardSetback: normalizeOptional(lotForm.frontYardSetback),
+      sideYardMinSetback: normalizeOptional(lotForm.sideYardMinSetback),
+      rearYardMinSetback: normalizeOptional(lotForm.rearYardMinSetback),
+      exampleArea: normalizeOptional(lotForm.exampleArea),
+      exampleLotSize: normalizeOptional(lotForm.exampleLotSize),
+      apiZoning: normalizeOptional(lotForm.apiZoning),
+      apiMatches: apiMatchesResult.value,
+      frontageCoordinate: normalizeOptional(lotForm.frontageCoordinate),
+      highFall: lotForm.highFall,
+      zoningSetbacks: hasZoningSetbacks
+        ? {
+            frontSetback: zoningFrontResult.value,
+            sideSetback: zoningSideResult.value,
+            rearSetback: zoningRearResult.value,
+          }
+        : null,
+    };
+
+    const hasMetadataValue = Object.entries(lotMetadata)
+      .filter(([key]) => key !== "highFall")
+      .some(([, value]) => value !== null && value !== undefined && value !== "");
+    const sValues = [s1Result.value, s2Result.value, s3Result.value, s4Result.value];
+    const hasSValues = sValues.some((value) => value !== null);
+    const hasDimensions = widthResult.value !== null || depthResult.value !== null;
+    const hasGeojsonExtras =
+      hasMetadataValue || lotForm.highFall || hasSValues || hasDimensions;
+
     const payload: Record<string, unknown> = {
       blockKey: trimmedBlockKey,
       areaSqm: areaValue,
@@ -678,10 +1184,57 @@ const AdminEstatePage = () => {
       overlays: parseOverlays(lotForm.overlays),
     };
 
-    if (geojsonValue.data !== null) {
-      payload.geojson = geojsonValue.data;
-    } else if (editingLotId) {
-      payload.geojson = null;
+    if (geojsonValue.data === null) {
+      if (hasGeojsonExtras) {
+        setLotFormError(
+          "GeoJSON is required to save lot metadata. Please add GeoJSON or clear the metadata fields."
+        );
+        setLotSaving(false);
+        return;
+      }
+      if (editingLotId) {
+        payload.geojson = null;
+      }
+    } else {
+      const nextGeojson = {
+        ...(geojsonValue.data as Record<string, unknown>),
+      };
+
+      if (widthResult.value !== null) {
+        nextGeojson["width"] = widthResult.value;
+      } else if ("width" in nextGeojson) {
+        nextGeojson["width"] = null;
+      }
+
+      if (depthResult.value !== null) {
+        nextGeojson["depth"] = depthResult.value;
+      } else if ("depth" in nextGeojson) {
+        nextGeojson["depth"] = null;
+      }
+
+      if (hasSValues) {
+        const sProperties: Array<Record<string, number>> = [];
+        if (s1Result.value !== null) sProperties.push({ s1: s1Result.value });
+        if (s2Result.value !== null) sProperties.push({ s2: s2Result.value });
+        if (s3Result.value !== null) sProperties.push({ s3: s3Result.value });
+        if (s4Result.value !== null) sProperties.push({ s4: s4Result.value });
+        nextGeojson["properties"] = sProperties;
+      } else if ("properties" in nextGeojson) {
+        nextGeojson["properties"] = [];
+      }
+
+      const existingMetadata = getGeojsonMetadata(nextGeojson);
+      const nextMetadata = { ...(existingMetadata ?? {}), ...lotMetadata };
+      const nextMetadataHasValues = Object.values(nextMetadata).some(
+        (value) => value !== null && value !== undefined && value !== ""
+      );
+      if (nextMetadataHasValues) {
+        nextGeojson["lotMetadata"] = nextMetadata;
+      } else if (existingMetadata) {
+        nextGeojson["lotMetadata"] = null;
+      }
+
+      payload.geojson = nextGeojson;
     }
 
     try {
@@ -1401,6 +1954,510 @@ const AdminEstatePage = () => {
                     }
                     placeholder="overlayA, overlayB"
                     className="w-full"
+                  />
+                </div>
+
+                <div className="md:col-span-2 pt-2 text-sm font-semibold text-slate-600">
+                  Dimensions & S-values
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Width (m)</span>
+                  <Input
+                    value={lotForm.width}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        width: event.target.value,
+                      }))
+                    }
+                    type="number"
+                    step="0.01"
+                    placeholder="12.5"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Depth (m)</span>
+                  <Input
+                    value={lotForm.depth}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        depth: event.target.value,
+                      }))
+                    }
+                    type="number"
+                    step="0.01"
+                    placeholder="30.2"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">S1 (m)</span>
+                  <Input
+                    value={lotForm.s1}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        s1: event.target.value,
+                      }))
+                    }
+                    type="number"
+                    step="0.01"
+                    placeholder="12.5"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">S2 (m)</span>
+                  <Input
+                    value={lotForm.s2}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        s2: event.target.value,
+                      }))
+                    }
+                    type="number"
+                    step="0.01"
+                    placeholder="30.2"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">S3 (m)</span>
+                  <Input
+                    value={lotForm.s3}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        s3: event.target.value,
+                      }))
+                    }
+                    type="number"
+                    step="0.01"
+                    placeholder="12.5"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">S4 (m)</span>
+                  <Input
+                    value={lotForm.s4}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        s4: event.target.value,
+                      }))
+                    }
+                    type="number"
+                    step="0.01"
+                    placeholder="30.2"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2 md:col-span-2">
+                  <span className="text-sm font-medium">
+                    Frontage selector
+                  </span>
+                  {frontagePreview.error || !frontageEdges ? (
+                    <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+                      {frontagePreview.error || "Unable to render lot preview."}
+                    </div>
+                  ) : (
+                    <div className="rounded-md border border-slate-200 bg-white p-2">
+                      <svg
+                        viewBox={`0 0 ${frontageEdges.viewWidth} ${frontageEdges.viewHeight}`}
+                        className="h-56 w-full pointer-events-auto"
+                        preserveAspectRatio="xMidYMid meet"
+                      >
+                        <polygon
+                          points={frontageEdges.polygonPoints}
+                          fill="#f1f5f9"
+                          stroke="#94a3b8"
+                          strokeWidth="1"
+                        />
+                        {frontageEdges.edges.map((edge, index) => {
+                          const start = frontageEdges.toSvg(edge[0]);
+                          const end = frontageEdges.toSvg(edge[1]);
+                          const selected = isEdgeInLine(edge, frontageLine);
+                          return (
+                            <line
+                              key={`frontage-edge-${index}`}
+                              x1={start.x}
+                              y1={start.y}
+                              x2={end.x}
+                              y2={end.y}
+                              stroke={selected ? "#0f766e" : "#64748b"}
+                              strokeWidth={selected ? 4 : 2}
+                              strokeLinecap="round"
+                              className="cursor-pointer pointer-events-auto"
+                              onClick={(event) => {
+                                const nextCoords = event.shiftKey
+                                  ? extendFrontageLine(frontageLine, edge)
+                                  : [edge[0], edge[1]];
+                                const payload = JSON.stringify({
+                                  type: "LineString",
+                                  coordinates: nextCoords,
+                                });
+                                setLotForm((prev) => ({
+                                  ...prev,
+                                  frontageCoordinate: payload,
+                                }));
+                              }}
+                            />
+                          );
+                        })}
+                      </svg>
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                        <span>
+                          Click an edge to set the frontage line. Shift-click to
+                          extend across multiple edges.
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          label="Clear frontage"
+                          onClick={() =>
+                            setLotForm((prev) => ({
+                              ...prev,
+                              frontageCoordinate: "",
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="grid gap-2 md:col-span-2">
+                  <span className="text-sm font-medium">
+                    Frontage coordinate (GeoJSON LineString)
+                  </span>
+                  <textarea
+                    value={lotForm.frontageCoordinate}
+                    readOnly
+                    rows={3}
+                    spellCheck={false}
+                    className="w-full rounded-md border border-input bg-slate-50 px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    placeholder='{"type":"LineString","coordinates":[[148.9246407,-34.8503355],[148.924815,-34.8504019]]}'
+                  />
+                  <span className="text-xs text-slate-500">
+                    Use the selector above to set the frontage line.
+                  </span>
+                </div>
+
+                <div className="md:col-span-2 pt-2 text-sm font-semibold text-slate-600">
+                  Planning & rules
+                </div>
+                <label className="flex items-center gap-2 text-sm font-medium md:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={lotForm.highFall}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        highFall: event.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                  />
+                  High fall (&gt;2m across block)
+                </label>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Lot type</span>
+                  <Input
+                    value={lotForm.lotType}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        lotType: event.target.value,
+                      }))
+                    }
+                    placeholder="Standard"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Frontage type</span>
+                  <Input
+                    value={lotForm.frontageType}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        frontageType: event.target.value,
+                      }))
+                    }
+                    placeholder="Primary"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Planning ID</span>
+                  <Input
+                    value={lotForm.planningId}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        planningId: event.target.value,
+                      }))
+                    }
+                    placeholder="PLAN-001"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Max height</span>
+                  <Input
+                    value={lotForm.maxHeight}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        maxHeight: event.target.value,
+                      }))
+                    }
+                    placeholder="8.5"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Max size</span>
+                  <Input
+                    value={lotForm.maxSize}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        maxSize: event.target.value,
+                      }))
+                    }
+                    placeholder="250"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Max FSR</span>
+                  <Input
+                    value={lotForm.maxFSR}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        maxFSR: event.target.value,
+                      }))
+                    }
+                    placeholder="0.5"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Max FSR upper</span>
+                  <Input
+                    value={lotForm.maxFSRUpper}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        maxFSRUpper: event.target.value,
+                      }))
+                    }
+                    placeholder="0.65"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Max stories</span>
+                  <Input
+                    value={lotForm.maxStories}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        maxStories: event.target.value,
+                      }))
+                    }
+                    placeholder="2"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Minimum area</span>
+                  <Input
+                    value={lotForm.minArea}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        minArea: event.target.value,
+                      }))
+                    }
+                    placeholder="450"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Minimum depth</span>
+                  <Input
+                    value={lotForm.minDepth}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        minDepth: event.target.value,
+                      }))
+                    }
+                    placeholder="25"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Front yard setback</span>
+                  <Input
+                    value={lotForm.frontYardSetback}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        frontYardSetback: event.target.value,
+                      }))
+                    }
+                    placeholder="4-6"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Side yard setback (min)</span>
+                  <Input
+                    value={lotForm.sideYardMinSetback}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        sideYardMinSetback: event.target.value,
+                      }))
+                    }
+                    placeholder="3"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Rear yard setback (min)</span>
+                  <Input
+                    value={lotForm.rearYardMinSetback}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        rearYardMinSetback: event.target.value,
+                      }))
+                    }
+                    placeholder="6"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Example floor area</span>
+                  <Input
+                    value={lotForm.exampleArea}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        exampleArea: event.target.value,
+                      }))
+                    }
+                    placeholder="279"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Example lot size</span>
+                  <Input
+                    value={lotForm.exampleLotSize}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        exampleLotSize: event.target.value,
+                      }))
+                    }
+                    placeholder="465"
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="md:col-span-2 pt-2 text-sm font-semibold text-slate-600">
+                  Zoning setbacks (API)
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Front setback</span>
+                  <Input
+                    value={lotForm.zoningFrontSetback}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        zoningFrontSetback: event.target.value,
+                      }))
+                    }
+                    type="number"
+                    step="0.01"
+                    placeholder="4"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Side setback</span>
+                  <Input
+                    value={lotForm.zoningSideSetback}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        zoningSideSetback: event.target.value,
+                      }))
+                    }
+                    type="number"
+                    step="0.01"
+                    placeholder="3"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Rear setback</span>
+                  <Input
+                    value={lotForm.zoningRearSetback}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        zoningRearSetback: event.target.value,
+                      }))
+                    }
+                    type="number"
+                    step="0.01"
+                    placeholder="3"
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="md:col-span-2 pt-2 text-sm font-semibold text-slate-600">
+                  API metadata
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">API zoning</span>
+                  <Input
+                    value={lotForm.apiZoning}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        apiZoning: event.target.value,
+                      }))
+                    }
+                    placeholder="RZ1"
+                    className="w-full"
+                  />
+                </div>
+                <div className="grid gap-2 md:col-span-2">
+                  <span className="text-sm font-medium">API matches (JSON)</span>
+                  <textarea
+                    value={lotForm.apiMatches}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        apiMatches: event.target.value,
+                      }))
+                    }
+                    rows={4}
+                    spellCheck={false}
+                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    placeholder='[{"houseDesignId":"abc","floorplanUrl":"/path.png","spacing":{"front":4,"rear":3,"side":3},"maxCoverageArea":200,"houseArea":180,"lotDimensions":{"width":12,"depth":30}}]'
                   />
                 </div>
               </div>

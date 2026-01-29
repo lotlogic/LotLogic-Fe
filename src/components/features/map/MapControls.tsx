@@ -204,12 +204,14 @@ export const MapControls = ({
             parsedFrontage.coordinates &&
             parsedFrontage.coordinates.length >= 2
           ) {
-            const coord1 = parsedFrontage.coordinates[0] as [number, number];
-            const coord2 = parsedFrontage.coordinates[1] as [number, number];
-            const frontageMidpoint = turf.midpoint(
-              turf.point(coord1),
-              turf.point(coord2)
-            ).geometry.coordinates as [number, number];
+            const coords = parsedFrontage.coordinates as [number, number][];
+            const line = turf.lineString(coords);
+            const totalLength = turf.length(line, { units: "meters" });
+            const frontageMidpoint =
+              totalLength > 0
+                ? (turf.along(line, totalLength / 2, { units: "meters" })
+                    .geometry.coordinates as [number, number])
+                : (coords[0] as [number, number]);
             // console.log("🏘️ Lot Frontage Midpoint (from API):", frontageMidpoint);
 
             // Add marker to map to show frontage midpoint
