@@ -315,7 +315,7 @@ const parseLineString = (value: string) => {
     if (parsed?.type !== "LineString" || !Array.isArray(parsed.coordinates)) {
       return null;
     }
-    const coords = parsed.coordinates as unknown[];
+    const coords = parsed.coordinates as any[];
     if (
       coords.length < 2 ||
       !coords.every(
