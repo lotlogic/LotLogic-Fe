@@ -136,6 +136,12 @@ const lotZoningRulePath = (key: LotZoningRuleKey) =>
     key.lotId
   )}/${encodeId(key.zoningRuleId)}`;
 
+const builderUsersPath = (builderId: AdminId) =>
+  `${idPath("builders", builderId)}/users`;
+
+const builderUserPath = (builderId: AdminId, userId: AdminId) =>
+  `${builderUsersPath(builderId)}/${encodeId(userId)}`;
+
 export const adminApi = {
   async getEstates<T = unknown>(params?: AdminQuery): Promise<T[]> {
     return data(adminApiClient.get<T[]>(basePath("estates"), { params }));
@@ -223,6 +229,12 @@ export const adminApi = {
     return data(adminApiClient.delete<T>(lotZoningRulePath(key)));
   },
 
+  async createUpload<T = unknown, B extends Record<string, unknown> = Record<string, unknown>>(
+    payload: B
+  ): Promise<T> {
+    return data(adminApiClient.post<T>(basePath("uploads"), payload));
+  },
+
   async getFloorPlans<T = unknown>(params?: AdminQuery): Promise<T[]> {
     return data(adminApiClient.get<T[]>(basePath("floor-plans"), { params }));
   },
@@ -282,6 +294,9 @@ export const adminApi = {
   async getBuilders<T = unknown>(params?: AdminQuery): Promise<T[]> {
     return data(adminApiClient.get<T[]>(basePath("builders"), { params }));
   },
+  async getBuilderById<T = unknown>(id: AdminId): Promise<T> {
+    return data(adminApiClient.get<T>(idPath("builders", id)));
+  },
   async createBuilder<T = unknown, B extends Record<string, unknown> = Record<string, unknown>>(
     payload: B
   ): Promise<T> {
@@ -296,19 +311,45 @@ export const adminApi = {
   async deleteBuilder<T = unknown>(id: AdminId): Promise<T> {
     return data(adminApiClient.delete<T>(idPath("builders", id)));
   },
+  async getBuilderUsers<T = unknown>(id: AdminId): Promise<T[]> {
+    return data(adminApiClient.get<T[]>(builderUsersPath(id)));
+  },
+  async replaceBuilderUsers<T = unknown>(
+    id: AdminId,
+    userIds: string[]
+  ): Promise<T> {
+    return data(adminApiClient.put<T>(builderUsersPath(id), { userIds }));
+  },
+  async addBuilderUsers<T = unknown>(id: AdminId, userIds: string[]): Promise<T> {
+    return data(adminApiClient.post<T>(builderUsersPath(id), { userIds }));
+  },
+  async removeBuilderUser<T = unknown>(
+    id: AdminId,
+    userId: AdminId
+  ): Promise<T> {
+    return data(adminApiClient.delete<T>(builderUserPath(id, userId)));
+  },
 
-  async getBrandSettings<T = unknown>(): Promise<T> {
-    return data(adminApiClient.get<T>(basePath("brand-settings")));
+  async getBrandSettings<T = unknown>(params?: AdminQuery): Promise<T[]> {
+    return data(adminApiClient.get<T[]>(basePath("brand-settings"), { params }));
   },
-  async replaceBrandSettings<T = unknown, B extends Record<string, unknown> = Record<string, unknown>>(
-    payload: B
-  ): Promise<T> {
-    return data(adminApiClient.put<T>(basePath("brand-settings"), payload));
+  async getBrandSettingByGuid<T = unknown>(guid: AdminId): Promise<T> {
+    return data(adminApiClient.get<T>(idPath("brand-settings", guid)));
   },
-  async updateBrandSettings<T = unknown, B extends Record<string, unknown> = Record<string, unknown>>(
-    payload: B
-  ): Promise<T> {
-    return data(adminApiClient.patch<T>(basePath("brand-settings"), payload));
+  async createBrandSetting<
+    T = unknown,
+    B extends Record<string, unknown> = Record<string, unknown>
+  >(payload: B): Promise<T> {
+    return data(adminApiClient.post<T>(basePath("brand-settings"), payload));
+  },
+  async updateBrandSetting<
+    T = unknown,
+    B extends Record<string, unknown> = Record<string, unknown>
+  >(guid: AdminId, payload: B): Promise<T> {
+    return data(adminApiClient.patch<T>(idPath("brand-settings", guid), payload));
+  },
+  async deleteBrandSetting<T = unknown>(guid: AdminId): Promise<T> {
+    return data(adminApiClient.delete<T>(idPath("brand-settings", guid)));
   },
 
   async getUsers<T = unknown>(params?: AdminQuery): Promise<T[]> {

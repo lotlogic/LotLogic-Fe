@@ -1,4 +1,3 @@
-import { getColorClass } from "@/constants/content";
 import {
   FILTER_CONFIGS,
   INITIAL_FILTER_RANGES,
@@ -27,11 +26,11 @@ const FilterRow = React.memo(
     filterErrors = {},
   }: FilterRowProps) => {
     return (
-      <div className="mb-6 border-b border-gray-200 pb-6">
+      <div className="mb-6 border-b border-brand pb-6">
         <div className="flex items-center justify-between mb-4 w-full">
           <div className="flex items-center">
             {React.isValidElement(icon) ? React.cloneElement(icon) : icon}
-            <span className="ml-2 text-base font-semibold text-gray-800">
+            <span className="ml-2 text-base font-semibold text-brand">
               {label}
             </span>
           </div>
@@ -85,7 +84,7 @@ const DesignRow = React.memo(
     onChange,
   }: DesignRowProps) => {
     return (
-      <div className="mb-6 border-b border-gray-200 pb-6">
+      <div className="mb-6 border-b border-brand pb-6">
         <div className="flex items-center mb-4">
           <div className="flex gap-6">
             <div className="flex items-center space-x-2">
@@ -150,10 +149,10 @@ const HouseSizeInputRow = React.memo(
     filterErrors = {},
   }: HouseSizeInputRowProps) => {
     return (
-      <div className="mb-6 border-b border-gray-200 pb-6">
+      <div className="mb-6 border-b border-brand pb-6">
         <div className="flex items-center mb-4">
           <Building2 />
-          <span className="ml-2 text-base font-semibold text-gray-800">
+          <span className="ml-2 text-base font-semibold text-brand">
             Enter House Size
           </span>
         </div>
@@ -179,7 +178,7 @@ const HouseSizeInputRow = React.memo(
                 </p>
               )}
             </div>
-            <div className="text-xl items-center text-gray-500 p-1">-</div>
+            <div className="text-xl items-center text-brand-muted p-1">-</div>
             <div className="flex flex-col space-y-1">
               <Input
                 type="text"
@@ -283,12 +282,10 @@ export const FilterSectionWithSingleLineSliders = React.memo(
           />
         </div>
         {/* Sticky Footer with "Show House Design" button */}
-        <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-100 pb-6">
+        <div className="sticky bottom-0 bg-white pt-4 border-t border-brand pb-6">
           <Button
             label="Show House Design"
-            className={`w-full ${getColorClass(
-              "primary"
-            )} text-white text-lg py-3 rounded-lg font-medium`}
+            className="w-full bg-brand-primary text-white text-lg py-3 rounded-lg font-medium hover:bg-[var(--color-primary-hover)]"
             onClick={() => {
               // Track filter application
               trackFilterApplied("show_house_designs", {

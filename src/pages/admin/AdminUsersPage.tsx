@@ -35,7 +35,7 @@ type AdminInvitationResponse = {
   [key: string]: unknown;
 };
 
-const roleOptions = ["EDITOR", "ADMIN"] as const;
+const roleOptions = ["ADMIN", "USER"] as const;
 
 const getUserContact = (user: AdminUser): string => {
   const email = typeof user.email === "string" ? user.email.trim() : "";
@@ -82,7 +82,7 @@ const AdminUsersPage = () => {
   const [addEmail, setAddEmail] = useState("");
   const [addName, setAddName] = useState("");
   const [addRole, setAddRole] =
-    useState<(typeof roleOptions)[number]>("EDITOR");
+    useState<(typeof roleOptions)[number]>("USER");
   const [addSaving, setAddSaving] = useState(false);
   const [addErrorMessage, setAddErrorMessage] = useState<string | null>(null);
 
@@ -96,7 +96,7 @@ const AdminUsersPage = () => {
   const [editEmail, setEditEmail] = useState("");
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] =
-    useState<(typeof roleOptions)[number]>("EDITOR");
+    useState<(typeof roleOptions)[number]>("USER");
   const [editAction, setEditAction] = useState<
     "save" | "delete" | "disable" | "enable" | null
   >(null);
@@ -135,7 +135,7 @@ const AdminUsersPage = () => {
       setSelectedUser(data);
       setEditEmail(data.email ?? "");
       setEditName(data.displayName ?? "");
-      setEditRole((data.role as (typeof roleOptions)[number]) ?? "EDITOR");
+      setEditRole((data.role as (typeof roleOptions)[number]) ?? "USER");
       const estateIds = (data.estates ?? []).map((estate) => estate.id);
       setSelectedEstateIds(estateIds);
       return data;
@@ -241,7 +241,7 @@ const AdminUsersPage = () => {
       setShowAddForm(false);
       setAddEmail("");
       setAddName("");
-      setAddRole("EDITOR");
+      setAddRole("USER");
       if (result.user?.id) {
         setSelectedUserId(result.user.id);
       }

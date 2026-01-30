@@ -1,6 +1,6 @@
 export const PrivacyPolicyContent = () => {
   return (
-    <div className="prose prose-sm max-w-none text-gray-800 leading-7">
+    <div className="prose prose-sm max-w-none text-brand leading-7">
       <h3 className="text-lg font-semibold mt-0 mb-3">
         Privacy Policy – LotLogic (operated by BlockPlanner Pty Ltd)
       </h3>

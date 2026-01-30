@@ -3,7 +3,6 @@ import showToast from "@/components/ui/Toast";
 import {
   colors,
   filter as filterContent,
-  getColorClass,
   houseDesign,
   lotSidebar,
 } from "@/constants/content";
@@ -115,7 +114,7 @@ export const HouseDesignList = ({
     return (
       <div className="p-6 overflow-y-auto h-full">
         <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary"></div>
         </div>
       </div>
     );
@@ -143,10 +142,10 @@ export const HouseDesignList = ({
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-brand mb-2">
                 Unable to Load House Designs
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-brand-muted mb-4">
                 We encountered an issue while loading the house designs for this
                 lot.
               </p>
@@ -155,17 +154,13 @@ export const HouseDesignList = ({
               <Button
                 label="Try Again"
                 onClick={() => window.location.reload()}
-                className={`w-full ${getColorClass(
-                  "primary"
-                )} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass(
-                  "accent"
-                )} transition-colors`}
+                className="w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
               />
               <Button
                 label="Adjust Filters"
                 variant="outline"
                 onClick={onShowFilter}
-                className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                className="w-full border border-brand text-brand py-2 px-4 rounded-lg font-medium hover:bg-brand-muted transition-colors"
               />
             </div>
           </div>
@@ -196,10 +191,10 @@ export const HouseDesignList = ({
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-brand mb-2">
                 No House Designs Found
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-brand-muted mb-4">
                 We couldn't find any house designs matching your current
                 criteria. Try adjusting your filters to see more options.
               </p>
@@ -208,13 +203,9 @@ export const HouseDesignList = ({
               <Button
                 label="Adjust Filters"
                 onClick={onShowFilter}
-                className={`w-full ${getColorClass(
-                  "primary"
-                )} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass(
-                  "accent"
-                )} transition-colors`}
+                className="w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
               />
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-brand-muted">
                 <p className="mb-2">Try these suggestions:</p>
                 <ul className="text-left space-y-1">
                   <li>• Increase the number of bedrooms or bathrooms</li>
@@ -235,7 +226,7 @@ export const HouseDesignList = ({
       <div className="flex items-center justify-between mb-4">
         <div>
           <span className="text-xl font-bold">
-            <span className={`${getColorClass("primary", "text")}`}>
+            <span className="text-brand-primary">
               {filteredHouses.length}
             </span>{" "}
             {houseDesign.title}
@@ -250,7 +241,7 @@ export const HouseDesignList = ({
           label={filterContent.title}
           leftIcon={<Funnel className="h-4 w-4" />}
           variant="outline"
-          className="border border-gray-300 rounded-lg px-3 py-1 flex items-center gap-2"
+          className="border border-brand rounded-lg px-3 py-1 flex items-center gap-2 text-brand bg-brand"
           onClick={onShowFilter}
         />
       </div>
@@ -262,10 +253,10 @@ export const HouseDesignList = ({
           return (
             <div
               key={house.id}
-              className={`rounded-2xl border border-gray-200 p-4 transition-all duration-300 ${
+              className={`rounded-2xl border border-brand p-4 transition-all duration-300 ${
                 isExpanded
-                  ? getColorClass("background.accent")
-                  : "bg-white hover:shadow-md"
+                  ? "bg-brand-accent"
+                  : "bg-brand hover:shadow-md"
               }`}
               onClick={() => {
                 if (expandedIdx === idx) {
@@ -308,7 +299,7 @@ export const HouseDesignList = ({
                       <div className="font-bold text-lg mb-1 truncate">
                         {house.title}
                       </div>
-                      <div className="text-black text-sm whitespace-nowrap overflow-hidden text-ellipsis">
+                      <div className="text-brand text-sm whitespace-nowrap overflow-hidden text-ellipsis">
                         {lotSidebar.singleStorey} {houseDesign.area}:{" "}
                         {house.area} {houseDesign.m2}
                       </div>
@@ -317,7 +308,7 @@ export const HouseDesignList = ({
                       className={`h-6 w-6 cursor-pointer transition-colors duration-200 shrink-0 ${
                         isDesignSaved(lot.lotId, house.id)
                           ? "fill-current"
-                          : "text-gray-400"
+                          : "text-brand-muted"
                       }`}
                       style={{
                         color: isDesignSaved(lot.lotId, house.id)
@@ -330,17 +321,17 @@ export const HouseDesignList = ({
                   </div>
 
                   {/* Specifications Icons */}
-                  <div className="flex gap-4 mt-2 text-black text-sm font-medium bold flex-wrap">
+                  <div className="flex gap-4 mt-2 text-brand text-sm font-medium bold flex-wrap">
                     <span className="flex items-center gap-1">
-                      <BedDouble className="h-5 w-5 text-black" />
+                      <BedDouble className="h-5 w-5 text-brand" />
                       {house.bedrooms}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Bath className="h-5 w-5 text-black" />
+                      <Bath className="h-5 w-5 text-brand" />
                       {house.bathrooms}
                     </span>
                     <span className="flex items-center gap-1">
-                      <Car className="h-5 w-5 text-black" />
+                      <Car className="h-5 w-5 text-brand" />
                       {house.cars}
                     </span>
                   </div>
@@ -372,11 +363,7 @@ export const HouseDesignList = ({
                             lotId: lot.lotId,
                           });
                         }}
-                        className={`${getColorClass(
-                          "primary"
-                        )} text-white py-2 px-4 rounded-lg font-medium hover:${getColorClass(
-                          "accent"
-                        )} transition-colors flex-1 cursor-pointer`}
+                        className="bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors flex-1 cursor-pointer"
                       />
                       <Button
                         label="View Facades"
@@ -396,11 +383,7 @@ export const HouseDesignList = ({
                             lotId: lot.lotId,
                           });
                         }}
-                        className={`${getColorClass(
-                          "primary"
-                        )} text-white py-3 px-4 rounded-lg font-medium hover:${getColorClass(
-                          "accent"
-                        )} transition-colors flex-1 cursor-pointer`}
+                        className="bg-brand-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors flex-1 cursor-pointer"
                       />
                     </div>
 
@@ -425,12 +408,7 @@ export const HouseDesignList = ({
                           lotId: lot.lotId,
                         });
                       }}
-                      className={`border border-gray-300 bg-white text-gray-700 py-3 px-4 rounded-lg font-medium hover:${getColorClass(
-                        "primary"
-                      )} hover:text-white hover:${getColorClass(
-                        "primary",
-                        "border"
-                      )} transition-colors w-full flex items-center justify-center gap-2 cursor-pointer`}
+                      className="border border-brand bg-brand text-brand py-3 px-4 rounded-lg font-medium hover:bg-brand-primary hover:text-white hover:border-brand-primary transition-colors w-full flex items-center justify-center gap-2 cursor-pointer"
                     />
                   </div>
                 </div>

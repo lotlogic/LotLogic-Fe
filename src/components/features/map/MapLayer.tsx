@@ -398,7 +398,7 @@ export const ZoneMap = () => {
     <div className="relative h-full w-full">
       {(isLoading || isLoadingLots) && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary"></div>
         </div>
       )}
 
@@ -414,7 +414,7 @@ export const ZoneMap = () => {
           <div className="absolute top-4 right-5 z-10">
             <Suspense
               fallback={
-                <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
+                <div className="w-8 h-8 bg-brand-muted rounded animate-pulse"></div>
               }
             >
               <SearchControl onResultSelect={handleSearchResult} />
@@ -424,7 +424,7 @@ export const ZoneMap = () => {
           <div className="absolute top-45 right-5 z-10">
             <Suspense
               fallback={
-                <div className="w-8 h-8 bg-gray-200 rounded animate-pulse"></div>
+                <div className="w-8 h-8 bg-brand-muted rounded animate-pulse"></div>
               }
             >
               <SavedButton

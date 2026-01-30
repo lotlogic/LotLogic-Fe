@@ -4,7 +4,9 @@ import {
   Route,
   BrowserRouter as Router,
   Routes,
+  useLocation,
 } from "react-router-dom";
+import { useEffect } from "react";
 import HomePage from "./pages/Home";
 import NotFoundPage from "./pages/NotFoundPage";
 import PrototypePage from "./pages/PrototypePage";
@@ -19,13 +21,36 @@ import AdminFloorPlansPage from "./pages/admin/AdminFloorPlansPage";
 import AdminFacadesPage from "./pages/admin/AdminFacadesPage";
 import AdminDesignsOnLotsPage from "./pages/admin/AdminDesignsOnLotsPage";
 import AdminBuildersPage from "./pages/admin/AdminBuildersPage";
+import AdminBuilderPage from "./pages/admin/AdminBuilderPage";
 import AdminBrandSettingsPage from "./pages/admin/AdminBrandSettingsPage";
+import AdminBrandSettingPage from "./pages/admin/AdminBrandSettingPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import {
+  applyBrandTheme,
+  clearBrandThemeOverrides,
+  loadBrandFonts,
+} from "./lib/theme/brandTheme";
+
+const BrandThemeController = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.pathname.startsWith("/admin")) {
+      clearBrandThemeOverrides();
+    } else {
+      loadBrandFonts();
+      applyBrandTheme();
+    }
+  }, [location.pathname]);
+
+  return null;
+};
 
 function App() {
   return (
     <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
       <Router>
+        <BrandThemeController />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/prototype" element={<PrototypePage />} />
@@ -113,10 +138,26 @@ function App() {
             }
           />
           <Route
+            path="/admin/builders/:builderId"
+            element={
+              <RequireAdminAuth>
+                <AdminBuilderPage />
+              </RequireAdminAuth>
+            }
+          />
+          <Route
             path="/admin/brand-settings"
             element={
               <RequireAdminAuth>
                 <AdminBrandSettingsPage />
+              </RequireAdminAuth>
+            }
+          />
+          <Route
+            path="/admin/brand-settings/:guid"
+            element={
+              <RequireAdminAuth>
+                <AdminBrandSettingPage />
               </RequireAdminAuth>
             }
           />

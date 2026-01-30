@@ -21,7 +21,7 @@ const ModalTitle: React.FC<{ title: string; onClose: () => void }> = ({
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
-      borderBottom: "1px solid #e5e7eb",
+      borderBottom: "1px solid var(--color-border)",
       padding: "20px",
       margin: 0,
     }}
@@ -32,7 +32,7 @@ const ModalTitle: React.FC<{ title: string; onClose: () => void }> = ({
       sx={{
         fontSize: "18px",
         fontWeight: 600,
-        color: "#111827",
+        color: "var(--color-text-primary)",
       }}
     >
       {title}
@@ -40,12 +40,12 @@ const ModalTitle: React.FC<{ title: string; onClose: () => void }> = ({
     <IconButton
       onClick={onClose}
       sx={{
-        color: "#6b7280",
+        color: "var(--color-text-secondary)",
         padding: "8px",
         borderRadius: "50%",
         "&:hover": {
-          backgroundColor: "#f3f4f6",
-          color: "#374151",
+          backgroundColor: "var(--color-bg-secondary)",
+          color: "var(--color-text-primary)",
         },
       }}
     >
@@ -99,11 +99,13 @@ const Thumbnail: React.FC<{
       borderRadius: "4px",
       overflow: "hidden",
       cursor: "pointer",
-      border: isActive ? "2px solid #1976d2" : "2px solid transparent",
+      border: isActive
+        ? "2px solid var(--color-primary)"
+        : "2px solid transparent",
       flexShrink: 0,
       position: "relative",
       "&:hover": {
-        borderColor: "#1976d2",
+        borderColor: "var(--color-primary)",
       },
     }}
   >
@@ -168,6 +170,8 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
         margin: "16px",
         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
         overflow: "hidden",
+        backgroundColor: "var(--color-bg-primary)",
+        color: "var(--color-text-primary)",
       },
     }),
     [isMobile]
@@ -251,13 +255,13 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
                     top: "16px",
                     left: "50%",
                     transform: "translateX(-50%)",
-                    backgroundColor: "rgba(255, 255, 255, 0.95)",
+                    backgroundColor: "var(--color-bg-primary)",
                     backdropFilter: "blur(10px)",
-                    color: "#1f2937",
+                    color: "var(--color-text-primary)",
                     padding: "8px 16px",
                     borderRadius: "20px",
                     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                    border: "1px solid rgba(255, 255, 255, 0.2)",
+                    border: "1px solid var(--color-border)",
                     maxWidth: "calc(100% - 32px)",
                   }}
                 >
@@ -348,6 +352,8 @@ export const SingleImageModal: React.FC<SingleImageModalProps> = ({
         margin: "16px",
         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
         overflow: "hidden",
+        backgroundColor: "var(--color-bg-primary)",
+        color: "var(--color-text-primary)",
       },
     }),
     [isMobile]
@@ -446,6 +452,8 @@ export const TextModal: React.FC<TextModalProps> = ({
         margin: "16px",
         boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
         overflow: "hidden",
+        backgroundColor: "var(--color-bg-primary)",
+        color: "var(--color-text-primary)",
       },
     }),
     [isMobile]

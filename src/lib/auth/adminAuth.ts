@@ -64,8 +64,16 @@ const getAuthority = (): string => {
 const getLocationOrigin = (): string =>
   typeof window !== "undefined" ? window.location.origin : "";
 
+const getDefaultRedirectUri = (): string => {
+  const origin = getLocationOrigin();
+  if (!origin) {
+    return origin;
+  }
+  return `${origin}/admin/login`;
+};
+
 const getRedirectUri = (): string =>
-  import.meta.env.VITE_AAD_REDIRECT_URI || getLocationOrigin();
+  import.meta.env.VITE_AAD_REDIRECT_URI || getDefaultRedirectUri();
 
 const getPostLogoutRedirectUri = (): string =>
   import.meta.env.VITE_AAD_POST_LOGOUT_REDIRECT_URI || getLocationOrigin();
@@ -277,4 +285,3 @@ export const adminAuth = {
 
   clearAccessTokenCache,
 };
-

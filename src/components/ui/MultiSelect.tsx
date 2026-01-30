@@ -1,4 +1,4 @@
-import { colors, getColorClass } from "@/constants/content";
+import { colors } from "@/constants/content";
 import type { MultiSelectProps } from "@/types/ui";
 import { ChevronDown, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
@@ -46,7 +46,7 @@ export const MultiSelect = ({
   return (
     <div className={`relative ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-brand mb-1">
           {label}
         </label>
       )}
@@ -55,32 +55,26 @@ export const MultiSelect = ({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full p-3 border rounded-lg shadow-sm focus:${getColorClass(
-            "primary",
-            "ring"
-          )} focus:${getColorClass(
-            "primary",
-            "border"
-          )} appearance-none bg-white pr-8 text-left ${
-            isOpen ? getColorClass("primary", "border") : "border-gray-300"
-          } ${selectedOptions.length > 0 ? "text-gray-900" : "text-gray-500"}`}
+          className={`w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent appearance-none bg-brand pr-8 text-left ${
+            isOpen ? "border-brand-primary" : "border-brand"
+          } ${selectedOptions.length > 0 ? "text-brand" : "text-brand-muted"}`}
         >
           {displayText}
           <div className="absolute inset-y-0 right-0 flex items-center pr-3">
             {isOpen ? (
-              <ChevronDown className="h-4 w-4 text-gray-400" />
+              <ChevronDown className="h-4 w-4 text-brand-muted" />
             ) : (
-              <ChevronDown className="h-4 w-4 text-gray-400" />
+              <ChevronDown className="h-4 w-4 text-brand-muted" />
             )}
           </div>
         </button>
 
         {isOpen && (
-          <div className="absolute z-50 w-full top-0 mt-12 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          <div className="absolute z-50 w-full top-0 mt-12 bg-brand border border-brand rounded-lg shadow-lg max-h-60 overflow-y-auto">
             {options.map((option) => (
               <div
                 key={option.id}
-                className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                className="flex items-center px-3 py-2 hover:bg-brand-muted cursor-pointer"
                 onClick={() => handleOptionToggle(option.id)}
               >
                 {/* Logo/Icon */}
@@ -94,18 +88,18 @@ export const MultiSelect = ({
                       className="rounded-full object-cover"
                     />
                   ) : option.logoText ? (
-                    <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-700">
+                    <div className="w-6 h-6 rounded-full bg-brand-muted flex items-center justify-center text-xs font-bold text-brand">
                       {option.logoText}
                     </div>
                   ) : (
-                    <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-700">
+                    <div className="w-6 h-6 rounded-full bg-brand-muted flex items-center justify-center text-xs font-bold text-brand">
                       {option.label.charAt(0)}
                     </div>
                   )}
                 </div>
 
                 {/* Label */}
-                <span className="flex-1 text-sm text-gray-900">
+                <span className="flex-1 text-sm text-brand">
                   {option.label}
                 </span>
 
@@ -115,7 +109,7 @@ export const MultiSelect = ({
                     type="checkbox"
                     checked={selectedOptions.includes(option.id)}
                     onChange={() => handleOptionToggle(option.id)}
-                    className="w-4 h-4 border-gray-300 rounded focus:ring-2"
+                    className="w-4 h-4 border-brand rounded focus:ring-2 focus:ring-[var(--color-primary)]"
                     style={
                       {
                         "--tw-ring-color": colors.primary,

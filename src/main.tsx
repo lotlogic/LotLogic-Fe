@@ -1,8 +1,13 @@
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { APP_CONTENT } from "@/constants/content.ts";
 import { initializeMixpanel } from "@/lib/analytics/mixpanel.ts";
-import { getCurrentBrand } from "@/lib/api/lotApi.ts";
+import { type BrandQueryParams, getCurrentBrand } from "@/lib/api/lotApi.ts";
 import { adminAuth } from "@/lib/auth/adminAuth.ts";
+import {
+  applyBrandTheme,
+  clearBrandThemeOverrides,
+  loadBrandFonts,
+} from "@/lib/theme/brandTheme.ts";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
@@ -21,9 +26,24 @@ function setFavicon(url: string) {
   link.href = url;
 }
 
+const resolvePrototypeBrandQuery = (): BrandQueryParams | undefined => {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+  if (!window.location.pathname.startsWith("/prototype")) {
+    return undefined;
+  }
+  const params = new URLSearchParams(window.location.search);
+  const brandGuid = params.get("brand") || undefined;
+  if (brandGuid) {
+    return { guid: brandGuid };
+  }
+  return undefined;
+};
+
 async function bootstrap() {
   try {
-    const currentBrand = await getCurrentBrand();
+    const currentBrand = await getCurrentBrand(resolvePrototypeBrandQuery());
 
     if (currentBrand?.logoUrl) {
       setFavicon(currentBrand.logoUrl);
@@ -58,6 +78,12 @@ async function bootstrap() {
       APP_CONTENT.typography.fontFamily.secondary;
   } catch (err) {
     console.error("Brand init failed", err);
+  }
+  if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) {
+    clearBrandThemeOverrides();
+  } else {
+    loadBrandFonts();
+    applyBrandTheme();
   }
 
   try {

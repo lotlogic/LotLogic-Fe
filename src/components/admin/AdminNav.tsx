@@ -8,11 +8,6 @@ const adminLinks: Array<{
 }> = [
   { to: "/admin/users", label: "Users", requiresAdmin: true },
   { to: "/admin/estates", label: "Estates" },
-  { to: "/admin/zoning-rules", label: "Zoning Rules" },
-  { to: "/admin/lot-zoning-rules", label: "Lot Zoning Rules" },
-  { to: "/admin/floor-plans", label: "Floor Plans" },
-  { to: "/admin/facades", label: "Facades" },
-  { to: "/admin/design-on-lots", label: "Designs On Lots" },
   { to: "/admin/builders", label: "Builders" },
   { to: "/admin/brand-settings", label: "Brand Settings" },
 ];

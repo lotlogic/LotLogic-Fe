@@ -5,14 +5,14 @@ import { Link } from "react-router-dom";
 export const Header = () => {
   return (
     <>
-      <header className="fixed w-full top-0 bg-white z-10 shadow">
+      <header className="fixed w-full top-0 bg-brand z-10 shadow">
         <a
           href="#main-content"
           className={cn(
             "sr-only",
             "focus:not-sr-only",
             "focus:absolute top-2 left-2",
-            "bg-mow-navy",
+            "bg-brand-primary",
             "text-white",
             "px-4! py-2!",
             "rounded-md",

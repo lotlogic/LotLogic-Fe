@@ -2,6 +2,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { AdminUploadField } from "@/components/admin/AdminUploadField";
 import { adminApi, type CreateLotInput } from "@/lib/api/adminApi";
 import { adminAuth } from "@/lib/auth/adminAuth";
 import { Button } from "@/components/ui/Button";
@@ -1434,14 +1435,15 @@ const AdminEstatePage = () => {
               </div>
 
               <div className="grid gap-2">
-                <span className="text-sm font-medium">Logo URL</span>
-                <Input
+                <AdminUploadField
+                  label="Logo URL"
                   value={form.logoUrl}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, logoUrl: event.target.value }))
+                  onChange={(value) =>
+                    setForm((prev) => ({ ...prev, logoUrl: value }))
                   }
                   placeholder="https://cdn.example.com/logo.png"
-                  className="w-full"
+                  folder="logos"
+                  accept="image/*"
                 />
               </div>
 

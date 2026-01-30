@@ -1,4 +1,4 @@
-import { getColorClass, sidebar } from "@/constants/content";
+import { sidebar } from "@/constants/content";
 import { useMobile } from "@/hooks/useMobile";
 import { Box, Drawer, IconButton } from "@mui/material";
 import clsx from "clsx";
@@ -84,6 +84,8 @@ export const Sidebar = ({
             borderTopLeftRadius: "16px",
             borderTopRightRadius: "16px",
             transition: "height 0.3s ease-in-out",
+            backgroundColor: "var(--color-bg-primary)",
+            color: "var(--color-text-primary)",
             // Position above navbar for both heights
             bottom: "4rem", // 4rem = 64px (navbar height)
             // When expanded to 100vh, adjust height to fill remaining space
@@ -118,15 +120,15 @@ export const Sidebar = ({
               setDrawerHeight(drawerHeight === "50vh" ? "100vh" : "50vh")
             }
           >
-            <Box className="w-12 h-1 bg-gray-300 rounded-full" />
+            <Box className="w-12 h-1 bg-brand-muted rounded-full" />
           </Box>
 
           {/* Header */}
-          <Box className="flex items-start border-b border-gray-200 bg-white rounded-t-2xl p-4 pb-3">
+          <Box className="flex items-start border-b border-brand bg-brand rounded-t-2xl p-4 pb-3">
             {showBackButton && onBack && (
               <IconButton
                 onClick={onBack}
-                className="p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 mr-3"
+                className="p-1 rounded-full hover:bg-brand-muted text-brand-muted hover:text-brand mr-3"
                 aria-label={sidebar.back}
               >
                 <ChevronLeft className="h-6 w-6" />
@@ -135,10 +137,7 @@ export const Sidebar = ({
             <Box className="flex-grow">{headerContent}</Box>
             <IconButton
               onClick={onClose}
-              className={`p-2 rounded-full hover:bg-gray-100 ${getColorClass(
-                "text.primary",
-                "text"
-              )} hover:text-gray-700`}
+              className="p-2 rounded-full hover:bg-brand-muted text-brand hover:text-brand"
               aria-label={sidebar.close}
             >
               <X className="h-6 w-6" />
@@ -156,16 +155,16 @@ export const Sidebar = ({
   return (
     <aside
       className={clsx(
-        "fixed top-[80px] left-[20px] max-h-[calc(100vh-100px)] z-50 bg-white shadow-2xl rounded-2xl border border-gray-200 flex flex-col transition-transform duration-300",
+        "fixed top-[80px] left-[20px] max-h-[calc(100vh-100px)] z-50 shadow-2xl rounded-2xl border border-brand bg-white flex flex-col transition-transform duration-300",
         widthClass,
         className
       )}
     >
-      <div className="flex items-start p-6 pb-4 border-b border-gray-200 sticky top-0 z-10 bg-white rounded-t-2xl">
+      <div className="flex items-start p-6 pb-4 border-b border-brand sticky top-0 z-10 bg-white rounded-t-2xl">
         {showBackButton && onBack && (
           <button
             onClick={onBack}
-            className="p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 mr-3"
+            className="p-1 rounded-full hover:bg-brand-muted text-brand-muted hover:text-brand mr-3"
             aria-label={sidebar.back}
           >
             <ChevronLeft className="h-6 w-6" />
@@ -174,10 +173,7 @@ export const Sidebar = ({
         <div className="flex-grow">{headerContent}</div>
         <button
           onClick={onClose}
-          className={`p-2 rounded-full hover:bg-gray-100 ${getColorClass(
-            "text.primary",
-            "text"
-          )} hover:text-gray-700 ml-auto`}
+          className="p-2 rounded-full hover:bg-brand-muted text-brand hover:text-brand ml-auto"
           aria-label={sidebar.close}
         >
           <X className="h-6 w-6" />

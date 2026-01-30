@@ -14,7 +14,7 @@ export const Checkbox = ({
     <CheckboxPrimitive.Root
       {...props}
       className={cn(
-        "peer border-gray-400 dark:bg-input/30 w-6 h-6 shrink-0 rounded-md border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",
+        "peer border-brand dark:bg-input/30 w-6 h-6 shrink-0 rounded-md border shadow-xs transition-shadow outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       style={{

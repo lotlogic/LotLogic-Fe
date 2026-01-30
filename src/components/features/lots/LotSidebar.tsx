@@ -5,7 +5,6 @@ import {
 } from "@/components/ui/DynamicModal";
 import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
 import Sidebar from "@/components/ui/Sidebar";
-import { getColorClass } from "@/constants/content";
 import { useContent } from "@/hooks/useContent";
 import { useHouseDesigns } from "@/hooks/useHouseDesigns";
 import { getImageUrl } from "@/lib/api/lotApi";
@@ -235,17 +234,12 @@ export const LotSidebar = ({
 
   const headerContent = (
     <>
-      <h2
-        className={`text-2xl font-medium ${getColorClass(
-          "text.primary",
-          "text"
-        )}`}
-      >
+      <h2 className="text-2xl font-medium text-brand">
         {headerTitle}
       </h2>
       {/* Lot details only shown when not in filter mode */}
       {!showFilter && (
-        <div className="text-gray-600 mt-1 text-base font-normal">
+        <div className="text-brand-muted mt-1 text-base font-normal">
           {`Lot ID: ${lot.id || "--"}, ${
             lot.suburb
               ?.toLowerCase()
@@ -259,26 +253,26 @@ export const LotSidebar = ({
           {showHouseDesigns && (
             <div className="mt-2 flex flex-nowrap items-center gap-2 text-xs font-normal overflow-x-auto">
               {lot.size && (
-                <span className="px-2 py-1 bg-gray-100 rounded-md flex items-center text-gray-700 shrink-0">
+                <span className="px-2 py-1 bg-brand-muted rounded-md flex items-center text-brand shrink-0">
                   <Diamond className="h-3 w-3 mr-1" />
                   {lot.size}m²
                 </span>
               )}
               {lot.type && (
-                <span className="px-2 py-1 bg-gray-100 rounded-md text-gray-700 shrink-0">
+                <span className="px-2 py-1 bg-brand-muted rounded-md text-brand shrink-0">
                   {lot.type}
                 </span>
               )}
               {lot.zoning && (
                 <span
-                  className="px-2 py-1 rounded-full text-black font-medium shrink-0"
+                  className="px-2 py-1 rounded-full text-brand font-medium shrink-0"
                   style={{ backgroundColor: hexToRgba(zoningColor, 0.3) }}
                 >
                   {zoningText}
                 </span>
               )}
               {lot.overlays === "Flood" && (
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-md shrink-0">
+                <span className="px-2 py-1 bg-brand-muted text-brand rounded-md shrink-0">
                   Flood
                 </span>
               )}
@@ -348,13 +342,13 @@ export const LotSidebar = ({
           {/* Action Button - Conditional for "Show Me What I Can Build Here" */}
           {/* Show only if not in filter and not showing house designs */}
           {!showFilter && !showHouseDesigns && (
-            <div className="px-6 pt-0 pb-6 md:sticky md:bottom-0">
-              <div className="bg-white rounded-xl shadow border border-gray-100 p-6">
-                <div className="text-left mb-4">
-                  <p className="text-gray-600 text-base font-medium">
-                    Get inspired with new house designs
-                  </p>
-                </div>
+        <div className="px-6 pt-0 pb-6 md:sticky md:bottom-0">
+          <div className="bg-white rounded-xl shadow border border-brand p-6">
+            <div className="text-left mb-4">
+              <p className="text-brand-muted text-base font-medium">
+                Get inspired with new house designs
+              </p>
+            </div>
 
                 <Button
                   label={lotSidebar.showMeWhatICanBuild}

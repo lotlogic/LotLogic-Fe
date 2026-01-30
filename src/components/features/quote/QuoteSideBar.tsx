@@ -6,13 +6,7 @@ import MultiSelect from "@/components/ui/MultiSelect";
 import PrivacyPolicyContent from "@/components/ui/PrivacyPolicyContent";
 import Sidebar from "@/components/ui/Sidebar";
 import showToast from "@/components/ui/Toast";
-import {
-  colors,
-  formatContent,
-  getColorClass,
-  getContent,
-  quote,
-} from "@/constants/content";
+import { formatContent, quote } from "@/constants/content";
 import { convertBuildersToOptions, useBuilders } from "@/hooks/useBuilders";
 import {
   trackEnquirySubmitted,
@@ -215,10 +209,7 @@ export const GetYourQuoteSidebar = ({
         // Show lot info in header for thank you screens
         <>
           <h2
-            className={`text-2xl font-medium ${getColorClass(
-              "text.primary",
-              "text"
-            )}`}
+            className="text-2xl font-medium text-brand"
           >
             {lotSecured ? "" : ""}
           </h2>
@@ -240,14 +231,14 @@ export const GetYourQuoteSidebar = ({
                   <div className="font-bold text-lg">
                     {selectedHouseDesign.title}
                   </div>
-                  <div className="text-gray-600 text-sm">
+                  <div className="text-brand-muted text-sm">
                     Lot {lotDetails.id}, {lotDetails.suburb} ({lotDetails.size}
                     m²)
                   </div>
-                  <div className="text-gray-600 text-sm">
+                  <div className="text-brand-muted text-sm">
                     Floor Plan: {selectedHouseDesign.title}
                   </div>
-                  <div className="text-gray-600 text-sm">
+                  <div className="text-brand-muted text-sm">
                     Faced: {facedOption}
                   </div>
                 </div>
@@ -258,14 +249,11 @@ export const GetYourQuoteSidebar = ({
       ) : (
         <>
           <h2
-            className={`text-2xl font-medium ${getColorClass(
-              "text.primary",
-              "text"
-            )}`}
+            className="text-2xl font-medium text-brand"
           >
             {quote.title}
           </h2>
-          <div className="text-gray-600 mt-1 text-base font-normal">
+          <div className="text-brand-muted mt-1 text-base font-normal">
             {quote.subtitle}
           </div>
         </>
@@ -286,9 +274,7 @@ export const GetYourQuoteSidebar = ({
           <div className="p-6 space-y-6">
             <div className="text-center space-y-4">
               <div
-                className={`w-16 h-16 ${getColorClass(
-                  "primary"
-                )} rounded-full flex items-center justify-center mx-auto`}
+                className="w-16 h-16 bg-brand-primary rounded-full flex items-center justify-center mx-auto"
               >
                 <svg
                   className="w-8 h-8 text-white"
@@ -304,19 +290,17 @@ export const GetYourQuoteSidebar = ({
                   />
                 </svg>
               </div>
-              <h3 className="text-2xl font-semibold text-gray-900">
+              <h3 className="text-2xl font-semibold text-brand">
                 {quote.thankYou}
               </h3>
-              <p className="text-gray-600">{quote.lotSecured}</p>
+              <p className="text-brand-muted">{quote.lotSecured}</p>
             </div>
           </div>
         ) : showThankYou ? (
           <div className="p-6 space-y-6">
             <div className="text-center space-y-3">
               <div
-                className={`w-9 h-9 ${getColorClass(
-                  "primary"
-                )} rounded-full flex items-center justify-center mx-auto`}
+                className="w-9 h-9 bg-brand-primary rounded-full flex items-center justify-center mx-auto"
               >
                 <svg
                   className="w-7 h-7 text-white"
@@ -332,34 +316,27 @@ export const GetYourQuoteSidebar = ({
                   />
                 </svg>
               </div>
-              <h4 className="text-2xl font-bold text-gray-900">
+              <h4 className="text-2xl font-bold text-brand">
                 {quote.thankYou}
               </h4>
-              <p className="text-gray-600">{quote.enquirySubmitted}</p>
+              <p className="text-brand-muted">{quote.enquirySubmitted}</p>
             </div>
 
             {/* Reserve Your Lot Section */}
             <div
-              className={` border border-gray-200 ${getColorClass(
-                "background.accent"
-              )}  rounded-lg p-6 space-y-4 text-center`}
+              className="border border-brand bg-brand-accent rounded-lg p-6 space-y-4 text-center"
             >
               <div className="flex items-center justify-center gap-2">
-                <h1 className="text-lg font-semibold text-gray-900">
+                <h1 className="text-lg font-semibold text-brand">
                   {quote.reserveYourLot}
                 </h1>
               </div>
-              <p className="text-gray-600 text-sm">
+              <p className="text-brand-muted text-sm">
                 {formatContent(quote.secureLotDescription, {
                   lotId: lotDetails.id,
                 })}
               </p>
-              <div
-                className={`text-3xl font-bold ${getColorClass(
-                  "primary",
-                  "text"
-                )}`}
-              >
+              <div className="text-3xl font-bold text-brand-primary">
                 {quote.deposit}
               </div>
               <div className="flex flex-col gap-3 pt-2">
@@ -389,17 +366,13 @@ export const GetYourQuoteSidebar = ({
                       // Silently fail to avoid blocking UI; optionally we could surface a toast
                     }
                   }}
-                  className={`${getColorClass(
-                    "primary"
-                  )} text-white py-3 px-6 rounded-lg font-medium hover:${getColorClass(
-                    "accent"
-                  )} transition-colors`}
+                  className="bg-brand-primary text-white py-3 px-6 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
                 />
                 <Button
                   label={quote.mayBeLater}
                   variant="outline"
                   onClick={onClose}
-                  className="border border-gray-300 bg-white text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                  className="border border-brand bg-brand text-brand py-3 px-6 rounded-lg font-medium hover:bg-brand-muted transition-colors"
                 />
               </div>
             </div>
@@ -409,19 +382,11 @@ export const GetYourQuoteSidebar = ({
           <form onSubmit={handleSubmit}>
             <div className="space-y-4 p-6">
               {areaSqMeter && (
-                <div
-                  className={"rounded-2xl p-5"}
-                  style={{
-                    backgroundColor: getContent("colors.background.accent"),
-                  }}
-                >
-                  <div className="text-gray-900 font-semibold text-lg">
+                <div className="rounded-2xl p-5 bg-brand-accent">
+                  <div className="text-brand font-semibold text-lg">
                     Estimated Building Cost
                   </div>
-                  <div
-                    className={`mt-1 text-2xl sm:text-3xl font-extrabold`}
-                    style={{ color: colors.primary }}
-                  >
+                  <div className="mt-1 text-2xl sm:text-3xl font-extrabold text-brand-primary">
                     {`${formatCurrency(
                       areaSqMeter * COST_MIN_PER_SQFT
                     )} – ${formatCurrency(areaSqMeter * COST_MAX_PER_SQFT)}`}
@@ -431,7 +396,7 @@ export const GetYourQuoteSidebar = ({
               <div>
                 <label
                   htmlFor="yourName"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-brand mb-1"
                 >
                   {quote.yourName}
                 </label>
@@ -442,11 +407,8 @@ export const GetYourQuoteSidebar = ({
                   onChange={(e) =>
                     handleInputChange("yourName", e.target.value)
                   }
-                  className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:${getColorClass(
-                    "primary",
-                    "ring"
-                  )} focus:${getColorClass("primary", "border")} ${
-                    errors.yourName ? "border-red-500" : "border-gray-300"
+                  className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
+                    errors.yourName ? "border-red-500" : "border-brand"
                   }`}
                   placeholder="Your name"
                 />
@@ -457,7 +419,7 @@ export const GetYourQuoteSidebar = ({
               <div>
                 <label
                   htmlFor="emailAddress"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-brand mb-1"
                 >
                   {quote.emailAddress}
                 </label>
@@ -468,11 +430,8 @@ export const GetYourQuoteSidebar = ({
                   onChange={(e) =>
                     handleInputChange("emailAddress", e.target.value)
                   }
-                  className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:${getColorClass(
-                    "primary",
-                    "ring"
-                  )} focus:${getColorClass("primary", "border")} ${
-                    errors.emailAddress ? "border-red-500" : "border-gray-300"
+                  className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
+                    errors.emailAddress ? "border-red-500" : "border-brand"
                   }`}
                   placeholder="your.email@company.com"
                 />
@@ -485,7 +444,7 @@ export const GetYourQuoteSidebar = ({
               <div>
                 <label
                   htmlFor="phoneNumber"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-brand mb-1"
                 >
                   {quote.phoneNumber}
                 </label>
@@ -496,11 +455,8 @@ export const GetYourQuoteSidebar = ({
                   onChange={(e) =>
                     handleInputChange("phoneNumber", e.target.value)
                   }
-                  className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:${getColorClass(
-                    "primary",
-                    "ring"
-                  )} focus:${getColorClass("primary", "border")} ${
-                    errors.phoneNumber ? "border-red-500" : "border-gray-300"
+                  className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
+                    errors.phoneNumber ? "border-red-500" : "border-brand"
                   }`}
                   placeholder="0412 *** ***"
                 />
@@ -512,7 +468,7 @@ export const GetYourQuoteSidebar = ({
               </div>
               <div>
                 {buildersLoading ? (
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-brand-muted">
                     Loading builders...
                   </div>
                 ) : buildersError ? (
@@ -537,7 +493,7 @@ export const GetYourQuoteSidebar = ({
               <div>
                 <label
                   htmlFor="additionalComments"
-                  className="block text-sm font-medium text-gray-700 mb-1"
+                  className="block text-sm font-medium text-brand mb-1"
                 >
                   {quote.additionalComments}
                 </label>
@@ -548,13 +504,8 @@ export const GetYourQuoteSidebar = ({
                   onChange={(e) =>
                     handleInputChange("additionalComments", e.target.value)
                   }
-                  className={`block w-full p-3 border rounded-lg shadow-sm focus:${getColorClass(
-                    "primary",
-                    "ring"
-                  )} focus:${getColorClass("primary", "border")} ${
-                    errors.additionalComments
-                      ? "border-red-500"
-                      : "border-gray-300"
+                  className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
+                    errors.additionalComments ? "border-red-500" : "border-brand"
                   }`}
                   placeholder="Any specific requirements or questions?"
                 ></textarea>
@@ -567,14 +518,12 @@ export const GetYourQuoteSidebar = ({
 
               {selectedHouseDesign && (
                 <div className="mt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold text-brand mb-2">
                     Your Selection
                   </h3>
-                  <div className="border-t border-gray-200 pt-2">
+                  <div className="border-t border-brand pt-2">
                     <div
-                      className={`rounded-2xl border border-gray-200 ${getColorClass(
-                        "background.accent"
-                      )} p-4 flex gap-4 items-center`}
+                      className="rounded-2xl border border-brand bg-brand-accent p-4 flex gap-4 items-center"
                     >
                       <img
                         src={
@@ -587,14 +536,14 @@ export const GetYourQuoteSidebar = ({
                         className="rounded-lg object-cover"
                       />
                       <div className="flex-1">
-                        <div className="text-gray-900 text-sm">
+                        <div className="text-brand text-sm">
                           Lot {lotDetails.id}, {lotDetails.suburb}
                         </div>
-                        <div className="text-gray-900 text-sm">
+                        <div className="text-brand text-sm">
                           Floor Plan: {selectedHouseDesign.title} (
                           {selectedHouseDesign.area} m²)
                         </div>
-                        <div className="text-gray-900 text-sm">
+                        <div className="text-brand text-sm">
                           Faced: {facedOption}
                         </div>
                       </div>
@@ -610,17 +559,11 @@ export const GetYourQuoteSidebar = ({
                   checked={agreeToTerms}
                   onCheckedChange={() => setAgreeToTerms(!agreeToTerms)}
                 />
-                <label htmlFor="agreeToTerms" className="text-sm text-gray-700">
+                <label htmlFor="agreeToTerms" className="text-sm text-brand">
                   I agree to the{" "}
                   <a
                     href="#"
-                    className={`${getColorClass(
-                      "primary",
-                      "text"
-                    )} underline hover:${getColorClass(
-                      "accent",
-                      "text"
-                    )} transition-colors`}
+                    className="text-brand-primary underline hover:text-[var(--color-primary-hover)] transition-colors"
                     onClick={(e) => {
                       e.preventDefault();
                       setShowTerms(true);
@@ -632,13 +575,11 @@ export const GetYourQuoteSidebar = ({
               </div>
             </div>
             {/* Submit Button */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6">
+            <div className="sticky bottom-0 bg-brand border-t border-brand p-6">
               <Button
                 label={isSubmitting ? quote.submitting : "Enquire Now"}
                 type="submit"
-                className={`w-full text-lg py-3 rounded-lg ${getColorClass(
-                  "primary"
-                )} text-white disabled:opacity-50 disabled:cursor-not-allowed`}
+                className="w-full text-lg py-3 rounded-lg bg-brand-primary text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isSubmitting || !agreeToTerms}
               />
             </div>

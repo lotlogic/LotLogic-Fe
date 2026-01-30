@@ -1,4 +1,3 @@
-import { colors, getColorClass } from "@/constants/content";
 import { useMobile } from "@/hooks/useMobile";
 import { getImageUrl } from "@/lib/api/lotApi";
 import { getOverlaysColor } from "@/lib/utils/overlays";
@@ -106,7 +105,7 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
     return (
       <div
         ref={drawerRef}
-        className="fixed bottom-16 left-0 right-0 bg-white shadow-2xl z-50 transition-all duration-300 ease-in-out"
+        className="fixed bottom-16 left-0 right-0 bg-brand shadow-2xl z-50 transition-all duration-300 ease-in-out"
         style={{
           height: drawerHeight === "100vh" ? "calc(100vh - 4rem)" : "70vh",
           borderTopLeftRadius: "16px",
@@ -123,20 +122,20 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
             setDrawerHeight(drawerHeight === "50vh" ? "100vh" : "50vh")
           }
         >
-          <div className="w-12 h-1 bg-gray-300 rounded-full" />
+          <div className="w-12 h-1 bg-brand-muted rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="flex items-start border-b border-gray-200 bg-white rounded-t-2xl p-4 pb-3">
+        <div className="flex items-start border-b border-brand bg-brand rounded-t-2xl p-4 pb-3">
           <div className="flex-grow">
-            <h2 className="text-xl font-bold text-gray-900">Your Shortlist</h2>
-            <p className="text-sm text-gray-600 mt-1">
+            <h2 className="text-xl font-bold text-brand">Your Shortlist</h2>
+            <p className="text-sm text-brand-muted mt-1">
               List of properties that you&apos;ve shortlisted.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+            className="p-2 rounded-full hover:bg-brand-muted text-brand-muted hover:text-brand"
             aria-label="Close"
           >
             <X className="h-6 w-6" />
@@ -147,15 +146,15 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
         <div className="flex-grow overflow-y-auto min-h-0 p-4">
           {!isClient ? (
             <div className="flex items-center justify-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-primary"></div>
             </div>
           ) : storeSavedProperties.length === 0 ? (
             <div className="text-center py-8">
-              <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Bookmark className="h-12 w-12 text-brand-muted mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-brand mb-2">
                 No saved properties yet
               </h3>
-              <p className="text-gray-500">
+              <p className="text-brand-muted">
                 Start exploring lots and save your favorite house designs!
               </p>
             </div>
@@ -164,27 +163,24 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
               {storeSavedProperties.map((property, index) => (
                 <div
                   key={`${property.lotId}-${property.houseDesign.id}-${index}`}
-                  className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+                  className="bg-brand border border-brand rounded-lg p-4 shadow-sm"
                 >
                   {/* Lot Info Header */}
                   <div className="flex items-center justify-between">
-                    <div className="text-xs text-black">
+                    <div className="text-xs text-brand">
                       Lot ID: {property.lotId}, {property.suburb},{" "}
                       {property.address}
                     </div>
                     <Bookmark
-                      className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${getColorClass(
-                        "primary",
-                        "text"
-                      )} ${
+                      className={`h-6 w-6 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
                         property.houseDesign.isFavorite
                           ? "fill-current"
                           : "fill-white"
                       }`}
                       style={{
                         color: property.houseDesign.isFavorite
-                          ? colors.primary
-                          : undefined,
+                          ? "var(--color-primary)"
+                          : "var(--color-text-secondary)",
                       }}
                       onClick={() => {
                         removeFromSaved(
@@ -197,13 +193,13 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
 
                   {/* Lot Details */}
                   <div className="flex items-center gap-2 mb-3">
-                    <div className="flex items-center gap-1 text-xs text-black">
+                    <div className="flex items-center gap-1 text-xs text-brand">
                       {/* <ExternalLink className="h-4 w-4" /> */}
                       {property.size}m²
                     </div>
                     {property.zoning && (
                       <span
-                        className="text-xs px-4 py-2 rounded-full text-black items-center justify-between"
+                        className="text-xs px-4 py-2 rounded-full text-brand items-center justify-between"
                         style={{
                           backgroundColor: getZoningColor(property.zoning),
                         }}
@@ -213,7 +209,7 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
                     )}
                     {property.overlays && (
                       <span
-                        className="px-2 py-1 text-black text-xs rounded-full items-center justify-between"
+                        className="px-2 py-1 text-brand text-xs rounded-full items-center justify-between"
                         style={{
                           backgroundColor: getOverlaysColor(property.overlays),
                         }}
@@ -235,11 +231,11 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
                       className="w-16 h-16 rounded-lg object-cover"
                     />
                     <div className="flex-1">
-                      <h4 className="font-semibold text-black text-sm">
+                      <h4 className="font-semibold text-brand text-sm">
                         {property.houseDesign.title}
                       </h4>
-                      <p className="text-xs text-black mb-2">Single Storey</p>
-                      <div className="flex items-center gap-3 text-xs text-black">
+                      <p className="text-xs text-brand mb-2">Single Storey</p>
+                      <div className="flex items-center gap-3 text-xs text-brand">
                         <span className="flex items-center gap-1">
                           <BedDouble className="h-3 w-3" />
                           {property.houseDesign.bedrooms}
@@ -268,27 +264,27 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
   return (
     <div
       ref={sidebarRef}
-      className={`absolute bg-white shadow-lg z-30 transition-transform duration-300 ease-in-out
+      className={`absolute bg-brand shadow-lg z-30 transition-transform duration-300 ease-in-out
                 bottom-0 left-0 right-0 h-[70vh] w-full
                         md:bottom-auto md:left-auto md:top-0 md:right-0 md:h-full md:w-[350px]`}
     >
       {/* Draggable Handle - Only show on mobile */}
       <div className="flex justify-center pt-3 pb-2 md:hidden">
-        <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
+        <div className="w-12 h-1 bg-brand-muted rounded-full"></div>
       </div>
 
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-brand">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Your Shortlist</h2>
-            <p className="text-sm text-gray-600 mt-1">
+            <h2 className="text-xl font-bold text-brand">Your Shortlist</h2>
+            <p className="text-sm text-brand-muted mt-1">
               List of properties that you&apos;ve shortlisted.
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-900 hover:text-black-900 pb-6 rounded hover:bg-gray-100 transition-colors"
+            className="text-brand hover:text-brand pb-6 rounded hover:bg-brand-muted transition-colors"
           >
             <X className="h-8 w-7" />
           </button>
@@ -301,19 +297,19 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
           // Show loading state during SSR to prevent hydration mismatch
           <div className="text-center py-8">
             <div className="animate-pulse">
-              <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Bookmark className="h-12 w-12 text-brand-muted mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-brand mb-2">
                 Loading...
               </h3>
             </div>
           </div>
         ) : storeSavedProperties.length === 0 ? (
           <div className="text-center py-8">
-            <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <Bookmark className="h-12 w-12 text-brand-muted mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-brand mb-2">
               No saved properties
             </h3>
-            <p className="text-gray-600">
+            <p className="text-brand-muted">
               Start exploring properties and save them to your shortlist.
             </p>
           </div>
@@ -322,27 +318,24 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
             {storeSavedProperties.map((property, index) => (
               <div
                 key={`${property.lotId}-${property.houseDesign.id}-${index}`}
-                className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+                className="bg-brand border border-brand rounded-lg p-4 shadow-sm"
               >
                 {/* Lot Info Header */}
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-black">
+                  <div className="text-xs text-brand">
                     Lot ID: {property.lotId}, {property.suburb},{" "}
                     {property.address}
                   </div>
                   <Bookmark
-                    className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${getColorClass(
-                      "primary",
-                      "text"
-                    )} ${
+                    className={`h-6 w-6 cursor-pointer transition-colors duration-200 flex-shrink-0 ${
                       property.houseDesign.isFavorite
                         ? "fill-current"
                         : "fill-white"
                     }`}
                     style={{
                       color: property.houseDesign.isFavorite
-                        ? colors.primary
-                        : undefined,
+                        ? "var(--color-primary)"
+                        : "var(--color-text-secondary)",
                     }}
                     onClick={() => {
                       removeFromSaved(property.lotId, property.houseDesign.id);
@@ -352,13 +345,13 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
 
                 {/* Lot Details */}
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="flex items-center gap-1 text-xs text-black">
+                  <div className="flex items-center gap-1 text-xs text-brand">
                     {/* <ExternalLink className="h-4 w-4" /> */}
                     {property.size}m²
                   </div>
                   {property.zoning && (
                     <span
-                      className="text-xs px-4 py-2 rounded-full text-black items-center justify-between"
+                      className="text-xs px-4 py-2 rounded-full text-brand items-center justify-between"
                       style={{
                         backgroundColor: getZoningColor(property.zoning),
                       }}
@@ -368,7 +361,7 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
                   )}
                   {property.overlays && (
                     <span
-                      className="px-2 py-1 text-black text-xs rounded-full items-center justify-between"
+                      className="px-2 py-1 text-brand text-xs rounded-full items-center justify-between"
                       style={{
                         backgroundColor: getOverlaysColor(property.overlays),
                       }}
@@ -390,11 +383,11 @@ Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
                     className="w-16 h-16 rounded-lg object-cover"
                   />
                   <div className="flex-1">
-                    <h4 className="font-semibold text-black text-sm">
+                    <h4 className="font-semibold text-brand text-sm">
                       {property.houseDesign.title}
                     </h4>
-                    <p className="text-xs text-black mb-2">Single Storey</p>
-                    <div className="flex items-center gap-3 text-xs text-black">
+                    <p className="text-xs text-brand mb-2">Single Storey</p>
+                    <div className="flex items-center gap-3 text-xs text-brand">
                       <span className="flex items-center gap-1">
                         <BedDouble className="h-3 w-3" />
                         {property.houseDesign.bedrooms}

@@ -71,11 +71,11 @@ export const showToast = ({
   toastFn(
     <div className="flex items-center gap-3">
       {getToastIcon(type) || (
-        <div className="w-6 h-6 bg-gray-500 rounded-full flex items-center justify-center text-white text-xs">
+        <div className="w-6 h-6 bg-brand-primary rounded-full flex items-center justify-center text-white text-xs">
           !
         </div>
       )}
-      <span className="text-gray-800 font-medium">{message}</span>
+      <span className="text-brand font-medium">{message}</span>
     </div>,
     {
       position: options.position,
@@ -85,7 +85,7 @@ export const showToast = ({
       pauseOnHover: true,
       draggable: true,
       style: {
-        backgroundColor: "white",
+        backgroundColor: "var(--color-bg-primary)",
         border: `2px solid ${getBorderColor(type)}`,
         borderRadius: "12px",
         boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",

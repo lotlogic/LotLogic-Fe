@@ -220,9 +220,16 @@ export const submitDemoRequest = async (
   }
 };
 
-export const getCurrentBrand = async () => {
+export type BrandQueryParams = {
+  guid?: string;
+  estateId?: string;
+};
+
+export const getCurrentBrand = async (params?: BrandQueryParams) => {
   try {
-    const response = await axios.get(`${getApiBaseUrl()}/api/brand`);
+    const response = await axios.get(`${getApiBaseUrl()}/api/brand`, {
+      params,
+    });
     return response.data;
   } catch (error) {
     return {};

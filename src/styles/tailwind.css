@@ -65,6 +65,19 @@
   --color-coral: #ff6b6b;
   --color-ink: #1a1f2e;
   --color-ink-soft: #2d3748;
+  --color-primary: #2d8b85;
+  --color-primary-hover: #1a3d42;
+  --color-secondary: #eaefef;
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-accent: #eaf3f2;
+  --color-text-primary: #000000;
+  --color-text-secondary: #6b7280;
+  --color-border: #e5e7eb;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #6b7280;
+  --background: var(--color-bg-primary);
+  --foreground: var(--color-text-primary);
   /* radius */
   /* --radius: 0.625rem; */
   /* colors */
@@ -143,8 +156,8 @@
 @layer base {
   body {
     font-family: var(--font-body);
-    color: var(--color-ink);
-    background-color: #fafaf9;
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-primary);
   }
 
   h1,
@@ -186,6 +199,50 @@
 
   .font-body {
     font-family: var(--font-body);
+  }
+
+  .text-brand {
+    color: var(--color-text-primary);
+  }
+
+  .text-brand-muted {
+    color: var(--color-text-secondary);
+  }
+
+  .text-brand-primary {
+    color: var(--color-primary);
+  }
+
+  .bg-brand {
+    background-color: var(--color-bg-primary);
+  }
+
+  .bg-brand-muted {
+    background-color: var(--color-bg-secondary);
+  }
+
+  .bg-brand-accent {
+    background-color: var(--color-bg-accent);
+  }
+
+  .bg-brand-primary {
+    background-color: var(--color-primary);
+  }
+
+  .bg-brand-secondary {
+    background-color: var(--color-secondary);
+  }
+
+  .border-brand {
+    border-color: var(--color-border);
+  }
+
+  .border-brand-primary {
+    border-color: var(--color-primary);
+  }
+
+  .ring-brand-primary {
+    --tw-ring-color: var(--color-primary);
   }
 
   .text-coral {
