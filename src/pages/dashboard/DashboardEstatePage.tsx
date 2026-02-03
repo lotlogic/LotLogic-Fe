@@ -1,29 +1,19 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { AdminNav } from "@/components/admin/AdminNav";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { AdminUploadField } from "@/components/admin/AdminUploadField";
 import {
   EstateLotsCrud,
   type EstateLotRecord,
 } from "@/components/admin/estates/EstateLotsCrud";
-import { adminApi } from "@/lib/api/adminApi";
-import { adminAuth } from "@/lib/auth/adminAuth";
+import type { EstateRecord } from "@/components/admin/estates/types";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-
-type AdminEstate = {
-  id: string;
-  name?: string | null;
-  address?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  logoUrl?: string | null;
-  themeColor?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-  [key: string]: unknown;
-};
+import { adminApi, type CreateLotInput } from "@/lib/api/adminApi";
+import { getAdminApiErrorMessage } from "@/lib/api/adminApiErrors";
+import { useAdminSession } from "@/lib/admin/adminSession";
+import { resolveDashboardAccess } from "@/lib/dashboard/dashboardAccess";
 
 type EstateForm = {
   name: string;
@@ -43,18 +33,18 @@ const emptyForm: EstateForm = {
   themeColor: "",
 };
 
-const getEstateName = (estate: AdminEstate | null): string => {
+const normalizeOptional = (value: string) => {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+};
+
+const getEstateName = (estate: EstateRecord | null): string => {
   if (!estate) {
     return "";
   }
   return typeof estate.name === "string" && estate.name.trim()
     ? estate.name
     : estate.id;
-};
-
-const normalizeOptional = (value: string) => {
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
 };
 
 const formatMetaValue = (value: unknown) => {
@@ -67,9 +57,21 @@ const formatMetaValue = (value: unknown) => {
   return JSON.stringify(value);
 };
 
-const AdminEstatePage = () => {
+const DashboardEstatePage = () => {
   const { estateId } = useParams();
-  const [estate, setEstate] = useState<AdminEstate | null>(null);
+  const navigate = useNavigate();
+  const { whoAmI, loading: sessionLoading, reloadWhoAmI } = useAdminSession();
+
+  const { access, hasAssignments } = useMemo(
+    () => resolveDashboardAccess(whoAmI),
+    [whoAmI]
+  );
+  const isAssigned = Boolean(
+    estateId && access.estateIds.includes(estateId)
+  );
+  const hasAccess = hasAssignments && isAssigned;
+
+  const [estate, setEstate] = useState<EstateRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -80,8 +82,9 @@ const AdminEstatePage = () => {
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(
     null
   );
+  const [deleteAction, setDeleteAction] = useState(false);
 
-  const applyEstate = useCallback((data: AdminEstate) => {
+  const applyEstate = useCallback((data: EstateRecord) => {
     setEstate(data);
     const nextForm: EstateForm = {
       name: data.name ?? "",
@@ -104,32 +107,25 @@ const AdminEstatePage = () => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const data = await adminApi.getEstateById<AdminEstate>(estateId);
+      const data = await adminApi.getEstateById<EstateRecord>(estateId);
       applyEstate(data);
     } catch (error) {
-      try {
-        const estates = await adminApi.getEstates<AdminEstate>();
-        const match = estates.find((item) => item.id === estateId) ?? null;
-        if (!match) {
-          throw new Error("Estate not found.");
-        }
-        applyEstate(match);
-      } catch (fallbackError) {
-        setEstate(null);
-        setErrorMessage(
-          fallbackError instanceof Error
-            ? fallbackError.message
-            : "Failed to load estate."
-        );
-      }
+      setEstate(null);
+      setErrorMessage(
+        getAdminApiErrorMessage(error, "Failed to load estate.")
+      );
     } finally {
       setLoading(false);
     }
   }, [applyEstate, estateId]);
 
   useEffect(() => {
+    if (!hasAccess) {
+      setLoading(false);
+      return;
+    }
     loadEstate();
-  }, [loadEstate]);
+  }, [hasAccess, loadEstate]);
 
   const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -191,62 +187,180 @@ const AdminEstatePage = () => {
       setSaveSuccessMessage("Estate updated.");
     } catch (error) {
       setSaveErrorMessage(
-        error instanceof Error ? error.message : "Failed to update estate."
+        getAdminApiErrorMessage(error, "Failed to update estate.")
       );
     } finally {
       setSaving(false);
     }
   };
 
-  const handleLogout = async () => {
-    await adminAuth.logout();
+  const handleDelete = async () => {
+    if (!estateId) {
+      return;
+    }
+    const confirmed = window.confirm(
+      "Delete this estate? This cannot be undone."
+    );
+    if (!confirmed) {
+      return;
+    }
+    setDeleteAction(true);
+    setSaveErrorMessage(null);
+    try {
+      await adminApi.deleteEstate(estateId);
+      await reloadWhoAmI();
+      navigate("/dashboard");
+    } catch (error) {
+      setSaveErrorMessage(
+        getAdminApiErrorMessage(error, "Failed to delete estate.")
+      );
+    } finally {
+      setDeleteAction(false);
+    }
   };
+
+  const loadLots = useCallback(async (id: string) => {
+    try {
+      return await adminApi.getLots<EstateLotRecord>({ estateId: id });
+    } catch (error) {
+      throw new Error(getAdminApiErrorMessage(error, "Failed to load lots."));
+    }
+  }, []);
+
+  const createLot = useCallback(async (payload: CreateLotInput) => {
+    try {
+      return await adminApi.createLot(payload);
+    } catch (error) {
+      throw new Error(getAdminApiErrorMessage(error, "Failed to create lot."));
+    }
+  }, []);
+
+  const updateLot = useCallback(
+    async (id: string, payload: Record<string, unknown>) => {
+      try {
+        return await adminApi.updateLot(id, payload);
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to update lot.")
+        );
+      }
+    },
+    []
+  );
+
+  const deleteLot = useCallback(async (id: string) => {
+    try {
+      return await adminApi.deleteLot(id);
+    } catch (error) {
+      throw new Error(getAdminApiErrorMessage(error, "Failed to delete lot."));
+    }
+  }, []);
+
+  const importLotsDxf = useCallback(
+    async (id: string, payload: FormData) => {
+      try {
+        return await adminApi.importEstateLotsDxf(id, payload);
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to import lots.")
+        );
+      }
+    },
+    []
+  );
 
   const metaEntries = useMemo(() => {
     if (!estate) {
       return [];
     }
-    return [
+    const createdAt =
+      typeof estate.createdAt === "string" ? estate.createdAt : null;
+    const updatedAt =
+      typeof estate.updatedAt === "string" ? estate.updatedAt : null;
+    const entries = [
       { label: "Estate ID", value: estate.id },
-      ...(estate.createdAt ? [{ label: "Created", value: estate.createdAt }] : []),
-      ...(estate.updatedAt ? [{ label: "Updated", value: estate.updatedAt }] : []),
+      ...(createdAt ? [{ label: "Created", value: createdAt }] : []),
+      ...(updatedAt ? [{ label: "Updated", value: updatedAt }] : []),
     ];
+    return entries;
   }, [estate]);
 
+  const actions = (
+    <Button
+      onClick={loadEstate}
+      disabled={loading || sessionLoading || !hasAccess}
+      loading={loading && !sessionLoading}
+      label="Refresh"
+    />
+  );
+
+  if (sessionLoading) {
+    return (
+      <DashboardLayout
+        title="Estate"
+        subtitle="Loading access..."
+        actions={actions}
+      >
+        <p className="text-muted-foreground">Checking access...</p>
+      </DashboardLayout>
+    );
+  }
+
+  if (!estateId) {
+    return (
+      <DashboardLayout
+        title="Estate"
+        subtitle="Missing estate id."
+        actions={actions}
+      >
+        <p className="text-muted-foreground">
+          Return to <Link to="/dashboard">dashboard</Link>.
+        </p>
+      </DashboardLayout>
+    );
+  }
+
+  if (!hasAssignments) {
+    return (
+      <DashboardLayout
+        title="Estate"
+        subtitle="Assignments are not available yet."
+        actions={actions}
+      >
+        <p className="text-muted-foreground">
+          Ask an admin to enable estate assignments for your account.
+        </p>
+      </DashboardLayout>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <DashboardLayout
+        title="Estate"
+        subtitle="You don't have access to this estate."
+        actions={actions}
+      >
+        <p className="text-muted-foreground">
+          Return to <Link to="/dashboard">dashboard</Link>.
+        </p>
+      </DashboardLayout>
+    );
+  }
+
   return (
-    <div className="container py-8 max-w-7xl mx-auto">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-slate-500">
-            <Link to="/admin/estates" className="hover:underline">
-              Estates
-            </Link>{" "}
-            / {estateId ?? "unknown"}
-          </p>
-          <h1 className="text-3xl font-bold mb-2">
-            {loading ? "Loading estate..." : getEstateName(estate)}
-          </h1>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={loadEstate}
-            disabled={loading}
-            loading={loading}
-            label="Refresh"
-          />
-          <Button onClick={handleLogout} variant="outline" label="Sign out" />
-        </div>
-      </div>
-
-      <AdminNav />
-
+    <DashboardLayout
+      title={loading ? "Loading estate..." : getEstateName(estate)}
+      subtitle={`Estate ID: ${estateId}`}
+      actions={actions}
+    >
       {errorMessage && (
-        <div className="mt-4 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
+        <div className="mb-4 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
           {errorMessage}
         </div>
       )}
 
-      <section className="mt-6 grid gap-6">
+      <section className="grid gap-6">
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold mb-1">Estate properties</h2>
           <p className="text-sm text-muted-foreground mb-4">
@@ -277,7 +391,10 @@ const AdminEstatePage = () => {
                 <Input
                   value={form.address}
                   onChange={(event) =>
-                    setForm((prev) => ({ ...prev, address: event.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      address: event.target.value,
+                    }))
                   }
                   placeholder="123 Main St"
                   className="w-full"
@@ -359,6 +476,14 @@ const AdminEstatePage = () => {
                   loading={saving}
                   label="Save changes"
                 />
+                <Button
+                  type="button"
+                  variant="outline"
+                  label="Delete estate"
+                  onClick={handleDelete}
+                  disabled={deleteAction}
+                  loading={deleteAction}
+                />
                 {saveErrorMessage && (
                   <span className="text-sm text-destructive">
                     {saveErrorMessage}
@@ -376,17 +501,15 @@ const AdminEstatePage = () => {
 
         <EstateLotsCrud
           estateId={estateId}
-          loadLots={(id) => adminApi.getLots<EstateLotRecord>({ estateId: id })}
-          createLot={(payload) => adminApi.createLot(payload)}
-          updateLot={(id, payload) => adminApi.updateLot(id, payload)}
-          deleteLot={(id) => adminApi.deleteLot(id)}
-          importLotsDxf={(id, payload) =>
-            adminApi.importEstateLotsDxf(id, payload)
-          }
+          loadLots={loadLots}
+          createLot={createLot}
+          updateLot={updateLot}
+          deleteLot={deleteLot}
+          importLotsDxf={importLotsDxf}
         />
       </section>
-    </div>
+    </DashboardLayout>
   );
 };
 
-export default AdminEstatePage;
+export default DashboardEstatePage;

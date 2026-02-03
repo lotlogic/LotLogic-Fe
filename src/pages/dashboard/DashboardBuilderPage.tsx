@@ -1,7 +1,6 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { AdminNav } from "@/components/admin/AdminNav";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   FloorPlanCrud,
   type FloorPlanPayload,
@@ -12,36 +11,23 @@ import {
   type FacadePayload,
   type FacadeRecord,
 } from "@/components/admin/facades/FacadeCrud";
-import { adminApi } from "@/lib/api/adminApi";
-import { adminAuth } from "@/lib/auth/adminAuth";
+import type {
+  AdminUser,
+  BuilderRecord,
+  BuilderUser,
+} from "@/components/admin/builders/types";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { adminApi } from "@/lib/api/adminApi";
+import { getAdminApiErrorMessage } from "@/lib/api/adminApiErrors";
+import { useAdminSession } from "@/lib/admin/adminSession";
+import { resolveDashboardAccess } from "@/lib/dashboard/dashboardAccess";
 
-type AdminUser = {
-  id: string;
-  externalAuthId?: string | null;
-  email?: string | null;
-  displayName?: string | null;
-  role?: string | null;
-  status?: string | null;
-  [key: string]: unknown;
-};
-
-type BuilderUser = {
-  userId: string;
-  builderId?: string;
-  createdAt?: string | null;
-  user?: AdminUser;
-  [key: string]: unknown;
-};
-
-type AdminBuilder = {
-  id: string;
-  name?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  builderUsers?: BuilderUser[];
-  [key: string]: unknown;
+type BuilderForm = {
+  name: string;
+  email: string;
+  phone: string;
 };
 
 type AdminInvitationResponse = {
@@ -54,11 +40,16 @@ type AdminInvitationResponse = {
   [key: string]: unknown;
 };
 
+const emptyForm: BuilderForm = {
+  name: "",
+  email: "",
+  phone: "",
+};
 
-const getBuilderName = (builder: AdminBuilder): string =>
-  typeof builder.name === "string" && builder.name.trim()
-    ? builder.name
-    : builder.id;
+const normalizeOptional = (value: string) => {
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+};
 
 const getUserContact = (user: AdminUser): string => {
   const email = typeof user.email === "string" ? user.email.trim() : "";
@@ -71,9 +62,13 @@ const getUserContact = (user: AdminUser): string => {
 const getUserName = (user: AdminUser): string =>
   user.displayName && user.displayName.trim() ? user.displayName : "(no name)";
 
-const normalizeOptional = (value: string) => {
-  const trimmed = value.trim();
-  return trimmed ? trimmed : null;
+const getBuilderName = (builder: BuilderRecord | null): string => {
+  if (!builder) {
+    return "";
+  }
+  return typeof builder.name === "string" && builder.name.trim()
+    ? builder.name
+    : builder.id;
 };
 
 const inviteRedirectUrl =
@@ -81,19 +76,32 @@ const inviteRedirectUrl =
   import.meta.env.VITE_AAD_INVITE_REDIRECT_URL ||
   (typeof window !== "undefined" ? window.location.origin : "");
 
-const AdminBuilderPage = () => {
+const DashboardBuilderPage = () => {
   const { builderId } = useParams();
   const navigate = useNavigate();
+  const { whoAmI, loading: sessionLoading, reloadWhoAmI } = useAdminSession();
 
-  const [builder, setBuilder] = useState<AdminBuilder | null>(null);
+  const { access, hasAssignments } = useMemo(
+    () => resolveDashboardAccess(whoAmI),
+    [whoAmI]
+  );
+  const isAssigned = Boolean(
+    builderId && access.builderIds.includes(builderId)
+  );
+  const hasAccess = hasAssignments && isAssigned;
+
+  const [builder, setBuilder] = useState<BuilderRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const [editName, setEditName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editAction, setEditAction] = useState<"save" | "delete" | null>(null);
-  const [editErrorMessage, setEditErrorMessage] = useState<string | null>(null);
+  const [form, setForm] = useState<BuilderForm>(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
+  const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(
+    null
+  );
+
+  const [deleteAction, setDeleteAction] = useState(false);
 
   const [teamAction, setTeamAction] = useState<
     "add" | "remove" | "invite" | null
@@ -103,7 +111,9 @@ const AdminBuilderPage = () => {
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
-  const [usersErrorMessage, setUsersErrorMessage] = useState<string | null>(null);
+  const [usersErrorMessage, setUsersErrorMessage] = useState<string | null>(
+    null
+  );
   const [userFilter, setUserFilter] = useState("");
   const [showAddPanel, setShowAddPanel] = useState(false);
 
@@ -116,6 +126,15 @@ const AdminBuilderPage = () => {
   const [floorPlans, setFloorPlans] = useState<FloorPlanRecord[]>([]);
   const [floorPlansLoading, setFloorPlansLoading] = useState(false);
 
+  const applyBuilder = useCallback((data: BuilderRecord) => {
+    setBuilder(data);
+    setForm({
+      name: data.name ?? "",
+      email: data.email ?? "",
+      phone: data.phone ?? "",
+    });
+  }, []);
+
   const loadBuilder = useCallback(async () => {
     if (!builderId) {
       setErrorMessage("Builder ID is missing.");
@@ -125,20 +144,17 @@ const AdminBuilderPage = () => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const data = await adminApi.getBuilderById<AdminBuilder>(builderId);
-      setBuilder(data);
-      setEditName(data.name ?? "");
-      setEditEmail(data.email ?? "");
-      setEditPhone(data.phone ?? "");
+      const data = await adminApi.getBuilderById<BuilderRecord>(builderId);
+      applyBuilder(data);
     } catch (error) {
       setBuilder(null);
       setErrorMessage(
-        error instanceof Error ? error.message : "Failed to load builder."
+        getAdminApiErrorMessage(error, "Failed to load builder.")
       );
     } finally {
       setLoading(false);
     }
-  }, [builderId]);
+  }, [applyBuilder, builderId]);
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -170,25 +186,50 @@ const AdminBuilderPage = () => {
       return scoped;
     } catch (error) {
       setFloorPlans([]);
-      throw error;
+      throw new Error(
+        getAdminApiErrorMessage(error, "Failed to load floor plans.")
+      );
     } finally {
       setFloorPlansLoading(false);
     }
   }, [builderId]);
 
   const createFloorPlan = useCallback(
-    async (payload: FloorPlanPayload) => adminApi.createFloorPlan(payload),
+    async (payload: FloorPlanPayload) => {
+      try {
+        return await adminApi.createFloorPlan(payload);
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to create floor plan.")
+        );
+      }
+    },
     []
   );
 
   const updateFloorPlan = useCallback(
-    async (id: string, payload: FloorPlanPayload) =>
-      adminApi.updateFloorPlan(id, payload),
+    async (id: string, payload: FloorPlanPayload) => {
+      try {
+        return await adminApi.updateFloorPlan(id, payload);
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to update floor plan.")
+        );
+      }
+    },
     []
   );
 
   const deleteFloorPlan = useCallback(
-    async (id: string) => adminApi.deleteFloorPlan(id),
+    async (id: string) => {
+      try {
+        return await adminApi.deleteFloorPlan(id);
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to delete floor plan.")
+        );
+      }
+    },
     []
   );
 
@@ -197,35 +238,68 @@ const AdminBuilderPage = () => {
       if (!floorPlanId) {
         return [];
       }
-      const data = await adminApi.getFacades<FacadeRecord>({
-        floorPlanId,
-      });
-      return data.filter(
-        (facade) => String(facade.floorPlanId ?? "") === floorPlanId
-      );
+      try {
+        const data = await adminApi.getFacades<FacadeRecord>({
+          floorPlanId,
+        });
+        return data.filter(
+          (facade) => String(facade.floorPlanId ?? "") === floorPlanId
+        );
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to load facades.")
+        );
+      }
     },
     []
   );
 
   const createFacade = useCallback(
-    async (payload: FacadePayload) => adminApi.createFacade(payload),
+    async (payload: FacadePayload) => {
+      try {
+        return await adminApi.createFacade(payload);
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to create facade.")
+        );
+      }
+    },
     []
   );
 
   const updateFacade = useCallback(
-    async (id: string, payload: FacadePayload) =>
-      adminApi.updateFacade(id, payload),
+    async (id: string, payload: FacadePayload) => {
+      try {
+        return await adminApi.updateFacade(id, payload);
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to update facade.")
+        );
+      }
+    },
     []
   );
 
   const deleteFacade = useCallback(
-    async (id: string) => adminApi.deleteFacade(id),
+    async (id: string) => {
+      try {
+        return await adminApi.deleteFacade(id);
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to delete facade.")
+        );
+      }
+    },
     []
   );
 
   useEffect(() => {
+    if (!hasAccess) {
+      setLoading(false);
+      return;
+    }
     loadBuilder();
-  }, [loadBuilder]);
+  }, [hasAccess, loadBuilder]);
 
   useEffect(() => {
     if (showAddPanel && users.length === 0 && !usersLoading) {
@@ -233,8 +307,31 @@ const AdminBuilderPage = () => {
     }
   }, [loadUsers, showAddPanel, users.length, usersLoading]);
 
+  useEffect(() => {
+    if (!hasAccess) {
+      setFloorPlans([]);
+      setFloorPlansLoading(false);
+      return;
+    }
+    loadFloorPlans();
+  }, [hasAccess, loadFloorPlans]);
 
-  const teamMembers = builder?.builderUsers ?? [];
+  const floorPlanOptions = useMemo(
+    () =>
+      floorPlans.map((plan) => {
+        const name =
+          typeof plan.name === "string" && plan.name.trim()
+            ? plan.name.trim()
+            : "Untitled";
+        return {
+          id: plan.id,
+          label: `${name} (${plan.id})`,
+        };
+      }),
+    [floorPlans]
+  );
+
+  const teamMembers: BuilderUser[] = builder?.builderUsers ?? [];
   const teamUserIds = useMemo(
     () => new Set(teamMembers.map((member) => member.userId)),
     [teamMembers]
@@ -257,50 +354,37 @@ const AdminBuilderPage = () => {
     });
   }, [availableUsers, userFilter]);
 
-  const floorPlanOptions = useMemo(
-    () =>
-      floorPlans.map((plan) => {
-        const name =
-          typeof plan.name === "string" && plan.name.trim()
-            ? plan.name.trim()
-            : "Untitled";
-        return {
-          id: plan.id,
-          label: `${name} (${plan.id})`,
-        };
-      }),
-    [floorPlans]
-  );
-
-  const handleSaveBuilder = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!builderId) {
       return;
     }
-    const trimmedName = editName.trim();
+    const trimmedName = form.name.trim();
     if (!trimmedName) {
-      setEditErrorMessage("Name is required.");
+      setSaveErrorMessage("Name is required.");
       return;
     }
-    setEditAction("save");
-    setEditErrorMessage(null);
+    setSaving(true);
+    setSaveErrorMessage(null);
+    setSaveSuccessMessage(null);
     try {
       await adminApi.updateBuilder(builderId, {
         name: trimmedName,
-        email: normalizeOptional(editEmail),
-        phone: normalizeOptional(editPhone),
+        email: normalizeOptional(form.email),
+        phone: normalizeOptional(form.phone),
       });
       await loadBuilder();
+      setSaveSuccessMessage("Builder updated.");
     } catch (error) {
-      setEditErrorMessage(
-        error instanceof Error ? error.message : "Failed to update builder."
+      setSaveErrorMessage(
+        getAdminApiErrorMessage(error, "Failed to update builder.")
       );
     } finally {
-      setEditAction(null);
+      setSaving(false);
     }
   };
 
-  const handleDeleteBuilder = async () => {
+  const handleDelete = async () => {
     if (!builderId) {
       return;
     }
@@ -310,17 +394,18 @@ const AdminBuilderPage = () => {
     if (!confirmed) {
       return;
     }
-    setEditAction("delete");
-    setEditErrorMessage(null);
+    setDeleteAction(true);
+    setSaveErrorMessage(null);
     try {
       await adminApi.deleteBuilder(builderId);
-      navigate("/admin/builders");
+      await reloadWhoAmI();
+      navigate("/dashboard");
     } catch (error) {
-      setEditErrorMessage(
-        error instanceof Error ? error.message : "Failed to delete builder."
+      setSaveErrorMessage(
+        getAdminApiErrorMessage(error, "Failed to delete builder.")
       );
     } finally {
-      setEditAction(null);
+      setDeleteAction(false);
     }
   };
 
@@ -336,7 +421,7 @@ const AdminBuilderPage = () => {
       await loadBuilder();
     } catch (error) {
       setTeamErrorMessage(
-        error instanceof Error ? error.message : "Failed to add team member."
+        getAdminApiErrorMessage(error, "Failed to add team member.")
       );
     } finally {
       setTeamAction(null);
@@ -360,7 +445,7 @@ const AdminBuilderPage = () => {
       await loadBuilder();
     } catch (error) {
       setTeamErrorMessage(
-        error instanceof Error ? error.message : "Failed to remove team member."
+        getAdminApiErrorMessage(error, "Failed to remove team member.")
       );
     } finally {
       setTeamAction(null);
@@ -403,125 +488,168 @@ const AdminBuilderPage = () => {
       setInviteName("");
     } catch (error) {
       setInviteErrorMessage(
-        error instanceof Error ? error.message : "Failed to invite user."
+        getAdminApiErrorMessage(error, "Failed to invite user.")
       );
     } finally {
       setTeamAction(null);
     }
   };
 
-  const handleLogout = async () => {
-    await adminAuth.logout();
-  };
+  const actions = (
+    <Button
+      onClick={loadBuilder}
+      disabled={loading || sessionLoading || !hasAccess}
+      loading={loading && !sessionLoading}
+      label="Refresh"
+    />
+  );
 
-  if (loading) {
+  if (sessionLoading) {
     return (
-      <div className="p-8 text-center text-muted-foreground">
-        Loading builder...
-      </div>
+      <DashboardLayout
+        title="Builder"
+        subtitle="Loading access..."
+        actions={actions}
+      >
+        <p className="text-muted-foreground">Checking access...</p>
+      </DashboardLayout>
     );
   }
 
-  if (errorMessage) {
+  if (!builderId) {
     return (
-      <div className="container py-8 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Builder</h1>
-        <AdminNav />
-        <p className="text-destructive mb-4">{errorMessage}</p>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => navigate("/admin/builders")}
-            variant="outline"
-            label="Back to builders"
-          />
-          <Button onClick={handleLogout} label="Sign out" />
-        </div>
-      </div>
+      <DashboardLayout
+        title="Builder"
+        subtitle="Missing builder id."
+        actions={actions}
+      >
+        <p className="text-muted-foreground">
+          Return to <Link to="/dashboard">dashboard</Link>.
+        </p>
+      </DashboardLayout>
     );
   }
 
-  if (!builder) {
+  if (!hasAssignments) {
     return (
-      <div className="container py-8 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Builder</h1>
-        <AdminNav />
-        <p className="text-muted-foreground">Builder not found.</p>
-      </div>
+      <DashboardLayout
+        title="Builder"
+        subtitle="Assignments are not available yet."
+        actions={actions}
+      >
+        <p className="text-muted-foreground">
+          Ask an admin to enable builder assignments for your account.
+        </p>
+      </DashboardLayout>
+    );
+  }
+
+  if (!hasAccess) {
+    return (
+      <DashboardLayout
+        title="Builder"
+        subtitle="You don't have access to this builder."
+        actions={actions}
+      >
+        <p className="text-muted-foreground">
+          Return to <Link to="/dashboard">dashboard</Link>.
+        </p>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="container py-8 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">
-        Builder: {getBuilderName(builder)}
-      </h1>
-      <AdminNav />
-      <div className="flex flex-wrap gap-3 mb-6 items-center">
-        <Button
-          onClick={() => navigate("/admin/builders")}
-          variant="outline"
-          label="Back to builders"
-        />
-        <Button onClick={loadBuilder} label="Refresh builder" />
-        <Button onClick={handleLogout} variant="outline" label="Sign out" />
-      </div>
+    <DashboardLayout
+      title={loading ? "Loading builder..." : getBuilderName(builder)}
+      subtitle={`Builder ID: ${builderId}`}
+      actions={actions}
+    >
+      {errorMessage && (
+        <div className="mb-4 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
+          {errorMessage}
+        </div>
+      )}
 
-      <section className="grid gap-6 grid-cols-1 lg:grid-cols-[1.1fr_1fr]">
-        <div className="border rounded-lg p-6 bg-white shadow-sm h-fit">
-          <h2 className="text-xl font-bold mb-4 mt-0">Builder Details</h2>
-          <form onSubmit={handleSaveBuilder} className="grid gap-4">
-            <div className="grid gap-2">
-              <span className="text-sm font-medium">Name *</span>
-              <Input
-                value={editName}
-                onChange={(event) => setEditName(event.target.value)}
-                className="w-full"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <span className="text-sm font-medium">Email</span>
-              <Input
-                value={editEmail}
-                onChange={(event) => setEditEmail(event.target.value)}
-                type="email"
-                className="w-full"
-              />
-            </div>
-            <div className="grid gap-2">
-              <span className="text-sm font-medium">Phone</span>
-              <Input
-                value={editPhone}
-                onChange={(event) => setEditPhone(event.target.value)}
-                className="w-full"
-              />
-            </div>
-            <div className="flex gap-2 flex-wrap items-center mt-2">
-              <Button
-                type="submit"
-                disabled={editAction !== null}
-                loading={editAction === "save"}
-                label="Save builder"
-              />
-              <Button
-                type="button"
-                onClick={handleDeleteBuilder}
-                disabled={editAction !== null}
-                loading={editAction === "delete"}
-                variant="ghost"
-                className="text-destructive hover:bg-red-50 hover:text-destructive"
-                label="Delete builder"
-              />
-              {editErrorMessage && (
-                <span className="text-destructive text-sm">
-                  {editErrorMessage}
-                </span>
-              )}
-            </div>
-          </form>
+      <section className="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-lg font-semibold mb-2">Builder details</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Update the builder contact details below.
+          </p>
+
+          {loading && (
+            <p className="text-sm text-muted-foreground">Loading builder...</p>
+          )}
+
+          {!loading && builder && (
+            <form onSubmit={handleSave} className="grid gap-4">
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Name *</span>
+                <Input
+                  value={form.name}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, name: event.target.value }))
+                  }
+                  placeholder="Builder name"
+                  className="w-full"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Email</span>
+                <Input
+                  value={form.email}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, email: event.target.value }))
+                  }
+                  placeholder="contact@example.com"
+                  type="email"
+                  className="w-full"
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Phone</span>
+                <Input
+                  value={form.phone}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, phone: event.target.value }))
+                  }
+                  placeholder="+61 2 5555 5555"
+                  className="w-full"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="submit"
+                  disabled={saving}
+                  loading={saving}
+                  label="Save changes"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  label="Delete builder"
+                  onClick={handleDelete}
+                  disabled={deleteAction}
+                  loading={deleteAction}
+                />
+                {saveErrorMessage && (
+                  <span className="text-sm text-destructive">
+                    {saveErrorMessage}
+                  </span>
+                )}
+                {saveSuccessMessage && (
+                  <span className="text-sm text-emerald-600">
+                    {saveSuccessMessage}
+                  </span>
+                )}
+              </div>
+            </form>
+          )}
         </div>
 
-        <div className="border rounded-lg p-6 bg-white shadow-sm h-fit">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm h-fit">
           <div className="flex items-center justify-between gap-2 mb-4">
             <h2 className="text-xl font-bold mt-0 mb-0">Team Members</h2>
             <Button
@@ -534,12 +662,17 @@ const AdminBuilderPage = () => {
           {teamErrorMessage && (
             <p className="text-destructive mb-3 text-sm">{teamErrorMessage}</p>
           )}
-          {teamMembers.length === 0 && (
+          {loading && (
+            <p className="text-sm text-muted-foreground">
+              Loading team members...
+            </p>
+          )}
+          {!loading && teamMembers.length === 0 && (
             <p className="text-sm text-muted-foreground">
               No team members assigned.
             </p>
           )}
-          {teamMembers.length > 0 && (
+          {!loading && teamMembers.length > 0 && (
             <div className="overflow-auto border rounded-lg">
               <table className="w-full border-collapse min-w-[520px]">
                 <thead>
@@ -606,7 +739,7 @@ const AdminBuilderPage = () => {
       </section>
 
       {showAddPanel && (
-        <section className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
+        <section className="mt-2 mb-8 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
           <div className="border rounded-lg p-6 bg-white shadow-sm">
             <div className="flex items-center justify-between gap-2 mb-3">
               <h3 className="font-semibold text-lg m-0">Add Existing User</h3>
@@ -743,7 +876,7 @@ const AdminBuilderPage = () => {
         </section>
       )}
 
-      <section className="mt-10">
+      <section className="mb-10">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
             <h2 className="text-2xl font-bold m-0">Floor Plans</h2>
@@ -761,7 +894,7 @@ const AdminBuilderPage = () => {
         />
       </section>
 
-      <section className="mt-10">
+      <section className="mb-10">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
             <h2 className="text-2xl font-bold m-0">Facades</h2>
@@ -790,8 +923,8 @@ const AdminBuilderPage = () => {
           />
         )}
       </section>
-    </div>
+    </DashboardLayout>
   );
 };
 
-export default AdminBuilderPage;
+export default DashboardBuilderPage;

@@ -6,11 +6,13 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
+import type { ReactNode } from "react";
 import { useEffect } from "react";
 import HomePage from "./pages/Home";
 import NotFoundPage from "./pages/NotFoundPage";
 import PrototypePage from "./pages/PrototypePage";
 import { RequireAdminAuth } from "./components/auth/RequireAdminAuth";
+import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminEstatesPage from "./pages/admin/AdminEstatesPage";
 import AdminEstatePage from "./pages/admin/AdminEstatePage";
@@ -25,6 +27,9 @@ import AdminBuilderPage from "./pages/admin/AdminBuilderPage";
 import AdminBrandSettingsPage from "./pages/admin/AdminBrandSettingsPage";
 import AdminBrandSettingPage from "./pages/admin/AdminBrandSettingPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import DashboardPage from "./pages/dashboard/DashboardPage";
+import DashboardBuilderPage from "./pages/dashboard/DashboardBuilderPage";
+import DashboardEstatePage from "./pages/dashboard/DashboardEstatePage";
 import {
   applyBrandTheme,
   clearBrandThemeOverrides,
@@ -35,7 +40,10 @@ const BrandThemeController = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (location.pathname.startsWith("/admin")) {
+    if (
+      location.pathname.startsWith("/admin") ||
+      location.pathname.startsWith("/dashboard")
+    ) {
       clearBrandThemeOverrides();
     } else {
       loadBrandFonts();
@@ -45,6 +53,12 @@ const BrandThemeController = () => {
 
   return null;
 };
+
+const AdminGate = ({ children }: { children: ReactNode }) => (
+  <RequireAdminAuth>
+    <RequireAdminRole>{children}</RequireAdminRole>
+  </RequireAdminAuth>
+);
 
 function App() {
   return (
@@ -56,109 +70,140 @@ function App() {
           <Route path="/prototype" element={<PrototypePage />} />
           <Route path="*" element={<NotFoundPage />} />
           <Route path="/admin/login" element={<AdminLoginPage />} />
-          <Route path="/admin" element={<Navigate to="/admin/users" replace />} />
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAdminAuth>
+                <DashboardPage />
+              </RequireAdminAuth>
+            }
+          />
+          <Route
+            path="/dashboard/builders/:builderId"
+            element={
+              <RequireAdminAuth>
+                <DashboardBuilderPage />
+              </RequireAdminAuth>
+            }
+          />
+          <Route
+            path="/dashboard/estates/:estateId"
+            element={
+              <RequireAdminAuth>
+                <DashboardEstatePage />
+              </RequireAdminAuth>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminGate>
+                <Navigate to="/admin/users" replace />
+              </AdminGate>
+            }
+          />
           <Route
             path="/admin/users"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminUsersPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/estates"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminEstatesPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/estates/:estateId"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminEstatePage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/lots"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminLotsPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/zoning-rules"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminZoningRulesPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/lot-zoning-rules"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminLotZoningRulesPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/floor-plans"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminFloorPlansPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/facades"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminFacadesPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/design-on-lots"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminDesignsOnLotsPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/builders"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminBuildersPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/builders/:builderId"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminBuilderPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/brand-settings"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminBrandSettingsPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
           <Route
             path="/admin/brand-settings/:guid"
             element={
-              <RequireAdminAuth>
+              <AdminGate>
                 <AdminBrandSettingPage />
-              </RequireAdminAuth>
+              </AdminGate>
             }
           />
         </Routes>
