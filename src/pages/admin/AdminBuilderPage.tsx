@@ -54,6 +54,70 @@ type AdminInvitationResponse = {
   [key: string]: unknown;
 };
 
+type FacadePanelProps = {
+  floorPlanId: string;
+  floorPlanOptions: Array<{ id: string; label: string }>;
+  loadFacades: (floorPlanId: string) => Promise<FacadeRecord[]>;
+  createFacade: (floorPlanId: string, payload: FacadePayload) => Promise<unknown>;
+  updateFacade: (
+    floorPlanId: string,
+    id: string,
+    payload: FacadePayload
+  ) => Promise<unknown>;
+  deleteFacade: (floorPlanId: string, id: string) => Promise<unknown>;
+};
+
+const FacadePanel = ({
+  floorPlanId,
+  floorPlanOptions,
+  loadFacades,
+  createFacade,
+  updateFacade,
+  deleteFacade,
+}: FacadePanelProps) => {
+  const [showFacades, setShowFacades] = useState(false);
+
+  useEffect(() => {
+    setShowFacades(false);
+  }, [floorPlanId]);
+
+  const option =
+    floorPlanOptions.find((item) => item.id === floorPlanId) ?? {
+      id: floorPlanId,
+      label: floorPlanId,
+    };
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-lg font-semibold m-0">Facades</h3>
+          <p className="text-sm text-muted-foreground m-0">
+            Manage facades for a selected floor plan.
+          </p>
+        </div>
+        <Button
+          onClick={() => setShowFacades((prev) => !prev)}
+          variant="outline"
+          className="h-8 text-xs"
+          label={showFacades ? "Hide facades" : "Manage facades"}
+        />
+      </div>
+      {showFacades && (
+        <FacadeCrud
+          loadFacades={loadFacades}
+          createFacade={createFacade}
+          updateFacade={updateFacade}
+          deleteFacade={deleteFacade}
+          floorPlanOptions={[option]}
+          initialFloorPlanId={floorPlanId}
+          filterPlaceholder="Filter by label or id"
+        />
+      )}
+    </div>
+  );
+};
+
 
 const getBuilderName = (builder: AdminBuilder): string =>
   typeof builder.name === "string" && builder.name.trim()
@@ -100,6 +164,11 @@ const AdminBuilderPage = () => {
   >(null);
   const [teamActionUserId, setTeamActionUserId] = useState<string | null>(null);
   const [teamErrorMessage, setTeamErrorMessage] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState<BuilderUser[]>([]);
+  const [teamMembersLoading, setTeamMembersLoading] = useState(false);
+  const [teamMembersErrorMessage, setTeamMembersErrorMessage] = useState<
+    string | null
+  >(null);
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -114,7 +183,6 @@ const AdminBuilderPage = () => {
   );
 
   const [floorPlans, setFloorPlans] = useState<FloorPlanRecord[]>([]);
-  const [floorPlansLoading, setFloorPlansLoading] = useState(false);
 
   const loadBuilder = useCallback(async () => {
     if (!builderId) {
@@ -155,12 +223,32 @@ const AdminBuilderPage = () => {
     }
   }, []);
 
+  const loadTeamMembers = useCallback(async () => {
+    if (!builderId) {
+      setTeamMembers([]);
+      setTeamMembersLoading(false);
+      return;
+    }
+    setTeamMembersLoading(true);
+    setTeamMembersErrorMessage(null);
+    try {
+      const data = await adminApi.getBuilderUsers<BuilderUser>(builderId);
+      setTeamMembers(data);
+    } catch (error) {
+      setTeamMembers([]);
+      setTeamMembersErrorMessage(
+        error instanceof Error ? error.message : "Failed to load team members."
+      );
+    } finally {
+      setTeamMembersLoading(false);
+    }
+  }, [builderId]);
+
   const loadFloorPlans = useCallback(async (): Promise<FloorPlanRecord[]> => {
     if (!builderId) {
       setFloorPlans([]);
       return [];
     }
-    setFloorPlansLoading(true);
     try {
       const data = await adminApi.getFloorPlans<FloorPlanRecord>({ builderId });
       const scoped = data.filter(
@@ -171,8 +259,6 @@ const AdminBuilderPage = () => {
     } catch (error) {
       setFloorPlans([]);
       throw error;
-    } finally {
-      setFloorPlansLoading(false);
     }
   }, [builderId]);
 
@@ -192,34 +278,25 @@ const AdminBuilderPage = () => {
     []
   );
 
-  const loadFacades = useCallback(
-    async (floorPlanId?: string | null) => {
-      if (!floorPlanId) {
-        return [];
-      }
-      const data = await adminApi.getFacades<FacadeRecord>({
-        floorPlanId,
-      });
-      return data.filter(
-        (facade) => String(facade.floorPlanId ?? "") === floorPlanId
-      );
-    },
-    []
-  );
+  const loadFacades = useCallback(async (floorPlanId: string) => {
+    return adminApi.getFacades<FacadeRecord>(floorPlanId);
+  }, []);
 
   const createFacade = useCallback(
-    async (payload: FacadePayload) => adminApi.createFacade(payload),
+    async (floorPlanId: string, payload: FacadePayload) =>
+      adminApi.createFacade(floorPlanId, payload),
     []
   );
 
   const updateFacade = useCallback(
-    async (id: string, payload: FacadePayload) =>
-      adminApi.updateFacade(id, payload),
+    async (floorPlanId: string, id: string, payload: FacadePayload) =>
+      adminApi.updateFacade(floorPlanId, id, payload),
     []
   );
 
   const deleteFacade = useCallback(
-    async (id: string) => adminApi.deleteFacade(id),
+    async (floorPlanId: string, id: string) =>
+      adminApi.deleteFacade(floorPlanId, id),
     []
   );
 
@@ -233,8 +310,11 @@ const AdminBuilderPage = () => {
     }
   }, [loadUsers, showAddPanel, users.length, usersLoading]);
 
+  useEffect(() => {
+    loadTeamMembers();
+  }, [loadTeamMembers]);
 
-  const teamMembers = builder?.builderUsers ?? [];
+
   const teamUserIds = useMemo(
     () => new Set(teamMembers.map((member) => member.userId)),
     [teamMembers]
@@ -333,7 +413,7 @@ const AdminBuilderPage = () => {
     setTeamErrorMessage(null);
     try {
       await adminApi.addBuilderUsers(builderId, [userId]);
-      await loadBuilder();
+      await loadTeamMembers();
     } catch (error) {
       setTeamErrorMessage(
         error instanceof Error ? error.message : "Failed to add team member."
@@ -357,7 +437,7 @@ const AdminBuilderPage = () => {
     setTeamErrorMessage(null);
     try {
       await adminApi.removeBuilderUser(builderId, userId);
-      await loadBuilder();
+      await loadTeamMembers();
     } catch (error) {
       setTeamErrorMessage(
         error instanceof Error ? error.message : "Failed to remove team member."
@@ -397,7 +477,7 @@ const AdminBuilderPage = () => {
         throw new Error("Invitation created but no user id was returned.");
       }
       await adminApi.addBuilderUsers(builderId, [invitedUserId]);
-      await loadBuilder();
+      await loadTeamMembers();
       await loadUsers();
       setInviteEmail("");
       setInviteName("");
@@ -534,12 +614,22 @@ const AdminBuilderPage = () => {
           {teamErrorMessage && (
             <p className="text-destructive mb-3 text-sm">{teamErrorMessage}</p>
           )}
-          {teamMembers.length === 0 && (
+          {teamMembersLoading && (
+            <p className="text-sm text-muted-foreground">
+              Loading team members...
+            </p>
+          )}
+          {teamMembersErrorMessage && (
+            <p className="text-destructive mb-3 text-sm">
+              {teamMembersErrorMessage}
+            </p>
+          )}
+          {!teamMembersLoading && teamMembers.length === 0 && (
             <p className="text-sm text-muted-foreground">
               No team members assigned.
             </p>
           )}
-          {teamMembers.length > 0 && (
+          {!teamMembersLoading && teamMembers.length > 0 && (
             <div className="overflow-auto border rounded-lg">
               <table className="w-full border-collapse min-w-[520px]">
                 <thead>
@@ -602,146 +692,147 @@ const AdminBuilderPage = () => {
               </table>
             </div>
           )}
+          {showAddPanel && (
+            <div className="mt-4 pt-4 border-t border-slate-100 grid gap-6">
+              <div className="border rounded-lg p-6 bg-slate-50">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h3 className="font-semibold text-lg m-0">
+                    Add Existing User
+                  </h3>
+                  <Button
+                    onClick={loadUsers}
+                    disabled={usersLoading}
+                    loading={usersLoading}
+                    variant="outline"
+                    className="h-7 text-xs"
+                    label={usersLoading ? "Loading..." : "Reload users"}
+                  />
+                </div>
+                <Input
+                  value={userFilter}
+                  onChange={(event) => setUserFilter(event.target.value)}
+                  placeholder="Search by name or email"
+                  className="w-full mb-3"
+                />
+                {usersErrorMessage && (
+                  <p className="text-destructive text-sm mb-2">
+                    {usersErrorMessage}
+                  </p>
+                )}
+                <div className="max-h-[280px] overflow-auto border rounded-lg bg-white">
+                  <table className="w-full border-collapse min-w-[420px]">
+                    <thead>
+                      <tr className="bg-slate-50 text-left">
+                        <th className="p-2 border-b font-medium text-xs text-slate-500">
+                          Name
+                        </th>
+                        <th className="p-2 border-b font-medium text-xs text-slate-500">
+                          Email
+                        </th>
+                        <th className="p-2 border-b font-medium text-xs text-slate-500">
+                          Role
+                        </th>
+                        <th className="p-2 border-b font-medium text-xs text-slate-500">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usersLoading && (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="p-3 text-center text-sm text-muted-foreground"
+                          >
+                            Loading users...
+                          </td>
+                        </tr>
+                      )}
+                      {!usersLoading &&
+                        filteredAvailableUsers.map((user) => (
+                          <tr key={user.id}>
+                            <td className="p-2 border-b border-slate-50 text-sm">
+                              {getUserName(user)}
+                            </td>
+                            <td className="p-2 border-b border-slate-50 text-sm">
+                              {getUserContact(user)}
+                            </td>
+                            <td className="p-2 border-b border-slate-50 text-sm">
+                              {user.role ?? "--"}
+                            </td>
+                            <td className="p-2 border-b border-slate-50 text-sm">
+                              <Button
+                                onClick={() => handleAddMember(user.id)}
+                                disabled={teamAction !== null}
+                                loading={
+                                  teamAction === "add" &&
+                                  teamActionUserId === user.id
+                                }
+                                variant="ghost"
+                                className="h-7 px-2 text-xs"
+                                label="Add"
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      {!usersLoading && filteredAvailableUsers.length === 0 && (
+                        <tr>
+                          <td
+                            colSpan={4}
+                            className="p-3 text-center text-sm text-muted-foreground"
+                          >
+                            No available users match the filter.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="border rounded-lg p-6 bg-slate-50">
+                <h3 className="font-semibold text-lg m-0 mb-3">
+                  Invite & Add User
+                </h3>
+                <form onSubmit={handleInviteMember} className="grid gap-4">
+                  <div className="grid gap-2">
+                    <span className="text-sm font-medium">Email</span>
+                    <Input
+                      value={inviteEmail}
+                      onChange={(event) => setInviteEmail(event.target.value)}
+                      type="email"
+                      className="w-full"
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <span className="text-sm font-medium">Name</span>
+                    <Input
+                      value={inviteName}
+                      onChange={(event) => setInviteName(event.target.value)}
+                      className="w-full"
+                      required
+                    />
+                  </div>
+                  <div className="flex gap-2 items-center mt-2">
+                    <Button
+                      type="submit"
+                      disabled={teamAction !== null}
+                      loading={teamAction === "invite"}
+                      label="Send invite & add"
+                    />
+                    {inviteErrorMessage && (
+                      <span className="text-destructive text-sm">
+                        {inviteErrorMessage}
+                      </span>
+                    )}
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       </section>
-
-      {showAddPanel && (
-        <section className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-          <div className="border rounded-lg p-6 bg-white shadow-sm">
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <h3 className="font-semibold text-lg m-0">Add Existing User</h3>
-              <Button
-                onClick={loadUsers}
-                disabled={usersLoading}
-                loading={usersLoading}
-                variant="outline"
-                className="h-7 text-xs"
-                label={usersLoading ? "Loading..." : "Reload users"}
-              />
-            </div>
-            <Input
-              value={userFilter}
-              onChange={(event) => setUserFilter(event.target.value)}
-              placeholder="Search by name or email"
-              className="w-full mb-3"
-            />
-            {usersErrorMessage && (
-              <p className="text-destructive text-sm mb-2">
-                {usersErrorMessage}
-              </p>
-            )}
-            <div className="max-h-[280px] overflow-auto border rounded-lg bg-white">
-              <table className="w-full border-collapse min-w-[420px]">
-                <thead>
-                  <tr className="bg-slate-50 text-left">
-                    <th className="p-2 border-b font-medium text-xs text-slate-500">
-                      Name
-                    </th>
-                    <th className="p-2 border-b font-medium text-xs text-slate-500">
-                      Email
-                    </th>
-                    <th className="p-2 border-b font-medium text-xs text-slate-500">
-                      Role
-                    </th>
-                    <th className="p-2 border-b font-medium text-xs text-slate-500">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {usersLoading && (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="p-3 text-center text-sm text-muted-foreground"
-                      >
-                        Loading users...
-                      </td>
-                    </tr>
-                  )}
-                  {!usersLoading &&
-                    filteredAvailableUsers.map((user) => (
-                      <tr key={user.id}>
-                        <td className="p-2 border-b border-slate-50 text-sm">
-                          {getUserName(user)}
-                        </td>
-                        <td className="p-2 border-b border-slate-50 text-sm">
-                          {getUserContact(user)}
-                        </td>
-                        <td className="p-2 border-b border-slate-50 text-sm">
-                          {user.role ?? "--"}
-                        </td>
-                        <td className="p-2 border-b border-slate-50 text-sm">
-                          <Button
-                            onClick={() => handleAddMember(user.id)}
-                            disabled={teamAction !== null}
-                            loading={
-                              teamAction === "add" &&
-                              teamActionUserId === user.id
-                            }
-                            variant="ghost"
-                            className="h-7 px-2 text-xs"
-                            label="Add"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  {!usersLoading && filteredAvailableUsers.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={4}
-                        className="p-3 text-center text-sm text-muted-foreground"
-                      >
-                        No available users match the filter.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="border rounded-lg p-6 bg-white shadow-sm">
-            <h3 className="font-semibold text-lg m-0 mb-3">
-              Invite & Add User
-            </h3>
-            <form onSubmit={handleInviteMember} className="grid gap-4">
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Email</span>
-                <Input
-                  value={inviteEmail}
-                  onChange={(event) => setInviteEmail(event.target.value)}
-                  type="email"
-                  className="w-full"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Name</span>
-                <Input
-                  value={inviteName}
-                  onChange={(event) => setInviteName(event.target.value)}
-                  className="w-full"
-                  required
-                />
-              </div>
-              <div className="flex gap-2 items-center mt-2">
-                <Button
-                  type="submit"
-                  disabled={teamAction !== null}
-                  loading={teamAction === "invite"}
-                  label="Send invite & add"
-                />
-                {inviteErrorMessage && (
-                  <span className="text-destructive text-sm">
-                    {inviteErrorMessage}
-                  </span>
-                )}
-              </div>
-            </form>
-          </div>
-        </section>
-      )}
 
       <section className="mt-10">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -758,37 +849,17 @@ const AdminBuilderPage = () => {
           updateFloorPlan={updateFloorPlan}
           deleteFloorPlan={deleteFloorPlan}
           builderId={builderId}
+          renderEditPanel={(floorPlanId) => (
+            <FacadePanel
+              floorPlanId={floorPlanId}
+              floorPlanOptions={floorPlanOptions}
+              loadFacades={loadFacades}
+              createFacade={createFacade}
+              updateFacade={updateFacade}
+              deleteFacade={deleteFacade}
+            />
+          )}
         />
-      </section>
-
-      <section className="mt-10">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div>
-            <h2 className="text-2xl font-bold m-0">Facades</h2>
-            <p className="text-sm text-muted-foreground m-0">
-              Manage facades for a selected floor plan.
-            </p>
-          </div>
-        </div>
-        {floorPlansLoading ? (
-          <div className="p-6 text-center text-muted-foreground">
-            Loading floor plans...
-          </div>
-        ) : floorPlanOptions.length === 0 ? (
-          <div className="p-6 text-center text-muted-foreground">
-            Add a floor plan to manage facades.
-          </div>
-        ) : (
-          <FacadeCrud
-            loadFacades={loadFacades}
-            createFacade={createFacade}
-            updateFacade={updateFacade}
-            deleteFacade={deleteFacade}
-            floorPlanOptions={floorPlanOptions}
-            initialFloorPlanId={floorPlanOptions[0]?.id ?? null}
-            filterPlaceholder="Filter by label or id"
-          />
-        )}
       </section>
     </div>
   );

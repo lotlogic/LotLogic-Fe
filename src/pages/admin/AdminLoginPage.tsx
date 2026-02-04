@@ -12,7 +12,10 @@ const normalizeRedirectPath = (path?: string | null): string | null => {
   if (!path || typeof path !== "string") {
     return null;
   }
-  return path.startsWith("/admin") ? path : null;
+  if (path.startsWith("/admin") || path.startsWith("/dashboard")) {
+    return path;
+  }
+  return null;
 };
 
 const readStoredRedirectPath = (): string | null => {

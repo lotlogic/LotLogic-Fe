@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { BuilderCreateForm } from "@/components/admin/builders/BuilderCreateForm";
 import { BuilderTable } from "@/components/admin/builders/BuilderTable";
-import type {
-  BuilderCreatePayload,
-  BuilderRecord,
-} from "@/components/admin/builders/types";
+import type { BuilderRecord } from "@/components/admin/builders/types";
 import { EstateCreateForm } from "@/components/admin/estates/EstateCreateForm";
 import { EstateTable } from "@/components/admin/estates/EstateTable";
 import type {
@@ -43,7 +39,6 @@ const DashboardPage = () => {
   const [buildersErrorMessage, setBuildersErrorMessage] = useState<
     string | null
   >(null);
-  const [showBuilderForm, setShowBuilderForm] = useState(false);
 
   const [estates, setEstates] = useState<EstateRecord[]>([]);
   const [estatesLoading, setEstatesLoading] = useState(false);
@@ -128,23 +123,17 @@ const DashboardPage = () => {
     return null;
   }, [access.builderIds.length, access.estateIds.length, hasAssignments]);
 
-  const handleCreateBuilder = useCallback(
-    async (payload: BuilderCreatePayload) => {
-      try {
-        const created = await adminApi.createBuilder<BuilderRecord>(payload);
-        await reloadWhoAmI();
-        return created;
-      } catch (error) {
-        throw new Error(
-          getAdminApiErrorMessage(error, "Failed to create builder.")
-        );
-      }
-    },
-    [reloadWhoAmI]
-  );
+  const hasBuilderAssignments = hasAssignments && access.builderIds.length > 0;
+  const hasEstateAssignments = hasAssignments && access.estateIds.length > 0;
+  const canCreateEstate = hasEstateAssignments;
 
   const handleCreateEstate = useCallback(
     async (payload: EstateCreatePayload) => {
+      if (!canCreateEstate) {
+        throw new Error(
+          "You need at least one assigned estate before creating another."
+        );
+      }
       try {
         const created = await adminApi.createEstate<EstateRecord>(payload);
         await reloadWhoAmI();
@@ -155,8 +144,14 @@ const DashboardPage = () => {
         );
       }
     },
-    [reloadWhoAmI]
+    [canCreateEstate, reloadWhoAmI]
   );
+
+  useEffect(() => {
+    if (!canCreateEstate && showEstateForm) {
+      setShowEstateForm(false);
+    }
+  }, [canCreateEstate, showEstateForm]);
 
   const actions = (
     <Button
@@ -208,48 +203,26 @@ const DashboardPage = () => {
         </div>
       )}
 
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm mb-8">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div>
-            <h2 className="text-xl font-semibold">Builders</h2>
-            <p className="text-sm text-muted-foreground">
-              Create or manage builder records you have access to.
-            </p>
+      {hasBuilderAssignments && (
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-xl font-semibold">Builders</h2>
+              <p className="text-sm text-muted-foreground">
+                Manage the builders you are assigned to.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                onClick={() => loadBuilders()}
+                disabled={buildersLoading}
+                loading={buildersLoading}
+                variant="outline"
+                label="Refresh"
+              />
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={() => loadBuilders()}
-              disabled={buildersLoading}
-              loading={buildersLoading}
-              variant="outline"
-              label="Refresh"
-            />
-            <Button
-              onClick={() => setShowBuilderForm((prev) => !prev)}
-              label={showBuilderForm ? "Hide form" : "Add builder"}
-            />
-          </div>
-        </div>
 
-        {showBuilderForm && (
-          <BuilderCreateForm
-            onCreate={handleCreateBuilder}
-            onOpenCreated={(builderId) =>
-              navigate(`/dashboard/builders/${builderId}`)
-            }
-            openLabel="Open in dashboard"
-          />
-        )}
-
-        {!hasAssignments ? (
-          <div className="p-4 text-center text-muted-foreground">
-            Assignments not available yet.
-          </div>
-        ) : access.builderIds.length === 0 ? (
-          <div className="p-4 text-center text-muted-foreground">
-            No builders are assigned yet.
-          </div>
-        ) : (
           <BuilderTable
             builders={builders}
             loading={buildersLoading}
@@ -257,53 +230,47 @@ const DashboardPage = () => {
             onOpenBuilder={(builderId) =>
               navigate(`/dashboard/builders/${builderId}`)
             }
-            actionLabel="Open"
+            actionLabel="Manage"
           />
-        )}
-      </section>
+        </section>
+      )}
 
-      <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div>
-            <h2 className="text-xl font-semibold">Estates</h2>
-            <p className="text-sm text-muted-foreground">
-              Create or manage estate records you have access to.
-            </p>
+      {hasEstateAssignments && (
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-xl font-semibold">Estates</h2>
+              <p className="text-sm text-muted-foreground">
+                Manage the estates you are assigned to.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                onClick={() => loadEstates()}
+                disabled={estatesLoading}
+                loading={estatesLoading}
+                variant="outline"
+                label="Refresh"
+              />
+              {canCreateEstate && (
+                <Button
+                  onClick={() => setShowEstateForm((prev) => !prev)}
+                  label={showEstateForm ? "Hide form" : "Add estate"}
+                />
+              )}
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={() => loadEstates()}
-              disabled={estatesLoading}
-              loading={estatesLoading}
-              variant="outline"
-              label="Refresh"
+
+          {showEstateForm && canCreateEstate && (
+            <EstateCreateForm
+              onCreate={handleCreateEstate}
+              onOpenCreated={(estateId) =>
+                navigate(`/dashboard/estates/${estateId}`)
+              }
+              openLabel="Open in dashboard"
             />
-            <Button
-              onClick={() => setShowEstateForm((prev) => !prev)}
-              label={showEstateForm ? "Hide form" : "Add estate"}
-            />
-          </div>
-        </div>
+          )}
 
-        {showEstateForm && (
-          <EstateCreateForm
-            onCreate={handleCreateEstate}
-            onOpenCreated={(estateId) =>
-              navigate(`/dashboard/estates/${estateId}`)
-            }
-            openLabel="Open in dashboard"
-          />
-        )}
-
-        {!hasAssignments ? (
-          <div className="p-4 text-center text-muted-foreground">
-            Assignments not available yet.
-          </div>
-        ) : access.estateIds.length === 0 ? (
-          <div className="p-4 text-center text-muted-foreground">
-            No estates are assigned yet.
-          </div>
-        ) : (
           <EstateTable
             estates={estates}
             loading={estatesLoading}
@@ -311,10 +278,10 @@ const DashboardPage = () => {
             onOpenEstate={(estateId) =>
               navigate(`/dashboard/estates/${estateId}`)
             }
-            actionLabel="Open"
+            actionLabel="Manage"
           />
-        )}
-      </section>
+        </section>
+      )}
     </DashboardLayout>
   );
 };

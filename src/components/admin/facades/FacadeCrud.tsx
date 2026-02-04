@@ -37,10 +37,14 @@ const emptyForm: FacadeForm = {
 };
 
 type FacadeCrudProps = {
-  loadFacades: (floorPlanId?: string | null) => Promise<FacadeRecord[]>;
-  createFacade: (payload: FacadePayload) => Promise<unknown>;
-  updateFacade: (id: string, payload: FacadePayload) => Promise<unknown>;
-  deleteFacade: (id: string) => Promise<unknown>;
+  loadFacades: (floorPlanId: string) => Promise<FacadeRecord[]>;
+  createFacade: (floorPlanId: string, payload: FacadePayload) => Promise<unknown>;
+  updateFacade: (
+    floorPlanId: string,
+    id: string,
+    payload: FacadePayload
+  ) => Promise<unknown>;
+  deleteFacade: (floorPlanId: string, id: string) => Promise<unknown>;
   floorPlanOptions?: FloorPlanOption[];
   initialFloorPlanId?: string | null;
   showRefresh?: boolean;
@@ -64,6 +68,7 @@ export const FacadeCrud = ({
   const [selectedFloorPlanId, setSelectedFloorPlanId] = useState<string | null>(
     initialFloorPlanId
   );
+  const [showForm, setShowForm] = useState(false);
 
   const [form, setForm] = useState<FacadeForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -91,7 +96,7 @@ export const FacadeCrud = ({
     setLoading(true);
     setErrorMessage(null);
     try {
-      if (floorPlanOptions && !selectedFloorPlanId) {
+      if (!selectedFloorPlanId) {
         setFacades([]);
         return;
       }
@@ -141,6 +146,16 @@ export const FacadeCrud = ({
     setFormSuccessMessage(null);
   };
 
+  const openCreateForm = () => {
+    resetForm();
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    resetForm();
+    setShowForm(false);
+  };
+
   const startEdit = (facade: FacadeRecord) => {
     setEditingId(facade.id);
     setForm({
@@ -150,6 +165,7 @@ export const FacadeCrud = ({
     });
     setFormErrorMessage(null);
     setFormSuccessMessage(null);
+    setShowForm(true);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -160,8 +176,7 @@ export const FacadeCrud = ({
     const label = form.label.trim();
     const imageUrl = form.imageUrl.trim();
     const scopedFloorPlanId = floorPlanOptions ? selectedFloorPlanId : null;
-    const floorPlanId =
-      scopedFloorPlanId ?? form.floorPlanId.trim();
+    const floorPlanId = scopedFloorPlanId ?? form.floorPlanId.trim();
 
     if (!label || !imageUrl || !floorPlanId) {
       setFormErrorMessage("Label, image URL, and floor plan id are required.");
@@ -177,10 +192,10 @@ export const FacadeCrud = ({
     setSaving(true);
     try {
       if (editingId) {
-        await updateFacade(editingId, payload);
+        await updateFacade(floorPlanId, editingId, payload);
         setFormSuccessMessage("Facade updated.");
       } else {
-        await createFacade(payload);
+        await createFacade(floorPlanId, payload);
         setFormSuccessMessage("Facade created.");
       }
       await handleLoad();
@@ -204,9 +219,18 @@ export const FacadeCrud = ({
     if (!confirmed) {
       return;
     }
+    const resolvedFloorPlanId =
+      facades.find((facade) => facade.id === id)?.floorPlanId ??
+      selectedFloorPlanId ??
+      form.floorPlanId.trim() ??
+      null;
+    if (!resolvedFloorPlanId) {
+      setErrorMessage("Select a floor plan before deleting a facade.");
+      return;
+    }
     setDeleteId(id);
     try {
-      await deleteFacade(id);
+      await deleteFacade(resolvedFloorPlanId, id);
       await handleLoad();
     } catch (error) {
       setErrorMessage(
@@ -225,115 +249,45 @@ export const FacadeCrud = ({
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <h2 className="text-lg font-semibold">Existing Facades</h2>
-            {showRefresh && (
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <Input
+          value={filterText}
+          onChange={(event) => setFilterText(event.target.value)}
+          placeholder={filterPlaceholder}
+          className="flex-1 min-w-[220px] max-w-sm"
+        />
+        {showRefresh && (
+          <Button
+            onClick={handleLoad}
+            disabled={loading}
+            label="Refresh"
+            loading={loading}
+          />
+        )}
+        <Button
+          onClick={showForm ? closeForm : openCreateForm}
+          label={showForm ? "Cancel" : "Add facade"}
+          variant={showForm ? "outline" : "primary"}
+          className="ml-auto"
+        />
+      </div>
+
+      {showForm && (
+        <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="text-lg font-semibold">
+              {editingId ? "Edit Facade" : "Add facade"}
+            </h2>
+            {editingId && (
               <Button
-                onClick={handleLoad}
-                disabled={loading}
-                label="Refresh"
-                loading={loading}
+                type="button"
+                variant="ghost"
+                className="h-8 px-2 text-xs"
+                label="New facade"
+                onClick={openCreateForm}
               />
             )}
-            <Input
-              value={filterText}
-              onChange={(event) => setFilterText(event.target.value)}
-              placeholder={filterPlaceholder}
-              className="max-w-sm"
-            />
           </div>
-
-          {floorPlanOptions && (
-            <div className="mb-4 max-w-sm">
-              <label className="grid gap-2 text-sm">
-                <span className="font-medium text-slate-700">Floor Plan</span>
-                <select
-                  value={selectedFloorPlanId ?? ""}
-                  onChange={(event) =>
-                    setSelectedFloorPlanId(event.target.value || null)
-                  }
-                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  {floorPlanOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          )}
-
-          {loading ? (
-            <div className="p-6 text-center text-muted-foreground">
-              Loading facades...
-            </div>
-          ) : filteredFacades.length === 0 ? (
-            <div className="p-6 text-center text-muted-foreground">
-              No facades found.
-            </div>
-          ) : (
-            <div className="overflow-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-slate-700">
-                    <th className="p-2 border-b">Label</th>
-                    <th className="p-2 border-b">Floor Plan</th>
-                    <th className="p-2 border-b">Image</th>
-                    <th className="p-2 border-b text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredFacades.map((facade) => (
-                    <tr key={facade.id}>
-                      <td className="p-2 border-b border-slate-100">
-                        <div className="font-medium text-slate-900">
-                          {facade.label ?? "--"}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          {facade.id}
-                        </div>
-                      </td>
-                      <td className="p-2 border-b border-slate-100">
-                        {facade.floorPlanId ?? "--"}
-                      </td>
-                      <td className="p-2 border-b border-slate-100">
-                        <div className="text-xs text-slate-500 truncate max-w-[220px]">
-                          {facade.imageUrl ?? "--"}
-                        </div>
-                      </td>
-                      <td className="p-2 border-b border-slate-100 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            label="Edit"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs"
-                            onClick={() => startEdit(facade)}
-                          />
-                          <Button
-                            label="Delete"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs text-red-600"
-                            onClick={() => handleDelete(facade.id)}
-                            disabled={deleteId === facade.id}
-                            loading={deleteId === facade.id}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">
-            {editingId ? "Edit Facade" : "Create Facade"}
-          </h2>
           <form onSubmit={handleSubmit} className="grid gap-4">
             <div className="grid gap-2">
               <span className="text-sm font-medium">Label</span>
@@ -402,7 +356,93 @@ export const FacadeCrud = ({
             </div>
           </form>
         </section>
-      </div>
+      )}
+
+      <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
+        {floorPlanOptions && floorPlanOptions.length > 1 && (
+          <div className="mb-4 max-w-sm">
+            <label className="grid gap-2 text-sm">
+              <span className="font-medium text-slate-700">Floor Plan</span>
+              <select
+                value={selectedFloorPlanId ?? ""}
+                onChange={(event) =>
+                  setSelectedFloorPlanId(event.target.value || null)
+                }
+                className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                {floorPlanOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="p-6 text-center text-muted-foreground">
+            Loading facades...
+          </div>
+        ) : filteredFacades.length === 0 ? (
+          <div className="p-6 text-center text-muted-foreground">
+            No facades found.
+          </div>
+        ) : (
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-700">
+                  <th className="p-2 border-b">Label</th>
+                  <th className="p-2 border-b">Floor Plan</th>
+                  <th className="p-2 border-b">Image</th>
+                  <th className="p-2 border-b text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredFacades.map((facade) => (
+                  <tr key={facade.id}>
+                    <td className="p-2 border-b border-slate-100">
+                      <div className="font-medium text-slate-900">
+                        {facade.label ?? "--"}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {facade.id}
+                      </div>
+                    </td>
+                    <td className="p-2 border-b border-slate-100">
+                      {facade.floorPlanId ?? "--"}
+                    </td>
+                    <td className="p-2 border-b border-slate-100">
+                      <div className="text-xs text-slate-500 truncate max-w-[220px]">
+                        {facade.imageUrl ?? "--"}
+                      </div>
+                    </td>
+                    <td className="p-2 border-b border-slate-100 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          label="Edit"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => startEdit(facade)}
+                        />
+                        <Button
+                          label="Delete"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs text-red-600"
+                          onClick={() => handleDelete(facade.id)}
+                          disabled={deleteId === facade.id}
+                          loading={deleteId === facade.id}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </>
   );
 };

@@ -25,7 +25,7 @@ export const EstateTable = ({
   onOpenEstate,
   filterPlaceholder = "Filter estates by name or id",
   emptyMessage = "No estates match the current filter.",
-  actionLabel = "Edit",
+  actionLabel = "Manage",
 }: EstateTableProps) => {
   const [filterText, setFilterText] = useState("");
 

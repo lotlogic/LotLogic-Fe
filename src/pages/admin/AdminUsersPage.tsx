@@ -4,12 +4,21 @@ import { AdminNav } from "@/components/admin/AdminNav";
 import { adminApi } from "@/lib/api/adminApi";
 import { adminAuth } from "@/lib/auth/adminAuth";
 import { useAdminSession } from "@/lib/admin/adminSession";
+import { normalizeId, normalizeIdList } from "@/lib/utils/ids";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 type AdminEstate = {
   id: string;
   name?: string | null;
+  [key: string]: unknown;
+};
+
+type AdminEstateAssignment = {
+  id?: string | null;
+  estateId?: string | null;
+  name?: string | null;
+  userId?: string | null;
   [key: string]: unknown;
 };
 
@@ -20,7 +29,7 @@ type AdminUser = {
   displayName?: string | null;
   role?: string | null;
   status?: string | null;
-  estates?: AdminEstate[];
+  estates?: AdminEstateAssignment[];
   [key: string]: unknown;
 };
 
@@ -48,10 +57,16 @@ const getUserContact = (user: AdminUser): string => {
 const getUserName = (user: AdminUser): string =>
   user.displayName && user.displayName.trim() ? user.displayName : "(no name)";
 
-const getEstateName = (estate: AdminEstate): string =>
-  typeof estate.name === "string" && estate.name.trim()
-    ? estate.name
-    : estate.id;
+const getEstateName = (estate: {
+  id?: string | null;
+  estateId?: string | null;
+  name?: string | null;
+}): string => {
+  if (typeof estate.name === "string" && estate.name.trim()) {
+    return estate.name;
+  }
+  return normalizeId(estate) ?? "(unknown)";
+};
 
 const inviteRedirectUrl =
   import.meta.env.VITE_ENTRA_INVITE_REDIRECT_URL ||
@@ -136,7 +151,7 @@ const AdminUsersPage = () => {
       setEditEmail(data.email ?? "");
       setEditName(data.displayName ?? "");
       setEditRole((data.role as (typeof roleOptions)[number]) ?? "USER");
-      const estateIds = (data.estates ?? []).map((estate) => estate.id);
+      const estateIds = normalizeIdList(data.estates ?? []);
       setSelectedEstateIds(estateIds);
       return data;
     } catch (error) {
@@ -745,16 +760,21 @@ const AdminUsersPage = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {(selectedUser.estates ?? []).map((estate) => (
-                          <tr key={estate.id}>
-                            <td className="p-2 border-b border-slate-50 text-sm">
-                              {getEstateName(estate)}
-                            </td>
-                            <td className="p-2 border-b border-slate-50 text-xs text-slate-400 font-mono">
-                              {estate.id}
-                            </td>
-                          </tr>
-                        ))}
+                    {(selectedUser.estates ?? []).map((estate, index) => {
+                      const estateId = normalizeId(estate) ?? "(unknown)";
+                      const estateKey =
+                        estateId === "(unknown)" ? `unknown-${index}` : estateId;
+                      return (
+                        <tr key={estateKey}>
+                          <td className="p-2 border-b border-slate-50 text-sm">
+                            {getEstateName(estate)}
+                          </td>
+                          <td className="p-2 border-b border-slate-50 text-xs text-slate-400 font-mono">
+                            {estateId}
+                          </td>
+                        </tr>
+                      );
+                    })}
                       </tbody>
                     </table>
                   </div>

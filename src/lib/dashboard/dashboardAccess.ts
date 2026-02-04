@@ -1,4 +1,5 @@
 import type { AdminWhoAmI } from "@/lib/admin/adminSession";
+import { normalizeId } from "@/lib/utils/ids";
 
 export type DashboardAccess = {
   builderIds: string[];
@@ -8,22 +9,6 @@ export type DashboardAccess = {
 export type DashboardAccessResolution = {
   access: DashboardAccess;
   hasAssignments: boolean;
-};
-
-const normalizeId = (value: unknown): string | null => {
-  if (typeof value === "string" && value.trim()) {
-    return value.trim();
-  }
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return String(value);
-  }
-  if (value && typeof value === "object") {
-    const record = value as Record<string, unknown>;
-    if (typeof record.id === "string" && record.id.trim()) {
-      return record.id.trim();
-    }
-  }
-  return null;
 };
 
 const parseIdList = (value: unknown): string[] => {

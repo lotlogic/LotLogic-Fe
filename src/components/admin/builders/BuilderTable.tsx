@@ -28,7 +28,7 @@ export const BuilderTable = ({
   onOpenBuilder,
   filterPlaceholder = "Filter builders by name, email, phone, or id",
   emptyMessage = "No builders match the current filter.",
-  actionLabel = "Manage Team",
+  actionLabel = "Manage",
 }: BuilderTableProps) => {
   const [filterText, setFilterText] = useState("");
 

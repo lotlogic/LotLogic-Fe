@@ -1,5 +1,5 @@
-import type { FormEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import type { FormEvent, ReactNode } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { AdminUploadField } from "@/components/admin/AdminUploadField";
 import { Button } from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
@@ -79,6 +79,7 @@ type FloorPlanCrudProps = {
   builderId?: string | null;
   showRefresh?: boolean;
   filterPlaceholder?: string;
+  renderEditPanel?: (floorPlanId: string) => ReactNode;
 };
 
 export const FloorPlanCrud = ({
@@ -89,11 +90,14 @@ export const FloorPlanCrud = ({
   builderId,
   showRefresh = true,
   filterPlaceholder = "Filter by name or id",
+  renderEditPanel,
 }: FloorPlanCrudProps) => {
+  const formId = useId();
   const [floorPlans, setFloorPlans] = useState<FloorPlanRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filterText, setFilterText] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
   const [form, setForm] = useState<FloorPlanForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -142,6 +146,16 @@ export const FloorPlanCrud = ({
     setFormSuccessMessage(null);
   };
 
+  const openCreateForm = () => {
+    resetForm();
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    resetForm();
+    setShowForm(false);
+  };
+
   const startEdit = (plan: FloorPlanRecord) => {
     setEditingId(plan.id);
     setForm({
@@ -159,6 +173,7 @@ export const FloorPlanCrud = ({
     });
     setFormErrorMessage(null);
     setFormSuccessMessage(null);
+    setShowForm(true);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -260,108 +275,46 @@ export const FloorPlanCrud = ({
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <h2 className="text-lg font-semibold">Existing Floor Plans</h2>
-            {showRefresh && (
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <Input
+          value={filterText}
+          onChange={(event) => setFilterText(event.target.value)}
+          placeholder={filterPlaceholder}
+          className="flex-1 min-w-[220px] max-w-sm"
+        />
+        {showRefresh && (
+          <Button
+            onClick={handleLoad}
+            disabled={loading}
+            label="Refresh"
+            loading={loading}
+          />
+        )}
+        <Button
+          onClick={showForm ? closeForm : openCreateForm}
+          label={showForm ? "Cancel" : "Add floor plan"}
+          variant={showForm ? "outline" : "primary"}
+          className="ml-auto"
+        />
+      </div>
+
+      {showForm && (
+        <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="text-lg font-semibold">
+              {editingId ? "Edit Floor Plan" : "Add floor plan"}
+            </h2>
+            {editingId && (
               <Button
-                onClick={handleLoad}
-                disabled={loading}
-                label="Refresh"
-                loading={loading}
+                type="button"
+                variant="ghost"
+                className="h-8 px-2 text-xs"
+                label="New floor plan"
+                onClick={openCreateForm}
               />
             )}
-            <Input
-              value={filterText}
-              onChange={(event) => setFilterText(event.target.value)}
-              placeholder={filterPlaceholder}
-              className="max-w-sm"
-            />
           </div>
-
-          {loading ? (
-            <div className="p-6 text-center text-muted-foreground">
-              Loading floor plans...
-            </div>
-          ) : filteredFloorPlans.length === 0 ? (
-            <div className="p-6 text-center text-muted-foreground">
-              No floor plans found.
-            </div>
-          ) : (
-            <div className="overflow-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-slate-700">
-                    <th className="p-2 border-b">Name</th>
-                    <th className="p-2 border-b">Beds/Baths/Garages</th>
-                    <th className="p-2 border-b">Area (sqm)</th>
-                    <th className="p-2 border-b">Min Lot (W x D)</th>
-                    <th className="p-2 border-b">Features</th>
-                    <th className="p-2 border-b text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredFloorPlans.map((plan) => (
-                    <tr key={plan.id}>
-                      <td className="p-2 border-b border-slate-100">
-                        <div className="font-medium text-slate-900">
-                          {plan.name ?? "--"}
-                        </div>
-                        <div className="text-xs text-slate-500 truncate max-w-[220px]">
-                          {plan.floorplanUrl ?? "--"}
-                        </div>
-                      </td>
-                      <td className="p-2 border-b border-slate-100">
-                        {plan.bedrooms ?? "--"} / {plan.bathrooms ?? "--"} /{" "}
-                        {plan.garages ?? "--"}
-                      </td>
-                      <td className="p-2 border-b border-slate-100">
-                        {plan.areaSqm ?? "--"}
-                      </td>
-                      <td className="p-2 border-b border-slate-100">
-                        {plan.minLotWidth ?? "--"} x {plan.minLotDepth ?? "--"}
-                      </td>
-                      <td className="p-2 border-b border-slate-100">
-                        {[
-                          plan.rumpus ? "R" : null,
-                          plan.alfresco ? "A" : null,
-                          plan.pergola ? "P" : null,
-                        ]
-                          .filter(Boolean)
-                          .join(", ") || "--"}
-                      </td>
-                      <td className="p-2 border-b border-slate-100 text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            label="Edit"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs"
-                            onClick={() => startEdit(plan)}
-                          />
-                          <Button
-                            label="Delete"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs text-red-600"
-                            onClick={() => handleDelete(plan.id)}
-                            disabled={deleteId === plan.id}
-                            loading={deleteId === plan.id}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">
-            {editingId ? "Edit Floor Plan" : "Create Floor Plan"}
-          </h2>
-          <form onSubmit={handleSubmit} className="grid gap-4">
+          <form id={formId} onSubmit={handleSubmit} className="grid gap-4">
             <div className="grid gap-2">
               <span className="text-sm font-medium">Name</span>
               <Input
@@ -524,35 +477,119 @@ export const FloorPlanCrud = ({
                 </label>
               </div>
             </div>
-
-            {formErrorMessage && (
-              <div className="text-sm text-red-600">{formErrorMessage}</div>
-            )}
-            {formSuccessMessage && (
-              <div className="text-sm text-emerald-600">
-                {formSuccessMessage}
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="submit"
-                label={editingId ? "Save changes" : "Create floor plan"}
-                loading={saving}
-                disabled={saving}
-              />
-              {editingId && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  label="Cancel edit"
-                  onClick={resetForm}
-                />
-              )}
-            </div>
           </form>
+          {editingId && renderEditPanel && (
+            <div className="mt-6 border-t border-slate-100 pt-6">
+              {renderEditPanel(editingId)}
+            </div>
+          )}
+
+          {formErrorMessage && (
+            <div className="text-sm text-red-600 mt-4">{formErrorMessage}</div>
+          )}
+          {formSuccessMessage && (
+            <div className="text-sm text-emerald-600 mt-4">
+              {formSuccessMessage}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2 mt-4">
+            <Button
+              type="submit"
+              form={formId}
+              label={editingId ? "Save changes" : "Create floor plan"}
+              loading={saving}
+              disabled={saving}
+            />
+            {editingId && (
+              <Button
+                type="button"
+                variant="outline"
+                label="Cancel edit"
+                onClick={resetForm}
+              />
+            )}
+          </div>
         </section>
-      </div>
+      )}
+
+      <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6">
+        {loading ? (
+          <div className="p-6 text-center text-muted-foreground">
+            Loading floor plans...
+          </div>
+        ) : filteredFloorPlans.length === 0 ? (
+          <div className="p-6 text-center text-muted-foreground">
+            No floor plans found.
+          </div>
+        ) : (
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-slate-700">
+                  <th className="p-2 border-b">Name</th>
+                  <th className="p-2 border-b">Beds/Baths/Garages</th>
+                  <th className="p-2 border-b">Area (sqm)</th>
+                  <th className="p-2 border-b">Min Lot (W x D)</th>
+                  <th className="p-2 border-b">Features</th>
+                  <th className="p-2 border-b text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredFloorPlans.map((plan) => (
+                  <tr key={plan.id}>
+                    <td className="p-2 border-b border-slate-100">
+                      <div className="font-medium text-slate-900">
+                        {plan.name ?? "--"}
+                      </div>
+                      <div className="text-xs text-slate-500 truncate max-w-[220px]">
+                        {plan.floorplanUrl ?? "--"}
+                      </div>
+                    </td>
+                    <td className="p-2 border-b border-slate-100">
+                      {plan.bedrooms ?? "--"} / {plan.bathrooms ?? "--"} /{" "}
+                      {plan.garages ?? "--"}
+                    </td>
+                    <td className="p-2 border-b border-slate-100">
+                      {plan.areaSqm ?? "--"}
+                    </td>
+                    <td className="p-2 border-b border-slate-100">
+                      {plan.minLotWidth ?? "--"} x {plan.minLotDepth ?? "--"}
+                    </td>
+                    <td className="p-2 border-b border-slate-100">
+                      {[
+                        plan.rumpus ? "R" : null,
+                        plan.alfresco ? "A" : null,
+                        plan.pergola ? "P" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(", ") || "--"}
+                    </td>
+                    <td className="p-2 border-b border-slate-100 text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          label="Edit"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => startEdit(plan)}
+                        />
+                        <Button
+                          label="Delete"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs text-red-600"
+                          onClick={() => handleDelete(plan.id)}
+                          disabled={deleteId === plan.id}
+                          loading={deleteId === plan.id}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </>
   );
 };

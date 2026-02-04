@@ -1188,10 +1188,10 @@ export const EstateLotsCrud = ({
           />
           <Button
             type="button"
-            variant="ghost"
+            onClick={showLotForm ? closeLotForm : openNewLotForm}
+            variant={showLotForm ? "outline" : "ghost"}
             className="h-8 px-2 text-xs"
-            label="Create lot"
-            onClick={openNewLotForm}
+            label={showLotForm ? "Close lot form" : "Add lot"}
           />
           {canImportDxf && (
             <Button
@@ -1473,6 +1473,13 @@ export const EstateLotsCrud = ({
               className="h-8 px-2 text-xs"
               label="New lot"
               onClick={openNewLotForm}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="h-8 px-2 text-xs"
+              label="Close"
+              onClick={closeLotForm}
             />
           </div>
 

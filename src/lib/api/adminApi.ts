@@ -142,6 +142,12 @@ const builderUsersPath = (builderId: AdminId) =>
 const builderUserPath = (builderId: AdminId, userId: AdminId) =>
   `${builderUsersPath(builderId)}/${encodeId(userId)}`;
 
+const floorPlanFacadesPath = (floorPlanId: AdminId) =>
+  `${idPath("floor-plans", floorPlanId)}/facades`;
+
+const floorPlanFacadePath = (floorPlanId: AdminId, id: AdminId) =>
+  `${floorPlanFacadesPath(floorPlanId)}/${encodeId(id)}`;
+
 export const adminApi = {
   async getEstates<T = unknown>(params?: AdminQuery): Promise<T[]> {
     return data(adminApiClient.get<T[]>(basePath("estates"), { params }));
@@ -253,22 +259,32 @@ export const adminApi = {
     return data(adminApiClient.delete<T>(idPath("floor-plans", id)));
   },
 
-  async getFacades<T = unknown>(params?: AdminQuery): Promise<T[]> {
-    return data(adminApiClient.get<T[]>(basePath("facades"), { params }));
+  async getFacades<T = unknown>(floorPlanId: AdminId): Promise<T[]> {
+    return data(adminApiClient.get<T[]>(floorPlanFacadesPath(floorPlanId)));
   },
-  async createFacade<T = unknown, B extends Record<string, unknown> = Record<string, unknown>>(
+  async createFacade<
+    T = unknown,
+    B extends Record<string, unknown> = Record<string, unknown>
+  >(
+    floorPlanId: AdminId,
     payload: B
   ): Promise<T> {
-    return data(adminApiClient.post<T>(basePath("facades"), payload));
+    return data(adminApiClient.post<T>(floorPlanFacadesPath(floorPlanId), payload));
   },
-  async updateFacade<T = unknown, B extends Record<string, unknown> = Record<string, unknown>>(
+  async updateFacade<
+    T = unknown,
+    B extends Record<string, unknown> = Record<string, unknown>
+  >(
+    floorPlanId: AdminId,
     id: AdminId,
     payload: B
   ): Promise<T> {
-    return data(adminApiClient.patch<T>(idPath("facades", id), payload));
+    return data(
+      adminApiClient.patch<T>(floorPlanFacadePath(floorPlanId, id), payload)
+    );
   },
-  async deleteFacade<T = unknown>(id: AdminId): Promise<T> {
-    return data(adminApiClient.delete<T>(idPath("facades", id)));
+  async deleteFacade<T = unknown>(floorPlanId: AdminId, id: AdminId): Promise<T> {
+    return data(adminApiClient.delete<T>(floorPlanFacadePath(floorPlanId, id)));
   },
 
   async getDesignsOnLots<T = unknown>(params?: AdminQuery): Promise<T[]> {
@@ -313,6 +329,9 @@ export const adminApi = {
   },
   async getBuilderUsers<T = unknown>(id: AdminId): Promise<T[]> {
     return data(adminApiClient.get<T[]>(builderUsersPath(id)));
+  },
+  async getEstateUsers<T = unknown>(id: AdminId): Promise<T[]> {
+    return data(adminApiClient.get<T[]>(`${idPath("estates", id)}/users`));
   },
   async replaceBuilderUsers<T = unknown>(
     id: AdminId,
