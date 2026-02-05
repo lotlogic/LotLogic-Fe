@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { AdminUploadField } from "@/components/admin/AdminUploadField";
 import {
   EstateLotsCrud,
+  type DxfImportResult,
   type EstateLotRecord,
 } from "@/components/admin/estates/EstateLotsCrud";
 import type { EstateRecord } from "@/components/admin/estates/types";
@@ -410,9 +411,9 @@ const DashboardEstatePage = () => {
   }, []);
 
   const importLotsDxf = useCallback(
-    async (id: string, payload: FormData) => {
+    async (id: string, payload: FormData): Promise<DxfImportResult> => {
       try {
-        return await adminApi.importEstateLotsDxf(id, payload);
+        return await adminApi.importEstateLotsDxf<DxfImportResult>(id, payload);
       } catch (error) {
         throw new Error(
           getAdminApiErrorMessage(error, "Failed to import lots.")

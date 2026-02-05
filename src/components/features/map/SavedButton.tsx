@@ -1,7 +1,5 @@
 import type { SavedButtonProps } from "@/types/ui";
 import { Bookmark } from "lucide-react";
-import React from "react";
-
 export const SavedButton = ({
   onClick,
   isActive = false,

@@ -400,7 +400,6 @@ const DashboardBuilderPage = () => {
   useEffect(() => {
     if (!hasAccess) {
       setFloorPlans([]);
-      setFloorPlansLoading(false);
       return;
     }
     loadFloorPlans();
