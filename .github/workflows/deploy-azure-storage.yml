@@ -16,6 +16,9 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      AZURE_STORAGE_ACCOUNT: lotcheck
 
     steps:
       - name: Checkout
@@ -48,18 +51,18 @@ jobs:
       - name: Azure login
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          creds: ${{ env.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Storage ($web)
         run: |
           az storage blob delete-batch \
-            --account-name "lotcheck" \
+            --account-name "${{ env.AZURE_STORAGE_ACCOUNT }}" \
             --auth-mode login \
             --source '$web' \
             --pattern '*'
 
           az storage blob upload-batch \
-            --account-name "lotcheck" \
+            --account-name "${{ env.AZURE_STORAGE_ACCOUNT }}" \
             --auth-mode login \
             --destination '$web' \
             --source ./dist \
