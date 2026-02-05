@@ -1,0 +1,66 @@
+name: Deploy to Azure Storage Static Website
+
+on:
+  push:
+    branches:
+      - stage
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: azure-storage-deploy
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env (build-time)
+        run: |
+          cat << 'EOF' > .env
+          VITE_API_URL=https://lotcheck-be.wittysky-d6d60dbd.australiasoutheast.azurecontainerapps.io
+          VITE_AAD_CLIENT_ID=d19995ec-a209-41b5-b733-7a4302d606d8
+          VITE_AAD_AUTHORITY=https://login.microsoftonline.com/e5922548-7215-4393-b6af-5efececf95b1
+          VITE_AAD_SCOPES=openid profile email api://1ec35447-a0ca-41b8-8511-03bca3cf7d44/user_impersonation
+          VITE_API_APP_CLIENT_ID=1ec35447-a0ca-41b8-8511-03bca3cf7d44
+          VITE_MAPBOX_TOKEN=${{ secrets.VITE_MAPBOX_TOKEN }}
+          VITE_MIXPANEL_TOKEN=${{ secrets.VITE_MIXPANEL_TOKEN }}
+          EOF
+
+      - name: Build
+        run: npm run build
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Storage ($web)
+        run: |
+          az storage blob delete-batch \
+            --account-name "lotcheck" \
+            --auth-mode login \
+            --source '$web' \
+            --pattern '*'
+
+          az storage blob upload-batch \
+            --account-name "lotcheck" \
+            --auth-mode login \
+            --destination '$web' \
+            --source ./dist \
+            --overwrite true

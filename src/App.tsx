@@ -1,4 +1,3 @@
-import { APIProvider } from "@vis.gl/react-google-maps";
 import {
   Navigate,
   Route,
@@ -62,153 +61,151 @@ const AdminGate = ({ children }: { children: ReactNode }) => (
 
 function App() {
   return (
-    <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
-      <Router>
-        <BrandThemeController />
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/prototype" element={<PrototypePage />} />
-          <Route path="*" element={<NotFoundPage />} />
-          <Route path="/admin/login" element={<AdminLoginPage />} />
-          <Route
-            path="/dashboard"
-            element={
-              <RequireAdminAuth>
-                <DashboardPage />
-              </RequireAdminAuth>
-            }
-          />
-          <Route
-            path="/dashboard/builders/:builderId"
-            element={
-              <RequireAdminAuth>
-                <DashboardBuilderPage />
-              </RequireAdminAuth>
-            }
-          />
-          <Route
-            path="/dashboard/estates/:estateId"
-            element={
-              <RequireAdminAuth>
-                <DashboardEstatePage />
-              </RequireAdminAuth>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <AdminGate>
-                <Navigate to="/admin/users" replace />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/users"
-            element={
-              <AdminGate>
-                <AdminUsersPage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/estates"
-            element={
-              <AdminGate>
-                <AdminEstatesPage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/estates/:estateId"
-            element={
-              <AdminGate>
-                <AdminEstatePage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/lots"
-            element={
-              <AdminGate>
-                <AdminLotsPage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/zoning-rules"
-            element={
-              <AdminGate>
-                <AdminZoningRulesPage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/lot-zoning-rules"
-            element={
-              <AdminGate>
-                <AdminLotZoningRulesPage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/floor-plans"
-            element={
-              <AdminGate>
-                <AdminFloorPlansPage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/facades"
-            element={
-              <AdminGate>
-                <AdminFacadesPage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/design-on-lots"
-            element={
-              <AdminGate>
-                <AdminDesignsOnLotsPage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/builders"
-            element={
-              <AdminGate>
-                <AdminBuildersPage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/builders/:builderId"
-            element={
-              <AdminGate>
-                <AdminBuilderPage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/brand-settings"
-            element={
-              <AdminGate>
-                <AdminBrandSettingsPage />
-              </AdminGate>
-            }
-          />
-          <Route
-            path="/admin/brand-settings/:guid"
-            element={
-              <AdminGate>
-                <AdminBrandSettingPage />
-              </AdminGate>
-            }
-          />
-        </Routes>
-      </Router>
-    </APIProvider>
+    <Router>
+      <BrandThemeController />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/prototype" element={<PrototypePage />} />
+        <Route path="*" element={<NotFoundPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <RequireAdminAuth>
+              <DashboardPage />
+            </RequireAdminAuth>
+          }
+        />
+        <Route
+          path="/dashboard/builders/:builderId"
+          element={
+            <RequireAdminAuth>
+              <DashboardBuilderPage />
+            </RequireAdminAuth>
+          }
+        />
+        <Route
+          path="/dashboard/estates/:estateId"
+          element={
+            <RequireAdminAuth>
+              <DashboardEstatePage />
+            </RequireAdminAuth>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminGate>
+              <Navigate to="/admin/users" replace />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AdminGate>
+              <AdminUsersPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/estates"
+          element={
+            <AdminGate>
+              <AdminEstatesPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/estates/:estateId"
+          element={
+            <AdminGate>
+              <AdminEstatePage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/lots"
+          element={
+            <AdminGate>
+              <AdminLotsPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/zoning-rules"
+          element={
+            <AdminGate>
+              <AdminZoningRulesPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/lot-zoning-rules"
+          element={
+            <AdminGate>
+              <AdminLotZoningRulesPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/floor-plans"
+          element={
+            <AdminGate>
+              <AdminFloorPlansPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/facades"
+          element={
+            <AdminGate>
+              <AdminFacadesPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/design-on-lots"
+          element={
+            <AdminGate>
+              <AdminDesignsOnLotsPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/builders"
+          element={
+            <AdminGate>
+              <AdminBuildersPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/builders/:builderId"
+          element={
+            <AdminGate>
+              <AdminBuilderPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/brand-settings"
+          element={
+            <AdminGate>
+              <AdminBrandSettingsPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/brand-settings/:guid"
+          element={
+            <AdminGate>
+              <AdminBrandSettingPage />
+            </AdminGate>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 

@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LotCheck - Buyers who already know what fits</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // Lucide icons as inline SVG components
+        const ChevronDown = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+        );
+        
+        const Check = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+        );
+        
+        const ArrowRight = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+        );
+
+        function LotCheckLanding() {
+            const [scrollY, setScrollY] = useState(0);
+
+            useEffect(() => {
+                const handleScroll = () => setScrollY(window.scrollY);
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            const steps = [
+                { title: "Buyer explores the estate", detail: "Interactive map reveals all available lots and their unique characteristics" },
+                { title: "Sets their preferences", detail: "Bedrooms, layout style, budget range—filters that actually matter" },
+                { title: "Sees lots that genuinely fit", detail: "Real-time matching shows compatible options with transparent limitations" },
+                { title: "Enquiry with context", detail: "Sales receives qualified leads with full preference history attached" }
+            ];
+
+            const benefits = [
+                "Buyers arrive informed, not confused",
+                "Sales conversations start further along", 
+                "Fewer mismatched enquiries",
+                "Consistent experience across the estate"
+            ];
+
+            const faqs = [
+                {
+                    q: "Does this replace our planners or builders?",
+                    a: "No. LotCheck filters and qualifies. Your team still does the work that matters—we just ensure they're talking to the right people."
+                },
+                {
+                    q: "Will buyers treat results as guarantees?",
+                    a: "Every screen clearly explains dependencies and limitations. Buyers understand they're seeing possibilities, not promises."
+                },
+                {
+                    q: "How much work for our team?",
+                    a: "Minimal. You approve builders and supply lot information. We handle setup, builder onboarding, and technical integration."
+                },
+                {
+                    q: "How does it affect sales conversations?",
+                    a: "Buyers arrive clearer. Your team spends less time explaining basics and more time on meaningful engagement."
+                }
+            ];
+
+            return (
+                <div className="bg-stone-50 min-h-screen">
+                    <style>{`
+                        @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Montserrat:wght@300;400;500;600&display=swap');
+                        
+                        * {
+                            margin: 0;
+                            padding: 0;
+                            box-sizing: border-box;
+                        }
+
+                        body {
+                            overflow-x: hidden;
+                        }
+
+                        .hero-gradient {
+                            background: linear-gradient(165deg, #1a1f2e 0%, #2d3748 50%, #1a1f2e 100%);
+                            position: relative;
+                            overflow: hidden;
+                        }
+
+                        .hero-gradient::before {
+                            content: '';
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            bottom: 0;
+                            background: 
+                                radial-gradient(circle at 20% 30%, rgba(255, 107, 107, 0.08) 0%, transparent 40%),
+                                radial-gradient(circle at 80% 70%, rgba(255, 107, 107, 0.06) 0%, transparent 40%);
+                            pointer-events: none;
+                        }
+
+                        .fade-in {
+                            animation: fadeInUp 0.8s ease-out forwards;
+                            opacity: 0;
+                        }
+
+                        .fade-in-delay-1 { animation-delay: 0.2s; }
+                        .fade-in-delay-2 { animation-delay: 0.4s; }
+                        .fade-in-delay-3 { animation-delay: 0.6s; }
+
+                        @keyframes fadeInUp {
+                            from {
+                                opacity: 0;
+                                transform: translateY(30px);
+                            }
+                            to {
+                                opacity: 1;
+                                transform: translateY(0);
+                            }
+                        }
+
+                        .coral-accent {
+                            color: #ff6b6b;
+                        }
+
+                        .coral-bg {
+                            background-color: #ff6b6b;
+                        }
+
+                        .btn-primary {
+                            background: #ff6b6b;
+                            color: white;
+                            padding: 16px 40px;
+                            border-radius: 2px;
+                            border: none;
+                            font-family: 'Montserrat', sans-serif;
+                            font-weight: 500;
+                            font-size: 15px;
+                            letter-spacing: 0.5px;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            text-decoration: none;
+                            display: inline-block;
+                        }
+
+                        .btn-primary:hover {
+                            background: #ff5252;
+                            transform: translateY(-2px);
+                            box-shadow: 0 8px 24px rgba(255, 107, 107, 0.25);
+                        }
+
+                        .btn-secondary {
+                            background: transparent;
+                            color: #e5e7eb;
+                            padding: 16px 40px;
+                            border-radius: 2px;
+                            border: 1px solid rgba(229, 231, 235, 0.3);
+                            font-family: 'Montserrat', sans-serif;
+                            font-weight: 400;
+                            font-size: 15px;
+                            letter-spacing: 0.5px;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                            text-decoration: none;
+                            display: inline-block;
+                        }
+
+                        .btn-secondary:hover {
+                            border-color: rgba(229, 231, 235, 0.6);
+                            background: rgba(255, 255, 255, 0.05);
+                        }
+
+                        .step-card {
+                            background: white;
+                            border-left: 3px solid #e5e7eb;
+                            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                        }
+
+                        .step-card:hover {
+                            border-left-color: #ff6b6b;
+                            transform: translateX(8px);
+                            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+                        }
+
+                        .benefit-item {
+                            position: relative;
+                            padding-left: 32px;
+                            transition: all 0.3s ease;
+                        }
+
+                        .benefit-item::before {
+                            content: '';
+                            position: absolute;
+                            left: 0;
+                            top: 4px;
+                            width: 20px;
+                            height: 20px;
+                            background: #ff6b6b;
+                            border-radius: 50%;
+                            opacity: 0.15;
+                            transition: all 0.3s ease;
+                        }
+
+                        .benefit-item:hover::before {
+                            opacity: 0.25;
+                            transform: scale(1.1);
+                        }
+
+                        .faq-item {
+                            border-bottom: 1px solid #e5e7eb;
+                            transition: all 0.3s ease;
+                        }
+
+                        .faq-item:hover {
+                            background: #fafafa;
+                        }
+
+                        .visual-journey {
+                            background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%);
+                            position: relative;
+                        }
+
+                        .floating {
+                            animation: float 3s ease-in-out infinite;
+                        }
+
+                        @keyframes float {
+                            0%, 100% { transform: translateY(0px); }
+                            50% { transform: translateY(-10px); }
+                        }
+
+                        .pill {
+                            display: inline-block;
+                            padding: 6px 16px;
+                            background: rgba(255, 107, 107, 0.1);
+                            color: #ff6b6b;
+                            border-radius: 20px;
+                            font-size: 13px;
+                            font-weight: 500;
+                            letter-spacing: 0.3px;
+                        }
+
+                        .logo {
+                            font-family: 'Libre Baskerville', serif;
+                            font-size: 28px;
+                            font-weight: 700;
+                            color: #1a1f2e;
+                            letter-spacing: -0.5px;
+                        }
+
+                        .logo-light {
+                            color: #ffffff;
+                        }
+
+                        .section-heading {
+                            font-family: 'Libre Baskerville', serif;
+                            font-size: 42px;
+                            line-height: 1.2;
+                            color: #1a1f2e;
+                            margin-bottom: 16px;
+                            font-weight: 700;
+                        }
+
+                        .body-text {
+                            font-family: 'Montserrat', sans-serif;
+                            font-size: 17px;
+                            line-height: 1.7;
+                            color: #4b5563;
+                            font-weight: 300;
+                        }
+
+                        .stat-number {
+                            font-family: 'Libre Baskerville', serif;
+                            font-size: 48px;
+                            font-weight: 700;
+                            color: #ff6b6b;
+                        }
+
+                        .max-w-7xl { max-width: 80rem; margin-left: auto; margin-right: auto; }
+                        .max-w-6xl { max-width: 72rem; margin-left: auto; margin-right: auto; }
+                        .max-w-5xl { max-width: 64rem; margin-left: auto; margin-right: auto; }
+                        .max-w-4xl { max-width: 56rem; margin-left: auto; margin-right: auto; }
+                        .max-w-3xl { max-width: 48rem; margin-left: auto; margin-right: auto; }
+                        .max-w-2xl { max-width: 42rem; margin-left: auto; margin-right: auto; }
+                        .mx-auto { margin-left: auto; margin-right: auto; }
+                        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+                        .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+                        .py-12 { padding-top: 3rem; padding-bottom: 3rem; }
+                        .py-20 { padding-top: 5rem; padding-bottom: 5rem; }
+                        .py-24 { padding-top: 6rem; padding-bottom: 6rem; }
+                        .pt-40 { padding-top: 10rem; }
+                        .pb-32 { padding-bottom: 8rem; }
+                        .p-8 { padding: 2rem; }
+                        .p-10 { padding: 2.5rem; }
+                        .mb-2 { margin-bottom: 0.5rem; }
+                        .mb-4 { margin-bottom: 1rem; }
+                        .mb-6 { margin-bottom: 1.5rem; }
+                        .mb-8 { margin-bottom: 2rem; }
+                        .mb-10 { margin-bottom: 2.5rem; }
+                        .mb-12 { margin-bottom: 3rem; }
+                        .mb-16 { margin-bottom: 4rem; }
+                        .mb-20 { margin-bottom: 5rem; }
+                        .mt-4 { margin-top: 1rem; }
+                        .mt-8 { margin-top: 2rem; }
+                        .gap-3 { gap: 0.75rem; }
+                        .gap-4 { gap: 1rem; }
+                        .gap-6 { gap: 1.5rem; }
+                        .gap-8 { gap: 2rem; }
+                        .gap-12 { gap: 3rem; }
+                        .gap-16 { gap: 4rem; }
+                        .gap-x-16 { column-gap: 4rem; }
+                        .gap-y-8 { row-gap: 2rem; }
+                        .space-y-2 > * + * { margin-top: 0.5rem; }
+                        .space-y-3 > * + * { margin-top: 0.75rem; }
+                        .space-y-4 > * + * { margin-top: 1rem; }
+                        .space-y-6 > * + * { margin-top: 1.5rem; }
+                        .space-y-8 > * + * { margin-top: 2rem; }
+                        .space-y-0 > * + * { margin-top: 0; }
+                        .text-center { text-align: center; }
+                        .text-sm { font-size: 0.875rem; }
+                        .text-lg { font-size: 1.125rem; }
+                        .text-xl { font-size: 1.25rem; }
+                        .text-2xl { font-size: 1.5rem; }
+                        .text-5xl { font-size: 3rem; }
+                        .font-medium { font-weight: 500; }
+                        .font-semibold { font-weight: 600; }
+                        .font-bold { font-weight: 700; }
+                        .flex { display: flex; }
+                        .inline-block { display: inline-block; }
+                        .inline { display: inline; }
+                        .grid { display: grid; }
+                        .items-center { align-items: center; }
+                        .items-start { align-items: flex-start; }
+                        .justify-center { justify-content: center; }
+                        .justify-between { justify-content: space-between; }
+                        .flex-shrink-0 { flex-shrink: 0; }
+                        .flex-1 { flex: 1; }
+                        .w-2 { width: 0.5rem; }
+                        .w-12 { width: 3rem; }
+                        .w-full { width: 100%; }
+                        .w-3\\/4 { width: 75%; }
+                        .w-1\\/2 { width: 50%; }
+                        .h-2 { height: 0.5rem; }
+                        .h-12 { height: 3rem; }
+                        .rounded-sm { border-radius: 0.125rem; }
+                        .rounded-full { border-radius: 9999px; }
+                        .rounded { border-radius: 0.25rem; }
+                        .border { border-width: 1px; }
+                        .border-l-4 { border-left-width: 4px; }
+                        .border-stone-200 { border-color: #e7e5e4; }
+                        .bg-white { background-color: #ffffff; }
+                        .bg-stone-50 { background-color: #fafaf9; }
+                        .bg-stone-100 { background-color: #f5f5f4; }
+                        .bg-stone-200 { background-color: #e7e5e4; }
+                        .bg-stone-900 { background-color: #1c1917; }
+                        .text-white { color: #ffffff; }
+                        .text-stone-400 { color: #a8a29e; }
+                        .text-stone-600 { color: #57534e; }
+                        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+                        .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); }
+                        .fixed { position: fixed; }
+                        .relative { position: relative; }
+                        .absolute { position: absolute; }
+                        .top-0 { top: 0; }
+                        .left-0 { left: 0; }
+                        .right-0 { right: 0; }
+                        .bottom-0 { bottom: 0; }
+                        .z-10 { z-index: 10; }
+                        .z-50 { z-index: 50; }
+                        .opacity-40 { opacity: 0.4; }
+                        .aspect-video { aspect-ratio: 16 / 9; }
+                        .min-h-screen { min-height: 100vh; }
+                        .overflow-hidden { overflow: hidden; }
+                        
+                        @media (min-width: 768px) {
+                            .md\\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                            .md\\:flex-row { flex-direction: row; }
+                        }
+                        
+                        .flex-col { flex-direction: column; }
+                    `}</style>
+
+                    {/* Header */}
+                    <header className="fixed top-0 left-0 right-0 z-50"
+                        style={{
+                            background: scrollY > 50 ? 'rgba(250, 250, 250, 0.95)' : 'transparent',
+                            backdropFilter: scrollY > 50 ? 'blur(10px)' : 'none',
+                            borderBottom: scrollY > 50 ? '1px solid rgba(0,0,0,0.05)' : 'none',
+                            transition: 'all 0.3s'
+                        }}>
+                        <div className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
+                            <div className={`logo ${scrollY > 50 ? '' : 'logo-light'}`} style={{ transition: 'color 0.3s' }}>
+                                lotcheck.
+                            </div>
+                            <button className="btn-primary">Book a demo</button>
+                        </div>
+                    </header>
+
+                    {/* Hero Section */}
+                    <section className="hero-gradient pt-40 pb-32 px-6 relative">
+                        <div className="max-w-6xl mx-auto text-center relative z-10">
+                            <div className="fade-in">
+                                <div className="pill mb-8">Live with Hamilton Rise · Two pilot places remaining</div>
+                            </div>
+                            
+                            <h1 className="fade-in fade-in-delay-1"
+                                style={{
+                                    fontFamily: "'Libre Baskerville', serif",
+                                    fontSize: '64px',
+                                    lineHeight: '1.15',
+                                    color: '#ffffff',
+                                    marginBottom: '24px',
+                                    fontWeight: 700,
+                                    letterSpacing: '-1px'
+                                }}>
+                                Buyers who already know<br />what fits.
+                            </h1>
+                            
+                            <p className="fade-in fade-in-delay-2"
+                                style={{
+                                    fontFamily: "'Montserrat', sans-serif",
+                                    fontSize: '20px',
+                                    color: 'rgba(255, 255, 255, 0.8)',
+                                    marginBottom: '48px',
+                                    maxWidth: '600px',
+                                    margin: '0 auto 48px',
+                                    fontWeight: 300,
+                                    lineHeight: '1.6'
+                                }}>
+                                Better-qualified enquiries. Less wasted time. Sales conversations that start with context.
+                            </p>
+
+                            <div className="fade-in fade-in-delay-3 flex gap-4 justify-center">
+                                <button className="btn-primary">Book a demo</button>
+                                <button className="btn-secondary" onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })}>
+                                    See how it works
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Visual Journey */}
+                    <section className="visual-journey py-24 px-6">
+                        <div className="max-w-6xl mx-auto">
+                            <div className="text-center mb-20">
+                                <h2 className="section-heading mb-4">From confusion to clarity</h2>
+                                <p className="body-text max-w-2xl mx-auto">
+                                    Traditional estate browsing leaves buyers overwhelmed and sales teams fielding enquiries that go nowhere.
+                                    LotCheck changes that.
+                                </p>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-16 items-center">
+                                <div className="space-y-8">
+                                    <div className="p-8 bg-white rounded-sm border border-stone-200">
+                                        <div className="text-sm font-medium text-stone-400 mb-2" style={{ fontFamily: 'Montserrat' }}>BEFORE</div>
+                                        <div className="space-y-3 body-text text-sm">
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-2 h-2 bg-stone-200 rounded-full flex-shrink-0" style={{ marginTop: '8px' }}></div>
+                                                <div>Buyer browses 40+ lots with no clear guidance</div>
+                                            </div>
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-2 h-2 bg-stone-200 rounded-full flex-shrink-0" style={{ marginTop: '8px' }}></div>
+                                                <div>Enquires about lots that don't match their budget or needs</div>
+                                            </div>
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-2 h-2 bg-stone-200 rounded-full flex-shrink-0" style={{ marginTop: '8px' }}></div>
+                                                <div>Sales team spends 30 minutes explaining constraints</div>
+                                            </div>
+                                            <div className="flex items-start gap-3">
+                                                <div className="w-2 h-2 bg-stone-200 rounded-full flex-shrink-0" style={{ marginTop: '8px' }}></div>
+                                                <div>Conversation ends without progress</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-8 bg-white rounded-sm border-l-4 border-coral-bg shadow-lg">
+                                        <div className="text-sm font-medium coral-accent mb-2" style={{ fontFamily: 'Montserrat' }}>WITH LOTCHECK</div>
+                                        <div className="space-y-3 body-text text-sm">
+                                            <div className="flex items-start gap-3">
+                                                <Check size={18} className="text-coral-accent flex-shrink-0" style={{ marginTop: '2px' }} />
+                                                <div>Buyer sets preferences—immediately sees 6 compatible lots</div>
+                                            </div>
+                                            <div className="flex items-start gap-3">
+                                                <Check size={18} className="text-coral-accent flex-shrink-0" style={{ marginTop: '2px' }} />
+                                                <div>Enquiry includes full context: "4 bed, $850k budget, north-facing preferred"</div>
+                                            </div>
+                                            <div className="flex items-start gap-3">
+                                                <Check size={18} className="text-coral-accent flex-shrink-0" style={{ marginTop: '2px' }} />
+                                                <div>Sales conversation starts at "which of these three works best?"</div>
+                                            </div>
+                                            <div className="flex items-start gap-3">
+                                                <Check size={18} className="text-coral-accent flex-shrink-0" style={{ marginTop: '2px' }} />
+                                                <div>Deal moves forward in first call</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="relative floating">
+                                    <div className="bg-white p-8 rounded-sm shadow-2xl">
+                                        <div className="aspect-video bg-stone-100 rounded-sm mb-4 flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, #f5f5f4, #e7e5e4)' }}>
+                                            <svg width="200" height="120" viewBox="0 0 200 120" className="opacity-40">
+                                                <rect x="10" y="10" width="40" height="40" fill="#1a1f2e" opacity="0.3" />
+                                                <rect x="60" y="10" width="40" height="40" fill="#1a1f2e" opacity="0.3" />
+                                                <rect x="110" y="10" width="40" height="40" fill="#ff6b6b" opacity="0.6" />
+                                                <rect x="160" y="10" width="30" height="40" fill="#ff6b6b" opacity="0.6" />
+                                                <rect x="10" y="60" width="40" height="40" fill="#1a1f2e" opacity="0.3" />
+                                                <rect x="60" y="60" width="40" height="40" fill="#ff6b6b" opacity="0.6" />
+                                            </svg>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <div className="h-2 bg-stone-200 rounded w-3/4"></div>
+                                            <div className="h-2 bg-stone-200 rounded w-1/2"></div>
+                                            <div className="mt-4 inline-block px-4 py-2 coral-bg text-white text-xs rounded-sm">
+                                                6 lots match your criteria
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Benefits Grid */}
+                    <section className="py-24 px-6 bg-white">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="text-center mb-16">
+                                <h2 className="section-heading">What changes for you</h2>
+                            </div>
+                            
+                            <div className="grid md:grid-cols-2 gap-x-16 gap-y-8">
+                                {benefits.map((benefit, i) => (
+                                    <div key={i} className="benefit-item">
+                                        <Check size={16} className="absolute text-coral-accent" style={{ left: '4px', top: '4px' }} />
+                                        <p className="body-text text-lg">{benefit}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* How It Works */}
+                    <section className="py-24 px-6 bg-stone-50">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="text-center mb-16">
+                                <h2 className="section-heading">How it works</h2>
+                                <p className="body-text mt-4 max-w-2xl mx-auto">
+                                    Four steps from browsing to qualified enquiry
+                                </p>
+                            </div>
+
+                            <div className="space-y-6">
+                                {steps.map((step, i) => (
+                                    <div key={i} className="step-card p-8 rounded-sm">
+                                        <div className="flex items-start gap-6">
+                                            <div className="flex-shrink-0">
+                                                <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center">
+                                                    <span className="text-lg font-semibold text-stone-600" style={{ fontFamily: 'Montserrat' }}>
+                                                        {i + 1}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <h3 className="text-xl font-semibold mb-2" style={{ fontFamily: 'Libre Baskerville', color: '#1a1f2e' }}>
+                                                    {step.title}
+                                                </h3>
+                                                <p className="body-text">{step.detail}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Pilot Offer */}
+                    <section className="py-24 px-6 bg-white">
+                        <div className="max-w-5xl mx-auto">
+                            <div className="text-center mb-16">
+                                <div className="pill mb-4">Pilot Program</div>
+                                <h2 className="section-heading">Low risk. High upside.</h2>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-12">
+                                <div className="bg-stone-50 p-10 rounded-sm">
+                                    <h3 className="text-2xl font-bold mb-6" style={{ fontFamily: 'Libre Baskerville', color: '#1a1f2e' }}>
+                                        What you get
+                                    </h3>
+                                    <ul className="space-y-4">
+                                        {[
+                                            "Full setup handled by LotCheck",
+                                            "Builder onboarding managed",
+                                            "Sales team support during rollout",
+                                            "Interactive matching interface on your site"
+                                        ].map((item, i) => (
+                                            <li key={i} className="flex items-start gap-3">
+                                                <Check size={20} className="text-coral-accent flex-shrink-0" style={{ marginTop: '4px' }} />
+                                                <span className="body-text">{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                <div className="bg-stone-50 p-10 rounded-sm">
+                                    <h3 className="text-2xl font-bold mb-6" style={{ fontFamily: 'Libre Baskerville', color: '#1a1f2e' }}>
+                                        The deal
+                                    </h3>
+                                    <ul className="space-y-4 mb-8">
+                                        {[
+                                            "Onboarding fee + success-based model",
+                                            "~$4k per successful sale",
+                                            "No lock-in at pilot end",
+                                            "You retain full control of data"
+                                        ].map((item, i) => (
+                                            <li key={i} className="flex items-start gap-3">
+                                                <Check size={20} className="text-coral-accent flex-shrink-0" style={{ marginTop: '4px' }} />
+                                                <span className="body-text">{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <button className="btn-primary w-full">Request pilot details</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Social Proof */}
+                    <section className="py-20 px-6 bg-stone-900 text-white">
+                        <div className="max-w-4xl mx-auto text-center">
+                            <div className="stat-number mb-4">1</div>
+                            <p className="text-2xl mb-2" style={{ fontFamily: 'Libre Baskerville', color: '#ffffff', opacity: 0.9 }}>
+                                First deployment complete
+                            </p>
+                            <p className="body-text text-stone-400">
+                                Hamilton Rise · Live with 3 builders · Processing enquiries now
+                            </p>
+                            <div className="mt-8">
+                                <span className="pill">Two pilot places remaining for 2026</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* FAQ */}
+                    <section className="py-24 px-6 bg-white">
+                        <div className="max-w-3xl mx-auto">
+                            <h2 className="section-heading text-center mb-12">Common questions</h2>
+                            
+                            <div className="space-y-0">
+                                {faqs.map((faq, i) => (
+                                    <div key={i} className="faq-item">
+                                        <details className="group">
+                                            <summary className="flex items-center justify-between py-6" style={{ cursor: 'pointer', listStyle: 'none' }}>
+                                                <h3 className="text-lg font-medium" style={{ fontFamily: 'Montserrat', color: '#1a1f2e' }}>
+                                                    {faq.q}
+                                                </h3>
+                                                <ChevronDown size={20} className="text-stone-400" style={{ transition: 'transform 0.3s' }} />
+                                            </summary>
+                                            <div className="pb-6 pt-2">
+                                                <p className="body-text">{faq.a}</p>
+                                            </div>
+                                        </details>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Final CTA */}
+                    <section className="py-24 px-6 hero-gradient relative">
+                        <div className="max-w-4xl mx-auto text-center relative z-10">
+                            <h2 className="text-5xl font-bold mb-6" style={{ fontFamily: 'Libre Baskerville', color: '#ffffff' }}>
+                                See LotCheck running on Hamilton Rise
+                            </h2>
+                            <p className="text-xl mb-10" style={{ fontFamily: 'Montserrat', color: 'rgba(255, 255, 255, 0.8)', fontWeight: 300 }}>
+                                Book a 20-minute demo. No pressure, just a clear walkthrough.
+                            </p>
+                            <button className="btn-primary text-lg" style={{ padding: '20px 48px' }}>
+                                Book a demo <ArrowRight size={20} className="inline" style={{ marginLeft: '8px' }} />
+                            </button>
+                        </div>
+                    </section>
+
+                    {/* Footer */}
+                    <footer className="bg-stone-900 py-12 px-6">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                                <div className="logo text-white">lotcheck.</div>
+                                <p className="text-stone-400 text-sm" style={{ fontFamily: 'Montserrat' }}>
+                                    © 2026 LotCheck Pty Ltd · ACN 692 936 502
+                                </p>
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<LotCheckLanding />, document.getElementById('root'));
+    </script>
+</body>
+</html>
