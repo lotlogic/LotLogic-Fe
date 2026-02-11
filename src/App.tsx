@@ -15,6 +15,7 @@ import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AdminEstatesPage from "./pages/admin/AdminEstatesPage";
 import AdminEstatePage from "./pages/admin/AdminEstatePage";
+import AdminStateRuleSetsPage from "./pages/admin/AdminStateRuleSetsPage";
 import AdminLotsPage from "./pages/admin/AdminLotsPage";
 import AdminZoningRulesPage from "./pages/admin/AdminZoningRulesPage";
 import AdminLotZoningRulesPage from "./pages/admin/AdminLotZoningRulesPage";
@@ -105,6 +106,14 @@ function App() {
           element={
             <AdminGate>
               <AdminUsersPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/state-rule-sets"
+          element={
+            <AdminGate>
+              <AdminStateRuleSetsPage />
             </AdminGate>
           }
         />

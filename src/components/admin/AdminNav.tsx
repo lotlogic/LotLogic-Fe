@@ -7,7 +7,9 @@ const adminLinks: Array<{
   requiresAdmin?: boolean;
 }> = [
   { to: "/admin/users", label: "Users", requiresAdmin: true },
+  { to: "/admin/state-rule-sets", label: "State Rule Sets" },
   { to: "/admin/estates", label: "Estates" },
+  { to: "/admin/design-on-lots", label: "Design On Lots" },
   { to: "/admin/builders", label: "Builders" },
   { to: "/admin/brand-settings", label: "Brand Settings" },
 ];

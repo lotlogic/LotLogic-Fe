@@ -1,5 +1,6 @@
 import { z } from "zod";
 export interface HouseDesignImage {
+  facadeId?: string;
   src: string;
   faced: string;
 }
@@ -8,8 +9,8 @@ export interface HouseDesignItem {
   id: string;
   title: string;
   area: string;
-  minLotWidth?: number;
-  minLotDepth?: number;
+  width?: number;
+  depth?: number;
   image: string;
   images: HouseDesignImage[];
   bedrooms: number;
@@ -27,6 +28,9 @@ export interface HouseDesignListProps {
     car: number[];
     min_size?: number;
     max_size?: number;
+    rumpus?: boolean;
+    alfresco?: boolean;
+    pergola?: boolean;
   };
   lot: {
     lotId: string | number;

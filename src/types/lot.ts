@@ -8,7 +8,7 @@ export interface LotSidebarProps {
   geometry?: GeoJSON.Geometry;
   onSelectFloorPlan?: (data: FloorPlan | null) => void;
   onZoningDataUpdate?: (zoning: {
-    fsr: number;
+    fsr?: number;
     frontSetback: number;
     rearSetback: number;
     sideSetback: number;
@@ -27,16 +27,16 @@ export type LotProperties = {
   ADDRESSES?: string;
   BLOCK_DERIVED_AREA?: string;
   BLOCK_KEY: string;
-  BLOCK_NUMBER: number;
+  BLOCK_NUMBER: number | string | null;
   BLOCK_SECTION?: string;
   DISTRICT_CODE: number;
   DISTRICT_NAME?: string;
   DISTRICT_SHORT?: string;
-  ID: number;
+  ID: string | number;
   LAND_USE_POLICY_ZONES?: string;
-  OBJECTID: number;
+  OBJECTID: string | number;
   OVERLAY_PROVISION_ZONES?: string;
-  SECTION_NUMBER: number;
+  SECTION_NUMBER: number | string | null;
   TYPE?: string;
   WATER_FLAG?: string;
   STAGE?: string;

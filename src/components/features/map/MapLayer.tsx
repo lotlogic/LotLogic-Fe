@@ -130,19 +130,20 @@ export const ZoneMap = () => {
   // Handle zoning data updates from LotSidebar
   const handleZoningDataUpdate = useCallback(
     (zoning: {
-      fsr: number;
+      fsr?: number;
       frontSetback: number;
       rearSetback: number;
       sideSetback: number;
     }) => {
       const { fsr, frontSetback, rearSetback, sideSetback } = zoning;
-      setFsrBuildableArea(fsr);
-      // Convert from meters to decimeters (API returns meters, system expects decimeters)
-      setSetbackValues({
-        front: frontSetback,
-        side: sideSetback,
-        rear: rearSetback,
-      });
+      if (typeof fsr === "number" && Number.isFinite(fsr)) {
+        setFsrBuildableArea(fsr);
+      }
+      setSetbackValues((prev) => ({
+        front: Number.isFinite(frontSetback) ? frontSetback : prev.front,
+        side: Number.isFinite(sideSetback) ? sideSetback : prev.side,
+        rear: Number.isFinite(rearSetback) ? rearSetback : prev.rear,
+      }));
     },
     []
   );
@@ -163,9 +164,9 @@ export const ZoneMap = () => {
     setIsSavedSidebarOpen(false);
     // Close mobile navigation panels when viewing lot details
     closeAllPanels();
+    const lotId = String(property.lotId);
     const lotData = lotsData?.find(
-      (lot) =>
-        lot.id?.toString() === property.lotId || lot.blockKey === property.lotId
+      (lot) => lot.id?.toString() === lotId || lot.blockKey === lotId
     );
     if (!lotData) return;
 
@@ -173,16 +174,10 @@ export const ZoneMap = () => {
       type: "Feature" as const,
       geometry: lotData.geometry,
       properties: {
-        BLOCK_KEY: property.lotId,
-        ID:
-          typeof property.lotId === "number"
-            ? property.lotId
-            : parseInt(property.lotId),
-        LOT_NUMBER:
-          typeof property.lotId === "number"
-            ? property.lotId
-            : parseInt(property.lotId),
-        databaseId: property.lotId,
+        BLOCK_KEY: lotId,
+        ID: lotId,
+        LOT_NUMBER: lotId,
+        databaseId: lotId,
         areaSqm: property.size,
         lifecycleStage: "available",
         ADDRESSES: property.address,
@@ -193,10 +188,7 @@ export const ZoneMap = () => {
         BLOCK_NUMBER: null,
         SECTION_NUMBER: null,
         DISTRICT_CODE: 1,
-        OBJECTID:
-          typeof property.lotId === "number"
-            ? property.lotId
-            : parseInt(property.lotId),
+        OBJECTID: lotId,
         division: "",
         estateId: "",
         isRed: true,
@@ -212,10 +204,10 @@ export const ZoneMap = () => {
       );
     }
     mapRef.setFeatureState(
-      { source: "demo-lot-source", id: property.lotId.toString() },
+      { source: "demo-lot-source", id: lotId },
       { selected: true }
     );
-    selectedIdRef.current = property.lotId.toString();
+    selectedIdRef.current = lotId;
 
     if (property.houseDesign.floorPlanImage) {
       const coordinates = lotData.geometry.coordinates[0] as [number, number][];

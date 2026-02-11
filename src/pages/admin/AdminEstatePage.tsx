@@ -7,7 +7,12 @@ import {
   EstateLotsCrud,
   type EstateLotRecord,
 } from "@/components/admin/estates/EstateLotsCrud";
+import { EstateRuleLayersCrud } from "@/components/admin/estates/EstateRuleLayersCrud";
 import { adminApi } from "@/lib/api/adminApi";
+import {
+  JURISDICTIONS,
+  type Jurisdiction,
+} from "@/lib/api/adminModels";
 import { adminAuth } from "@/lib/auth/adminAuth";
 import { normalizeIdList } from "@/lib/utils/ids";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +21,7 @@ import { Input } from "@/components/ui/Input";
 type AdminEstate = {
   id: string;
   name?: string | null;
+  jurisdiction?: Jurisdiction | null;
   address?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -63,6 +69,7 @@ type AdminInvitationResponse = {
 
 type EstateForm = {
   name: string;
+  jurisdiction: Jurisdiction;
   address: string;
   email: string;
   phone: string;
@@ -72,6 +79,7 @@ type EstateForm = {
 
 const emptyForm: EstateForm = {
   name: "",
+  jurisdiction: "NSW",
   address: "",
   email: "",
   phone: "",
@@ -103,6 +111,12 @@ const normalizeOptional = (value: string) => {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
 };
+
+const normalizeJurisdiction = (value: unknown): Jurisdiction =>
+  typeof value === "string" &&
+  JURISDICTIONS.includes(value as Jurisdiction)
+    ? (value as Jurisdiction)
+    : "NSW";
 
 const inviteRedirectUrl =
   import.meta.env.VITE_ENTRA_INVITE_REDIRECT_URL ||
@@ -162,6 +176,7 @@ const AdminEstatePage = () => {
     setEstate(data);
     const nextForm: EstateForm = {
       name: data.name ?? "",
+      jurisdiction: normalizeJurisdiction(data.jurisdiction),
       address: data.address ?? "",
       email: data.email ?? "",
       phone: data.phone ?? "",
@@ -285,6 +300,9 @@ const AdminEstatePage = () => {
     const payload: Record<string, unknown> = {};
     if (trimmedName !== initialForm.name.trim()) {
       payload.name = trimmedName;
+    }
+    if (form.jurisdiction !== initialForm.jurisdiction) {
+      payload.jurisdiction = form.jurisdiction;
     }
 
     const currentAddress = normalizeOptional(form.address);
@@ -529,6 +547,26 @@ const AdminEstatePage = () => {
                   required
                 />
               </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Jurisdiction *</span>
+                <select
+                  value={form.jurisdiction}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      jurisdiction: event.target.value as Jurisdiction,
+                    }))
+                  }
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  required
+                >
+                  {JURISDICTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Address</span>
@@ -632,245 +670,253 @@ const AdminEstatePage = () => {
           )}
           </div>
 
-          <div className="border rounded-lg p-6 bg-white shadow-sm h-fit">
-            <div className="flex items-center justify-between gap-2 mb-4">
-              <h2 className="text-xl font-bold mt-0 mb-0">Team Members</h2>
-              <Button
-                onClick={() => setShowAddPanel((prev) => !prev)}
-                variant="outline"
-                className="h-8 text-xs"
-                label={showAddPanel ? "Close add members" : "Add members"}
-              />
-            </div>
-            {teamErrorMessage && (
-              <p className="text-destructive mb-3 text-sm">
-                {teamErrorMessage}
-              </p>
-            )}
-            {teamMembersLoading && (
-              <p className="text-sm text-muted-foreground">
-                Loading team members...
-              </p>
-            )}
-            {teamMembersErrorMessage && (
-              <p className="text-destructive mb-3 text-sm">
-                {teamMembersErrorMessage}
-              </p>
-            )}
-            {!teamMembersLoading && teamMembers.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No team members assigned.
-              </p>
-            )}
-            {!teamMembersLoading && teamMembers.length > 0 && (
-              <div className="overflow-auto border rounded-lg">
-                <table className="w-full border-collapse min-w-[520px]">
-                  <thead>
-                    <tr className="bg-slate-100 text-left">
-                      <th className="p-3 border-b font-medium text-sm text-slate-700">
-                        Name
-                      </th>
-                      <th className="p-3 border-b font-medium text-sm text-slate-700">
-                        Email
-                      </th>
-                      <th className="p-3 border-b font-medium text-sm text-slate-700">
-                        Role
-                      </th>
-                      <th className="p-3 border-b font-medium text-sm text-slate-700">
-                        Status
-                      </th>
-                      <th className="p-3 border-b font-medium text-sm text-slate-700">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {teamMembers.map((member) => {
-                      const user = member.user;
-                      const name = user ? getUserName(user) : "(unknown)";
-                      const contact = user
-                        ? getUserContact(user)
-                        : member.userId;
-                      return (
-                        <tr key={member.userId}>
-                          <td className="p-3 border-b border-slate-100 text-sm">
-                            {name}
-                          </td>
-                          <td className="p-3 border-b border-slate-100 text-sm">
-                            {contact}
-                          </td>
-                          <td className="p-3 border-b border-slate-100 text-sm">
-                            {user?.role ?? "--"}
-                          </td>
-                          <td className="p-3 border-b border-slate-100 text-sm">
-                            {user?.status ?? "--"}
-                          </td>
-                          <td className="p-3 border-b border-slate-100 text-sm">
-                            <Button
-                              onClick={() => handleRemoveMember(member.userId)}
-                              disabled={teamAction !== null}
-                              loading={
-                                teamAction === "remove" &&
-                                teamActionUserId === member.userId
-                              }
-                              variant="ghost"
-                              className="h-7 px-2 text-xs text-destructive hover:bg-red-50 hover:text-destructive"
-                              label="Remove"
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+          <div className="grid gap-6">
+            <div className="border rounded-lg p-6 bg-white shadow-sm h-fit">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <h2 className="text-xl font-bold mt-0 mb-0">Team Members</h2>
+                <Button
+                  onClick={() => setShowAddPanel((prev) => !prev)}
+                  variant="outline"
+                  className="h-8 text-xs"
+                  label={showAddPanel ? "Close add members" : "Add members"}
+                />
               </div>
-            )}
-            {usersErrorMessage && (
-              <p className="text-destructive mt-3 text-sm">
-                {usersErrorMessage}
-              </p>
-            )}
-            {showAddPanel && (
-              <div className="mt-4 pt-4 border-t border-slate-100 grid gap-6">
-                <div className="border rounded-lg p-6 bg-slate-50">
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <h3 className="font-semibold text-lg m-0">
-                      Add Existing User
-                    </h3>
-                    <Button
-                      onClick={loadUsers}
-                      disabled={usersLoading}
-                      loading={usersLoading}
-                      variant="outline"
-                      className="h-7 text-xs"
-                      label={usersLoading ? "Loading..." : "Reload users"}
-                    />
-                  </div>
-                  <Input
-                    value={userFilter}
-                    onChange={(event) => setUserFilter(event.target.value)}
-                    placeholder="Search by name or email"
-                    className="w-full mb-3"
-                  />
-                  {usersErrorMessage && (
-                    <p className="text-destructive text-sm mb-2">
-                      {usersErrorMessage}
-                    </p>
-                  )}
-                  <div className="max-h-[280px] overflow-auto border rounded-lg bg-white">
-                    <table className="w-full border-collapse min-w-[420px]">
-                      <thead>
-                        <tr className="bg-slate-50 text-left">
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Name
-                          </th>
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Email
-                          </th>
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Role
-                          </th>
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {usersLoading && (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="p-3 text-center text-sm text-muted-foreground"
-                            >
-                              Loading users...
+              {teamErrorMessage && (
+                <p className="text-destructive mb-3 text-sm">
+                  {teamErrorMessage}
+                </p>
+              )}
+              {teamMembersLoading && (
+                <p className="text-sm text-muted-foreground">
+                  Loading team members...
+                </p>
+              )}
+              {teamMembersErrorMessage && (
+                <p className="text-destructive mb-3 text-sm">
+                  {teamMembersErrorMessage}
+                </p>
+              )}
+              {!teamMembersLoading && teamMembers.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  No team members assigned.
+                </p>
+              )}
+              {!teamMembersLoading && teamMembers.length > 0 && (
+                <div className="overflow-auto border rounded-lg">
+                  <table className="w-full border-collapse min-w-[520px]">
+                    <thead>
+                      <tr className="bg-slate-100 text-left">
+                        <th className="p-3 border-b font-medium text-sm text-slate-700">
+                          Name
+                        </th>
+                        <th className="p-3 border-b font-medium text-sm text-slate-700">
+                          Email
+                        </th>
+                        <th className="p-3 border-b font-medium text-sm text-slate-700">
+                          Role
+                        </th>
+                        <th className="p-3 border-b font-medium text-sm text-slate-700">
+                          Status
+                        </th>
+                        <th className="p-3 border-b font-medium text-sm text-slate-700">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {teamMembers.map((member) => {
+                        const user = member.user;
+                        const name = user ? getUserName(user) : "(unknown)";
+                        const contact = user
+                          ? getUserContact(user)
+                          : member.userId;
+                        return (
+                          <tr key={member.userId}>
+                            <td className="p-3 border-b border-slate-100 text-sm">
+                              {name}
+                            </td>
+                            <td className="p-3 border-b border-slate-100 text-sm">
+                              {contact}
+                            </td>
+                            <td className="p-3 border-b border-slate-100 text-sm">
+                              {user?.role ?? "--"}
+                            </td>
+                            <td className="p-3 border-b border-slate-100 text-sm">
+                              {user?.status ?? "--"}
+                            </td>
+                            <td className="p-3 border-b border-slate-100 text-sm">
+                              <Button
+                                onClick={() => handleRemoveMember(member.userId)}
+                                disabled={teamAction !== null}
+                                loading={
+                                  teamAction === "remove" &&
+                                  teamActionUserId === member.userId
+                                }
+                                variant="ghost"
+                                className="h-7 px-2 text-xs text-destructive hover:bg-red-50 hover:text-destructive"
+                                label="Remove"
+                              />
                             </td>
                           </tr>
-                        )}
-                        {!usersLoading &&
-                          filteredAvailableUsers.map((user) => (
-                            <tr key={user.id}>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                {getUserName(user)}
-                              </td>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                {getUserContact(user)}
-                              </td>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                {user.role ?? "--"}
-                              </td>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                <Button
-                                  onClick={() => handleAddMember(user.id)}
-                                  disabled={teamAction !== null}
-                                  loading={
-                                    teamAction === "add" &&
-                                    teamActionUserId === user.id
-                                  }
-                                  variant="ghost"
-                                  className="h-7 px-2 text-xs"
-                                  label="Add"
-                                />
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {usersErrorMessage && (
+                <p className="text-destructive mt-3 text-sm">
+                  {usersErrorMessage}
+                </p>
+              )}
+              {showAddPanel && (
+                <div className="mt-4 pt-4 border-t border-slate-100 grid gap-6">
+                  <div className="border rounded-lg p-6 bg-slate-50">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <h3 className="font-semibold text-lg m-0">
+                        Add Existing User
+                      </h3>
+                      <Button
+                        onClick={loadUsers}
+                        disabled={usersLoading}
+                        loading={usersLoading}
+                        variant="outline"
+                        className="h-7 text-xs"
+                        label={usersLoading ? "Loading..." : "Reload users"}
+                      />
+                    </div>
+                    <Input
+                      value={userFilter}
+                      onChange={(event) => setUserFilter(event.target.value)}
+                      placeholder="Search by name or email"
+                      className="w-full mb-3"
+                    />
+                    {usersErrorMessage && (
+                      <p className="text-destructive text-sm mb-2">
+                        {usersErrorMessage}
+                      </p>
+                    )}
+                    <div className="max-h-[280px] overflow-auto border rounded-lg bg-white">
+                      <table className="w-full border-collapse min-w-[420px]">
+                        <thead>
+                          <tr className="bg-slate-50 text-left">
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Name
+                            </th>
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Email
+                            </th>
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Role
+                            </th>
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {usersLoading && (
+                            <tr>
+                              <td
+                                colSpan={4}
+                                className="p-3 text-center text-sm text-muted-foreground"
+                              >
+                                Loading users...
                               </td>
                             </tr>
-                          ))}
-                        {!usersLoading && filteredAvailableUsers.length === 0 && (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="p-3 text-center text-sm text-muted-foreground"
-                            >
-                              No available users match the filter.
-                            </td>
-                          </tr>
+                          )}
+                          {!usersLoading &&
+                            filteredAvailableUsers.map((user) => (
+                              <tr key={user.id}>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  {getUserName(user)}
+                                </td>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  {getUserContact(user)}
+                                </td>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  {user.role ?? "--"}
+                                </td>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  <Button
+                                    onClick={() => handleAddMember(user.id)}
+                                    disabled={teamAction !== null}
+                                    loading={
+                                      teamAction === "add" &&
+                                      teamActionUserId === user.id
+                                    }
+                                    variant="ghost"
+                                    className="h-7 px-2 text-xs"
+                                    label="Add"
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                          {!usersLoading && filteredAvailableUsers.length === 0 && (
+                            <tr>
+                              <td
+                                colSpan={4}
+                                className="p-3 text-center text-sm text-muted-foreground"
+                              >
+                                No available users match the filter.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-6 bg-slate-50">
+                    <h3 className="font-semibold text-lg m-0 mb-3">
+                      Invite & Add User
+                    </h3>
+                    <form onSubmit={handleInviteMember} className="grid gap-4">
+                      <div className="grid gap-2">
+                        <span className="text-sm font-medium">Email</span>
+                        <Input
+                          value={inviteEmail}
+                          onChange={(event) => setInviteEmail(event.target.value)}
+                          type="email"
+                          className="w-full"
+                          required
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <span className="text-sm font-medium">Name</span>
+                        <Input
+                          value={inviteName}
+                          onChange={(event) => setInviteName(event.target.value)}
+                          className="w-full"
+                          required
+                        />
+                      </div>
+                      <div className="flex gap-2 items-center mt-2">
+                        <Button
+                          type="submit"
+                          disabled={teamAction !== null}
+                          loading={teamAction === "invite"}
+                          label="Send invite & add"
+                        />
+                        {inviteErrorMessage && (
+                          <span className="text-destructive text-sm">
+                            {inviteErrorMessage}
+                          </span>
                         )}
-                      </tbody>
-                    </table>
+                      </div>
+                    </form>
                   </div>
                 </div>
+              )}
+            </div>
 
-                <div className="border rounded-lg p-6 bg-slate-50">
-                  <h3 className="font-semibold text-lg m-0 mb-3">
-                    Invite & Add User
-                  </h3>
-                  <form onSubmit={handleInviteMember} className="grid gap-4">
-                    <div className="grid gap-2">
-                      <span className="text-sm font-medium">Email</span>
-                      <Input
-                        value={inviteEmail}
-                        onChange={(event) => setInviteEmail(event.target.value)}
-                        type="email"
-                        className="w-full"
-                        required
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <span className="text-sm font-medium">Name</span>
-                      <Input
-                        value={inviteName}
-                        onChange={(event) => setInviteName(event.target.value)}
-                        className="w-full"
-                        required
-                      />
-                    </div>
-                    <div className="flex gap-2 items-center mt-2">
-                      <Button
-                        type="submit"
-                        disabled={teamAction !== null}
-                        loading={teamAction === "invite"}
-                        label="Send invite & add"
-                      />
-                      {inviteErrorMessage && (
-                        <span className="text-destructive text-sm">
-                          {inviteErrorMessage}
-                        </span>
-                      )}
-                    </div>
-                  </form>
-                </div>
-              </div>
+            {estateId && (
+              <EstateRuleLayersCrud estateId={estateId} mode="builderApprovals" />
             )}
           </div>
         </div>
+
+        {estateId && <EstateRuleLayersCrud estateId={estateId} mode="ruleSet" />}
 
         <EstateLotsCrud
           estateId={estateId}
@@ -880,6 +926,9 @@ const AdminEstatePage = () => {
           deleteLot={(id) => adminApi.deleteLot(id)}
           importLotsDxf={(id, payload) =>
             adminApi.importEstateLotsDxf(id, payload)
+          }
+          recomputeEstateDesignOnLot={(id) =>
+            adminApi.recomputeEstateDesignOnLot(id)
           }
         />
       </section>

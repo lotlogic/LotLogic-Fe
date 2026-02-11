@@ -16,22 +16,6 @@ const convertApiResponseToHouseDesign = (
     storeys: 1, // Default to 1 storey
     floorPlanImage: apiDesign.floorPlanImage || undefined,
   };
-
-  // return {
-  //   id: apiDesign.id,
-  //   title: apiDesign.title,
-  //   area: apiDesign.area.toString(),
-  //   minLotWidth: apiDesign.minLotWidth,
-  //   minLotDepth: apiDesign.minLotDepth,
-  //   image: apiDesign.image,
-  //   images: apiDesign.images,
-  //   bedrooms: apiDesign.bedrooms,
-  //   bathrooms: apiDesign.bathrooms,
-  //   cars: apiDesign.cars,
-  //   storeys: 1, // Default to 1 storey
-  //   isFavorite: apiDesign.isFavorite,
-  //   floorPlanImage: apiDesign.floorPlanImage || undefined,
-  // };
 };
 
 export const useHouseDesigns = (
@@ -44,7 +28,7 @@ export const useHouseDesigns = (
     queryFn: async (): Promise<{
       houseDesigns: HouseDesignItem[];
       zoning: {
-        fsr: number;
+        fsr?: number;
         frontSetback: number;
         rearSetback: number;
         sideSetback: number;
@@ -53,26 +37,38 @@ export const useHouseDesigns = (
       if (!lotId) {
         return {
           houseDesigns: [],
-          zoning: { fsr: 300, frontSetback: 4, rearSetback: 3, sideSetback: 3 },
+          zoning: { frontSetback: 4, rearSetback: 3, sideSetback: 3 },
         };
       }
 
       // If no filters, create empty filter object for API
       const filtersToSend = filters || {
-        bedroom: [],
-        bathroom: [],
-        car: [],
+        bedroom: undefined,
+        bathroom: undefined,
+        car: undefined,
       };
 
       const apiResponse = await lotApi.filterHouseDesigns(lotId, filtersToSend);
 
       // Handle case where apiResponse or houseDesigns might be undefined
       const houseDesigns = apiResponse?.houseDesigns || [];
-      const zoning = apiResponse?.zoning || {
-        fsr: 300,
-        frontSetback: 4,
-        rearSetback: 3,
-        sideSetback: 3,
+      const zoning = {
+        fsr:
+          typeof apiResponse?.zoning?.fsr === "number"
+            ? apiResponse.zoning.fsr
+            : undefined,
+        frontSetback:
+          typeof apiResponse?.zoning?.frontSetback === "number"
+            ? apiResponse.zoning.frontSetback
+            : 4,
+        rearSetback:
+          typeof apiResponse?.zoning?.rearSetback === "number"
+            ? apiResponse.zoning.rearSetback
+            : 3,
+        sideSetback:
+          typeof apiResponse?.zoning?.sideSetback === "number"
+            ? apiResponse.zoning.sideSetback
+            : 3,
       };
 
       return {

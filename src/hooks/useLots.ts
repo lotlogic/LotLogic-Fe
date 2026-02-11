@@ -14,6 +14,12 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
   return {
     type: "FeatureCollection" as const,
     features: lots.map((lot) => {
+      const lotId = String(lot.id);
+      const lotNumber =
+        lot.blockNumber != null
+          ? String(lot.blockNumber)
+          : lotId;
+
       // ---- Extract s1..s4 and check exact match ----
       const propsArr = lot?.geojson?.properties || [];
 
@@ -49,14 +55,14 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
           DISTRICT_NAME: lot.district ?? "",
           LAND_USE_POLICY_ZONES: lot.zoning ?? "unknown",
           OVERLAY_PROVISION_ZONES: lot.overlays?.join(", ") ?? "",
-          LOT_NUMBER: Number(lot.id),
+          LOT_NUMBER: lotNumber,
           STAGE: lot.lifecycleStage ?? "available",
-          ID: Number(lot.id),
+          ID: lotId,
           BLOCK_NUMBER: lot.blockNumber ?? null,
           SECTION_NUMBER: lot.sectionNumber ?? null,
           DISTRICT_CODE: 1,
-          OBJECTID: Number(lot.id),
-          databaseId: lot.id,
+          OBJECTID: lotId,
+          databaseId: lotId,
           areaSqm: lot.areaSqm,
           division: lot.division ?? "",
           estateId: lot.estateId ?? "",

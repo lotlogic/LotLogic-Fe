@@ -63,6 +63,9 @@ export const HouseDesignList = ({
       filter.min_size && !isNaN(filter.min_size) ? filter.min_size : undefined,
     max_size:
       filter.max_size && !isNaN(filter.max_size) ? filter.max_size : undefined,
+    rumpus: filter.rumpus ? true : undefined,
+    alfresco: filter.alfresco ? true : undefined,
+    pergola: filter.pergola ? true : undefined,
   };
 
   // Fetch house designs from API
@@ -231,6 +234,10 @@ export const HouseDesignList = ({
             </span>{" "}
             {houseDesign.title}
           </span>
+          <p className="text-xs text-brand-muted mt-1">
+            Showing precomputed PASS designs only. MANUAL_REVIEW results are
+            excluded.
+          </p>
           {/* {(apiHouseDesigns as HouseDesignItem[])?.length > 0 && (
             <div className="text-xs text-green-600 mt-1">
               ✓ Loaded from database

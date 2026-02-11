@@ -53,9 +53,9 @@ export interface LotCalculationResponse {
 }
 
 export interface HouseDesignFilterRequest {
-  bedroom: number[];
-  bathroom: number[];
-  car: number[];
+  bedroom?: number[];
+  bathroom?: number[];
+  car?: number[];
   min_size?: number;
   max_size?: number;
   rumpus?: boolean;
@@ -67,10 +67,11 @@ export interface HouseDesignItemResponse {
   id: string;
   title: string;
   area: number;
-  minLotWidth: number;
-  minLotDepth: number;
+  width: number;
+  depth: number;
   image: string;
   images: Array<{
+    facadeId?: string;
     src: string;
     faced: string;
   }>;
@@ -84,10 +85,10 @@ export interface HouseDesignItemResponse {
 export interface HouseDesignFilterResponse {
   houseDesigns: HouseDesignItemResponse[];
   zoning: {
-    fsr: number;
-    frontSetback: number;
-    rearSetback: number;
-    sideSetback: number;
+    fsr?: number;
+    frontSetback?: number;
+    rearSetback?: number;
+    sideSetback?: number;
   };
 }
 
@@ -101,10 +102,17 @@ export interface Builder {
 }
 
 // Get the API base URL based on environment
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
+
+const ensureApiSuffix = (value: string) => {
+  const trimmed = trimTrailingSlash(value);
+  return trimmed.toLowerCase().endsWith("/api") ? trimmed : `${trimmed}/api`;
+};
+
 const getApiBaseUrl = () => {
   // Check for environment variable first
   if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
+    return ensureApiSuffix(import.meta.env.VITE_API_URL);
   }
 
   // If running in Docker, use the service name
@@ -168,7 +176,7 @@ export interface EnquiryRequest {
   number: string;
   builders: string[];
   comments: string;
-  lot_id: number;
+  lot_id: string;
   house_design_id: string;
   facade_id: string;
   // Optional flags/metadata
@@ -180,7 +188,7 @@ export const submitEnquiry = async (
 ): Promise<{ message: string }> => {
   try {
     const response = await axios.post(
-      `${getApiBaseUrl()}/api/enquiry`,
+      `${getApiBaseUrl()}/enquiry`,
       enquiryData
     );
     return response.data;
@@ -207,7 +215,7 @@ export const submitDemoRequest = async (
 ): Promise<{ message: string }> => {
   try {
     const response = await axios.post(
-      `${getApiBaseUrl()}/api/demo-request`,
+      `${getApiBaseUrl()}/demo-request`,
       demoRequest
     );
     return response.data;
@@ -227,7 +235,7 @@ export type BrandQueryParams = {
 
 export const getCurrentBrand = async (params?: BrandQueryParams) => {
   try {
-    const response = await axios.get(`${getApiBaseUrl()}/api/brand`, {
+    const response = await axios.get(`${getApiBaseUrl()}/brand`, {
       params,
     });
     return response.data;
@@ -240,7 +248,7 @@ export const lotApi = {
   // Fetch all lots from database
   async getAllLots(): Promise<DatabaseLot[]> {
     try {
-      const response = await axios.get(`${getApiBaseUrl()}/api/lot`);
+      const response = await axios.get(`${getApiBaseUrl()}/lot`);
       return response.data;
     } catch (error) {
       throw error;
@@ -250,7 +258,7 @@ export const lotApi = {
   // Fetch a single lot by ID
   async getLotById(lotId: string): Promise<DatabaseLot> {
     try {
-      const response = await axios.get(`${getApiBaseUrl()}/api/lot/${lotId}`);
+      const response = await axios.get(`${getApiBaseUrl()}/lot/${lotId}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -261,7 +269,7 @@ export const lotApi = {
   async calculateDesignsOnLot(lotId: string): Promise<LotCalculationResponse> {
     try {
       const response = await axios.get(
-        `${getApiBaseUrl()}/api/design-on-lot/calculate?lotId=${lotId}`
+        `${getApiBaseUrl()}/design-on-lot/calculate?lotId=${lotId}`
       );
       return response.data;
     } catch (error) {
@@ -325,15 +333,17 @@ export const lotApi = {
         params.append("pergola", filters.pergola.toString());
       }
 
-      const response = await axios.get(
-        `${getApiBaseUrl()}/api/house-design/${lotId}?${params.toString()}`
-      );
+      const queryString = params.toString();
+      const url = queryString
+        ? `${getApiBaseUrl()}/house-design/${lotId}?${queryString}`
+        : `${getApiBaseUrl()}/house-design/${lotId}`;
+      const response = await axios.get(url);
 
       // Handle 204 No Content as a successful response with no results
       if (response.status === 204) {
         return {
           houseDesigns: [],
-          zoning: { fsr: 300, frontSetback: 3, rearSetback: 3, sideSetback: 3 },
+          zoning: { frontSetback: 4, rearSetback: 3, sideSetback: 3 },
         };
       }
 
@@ -346,7 +356,7 @@ export const lotApi = {
   // Fetch all builders from the backend
   async getBuilders(): Promise<Builder[]> {
     try {
-      const response = await axios.get(`${getApiBaseUrl()}/api/builders`);
+      const response = await axios.get(`${getApiBaseUrl()}/builders`);
       return response.data;
     } catch (error) {
       throw error;

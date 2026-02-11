@@ -13,11 +13,16 @@ export type FloorPlanRecord = {
   bathrooms?: number | null;
   garages?: number | null;
   areaSqm?: number | null;
-  minLotWidth?: number | null;
-  minLotDepth?: number | null;
+  width?: number | null;
+  depth?: number | null;
   rumpus?: boolean | null;
   alfresco?: boolean | null;
   pergola?: boolean | null;
+  storeys?: number | null;
+  buildingHeight_m?: number | null;
+  roofPitch_deg?: number | null;
+  architecturalStyle?: string | null;
+  hasFrontFacingServiceAreas?: boolean | null;
   builderId?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -30,11 +35,16 @@ export type FloorPlanPayload = {
   bathrooms: number;
   garages: number;
   areaSqm: number;
-  minLotWidth: number;
-  minLotDepth: number;
+  width: number;
+  depth: number;
   rumpus: boolean;
   alfresco: boolean;
   pergola: boolean;
+  storeys?: number;
+  buildingHeight_m?: number;
+  roofPitch_deg?: number;
+  architecturalStyle?: string;
+  hasFrontFacingServiceAreas?: boolean;
   builderId?: string;
 };
 
@@ -45,11 +55,16 @@ type FloorPlanForm = {
   bathrooms: string;
   garages: string;
   areaSqm: string;
-  minLotWidth: string;
-  minLotDepth: string;
+  width: string;
+  depth: string;
   rumpus: boolean;
   alfresco: boolean;
   pergola: boolean;
+  storeys: string;
+  buildingHeight_m: string;
+  roofPitch_deg: string;
+  architecturalStyle: string;
+  hasFrontFacingServiceAreas: "" | "true" | "false";
 };
 
 const emptyForm: FloorPlanForm = {
@@ -59,16 +74,35 @@ const emptyForm: FloorPlanForm = {
   bathrooms: "",
   garages: "",
   areaSqm: "",
-  minLotWidth: "",
-  minLotDepth: "",
+  width: "",
+  depth: "",
   rumpus: false,
   alfresco: false,
   pergola: false,
+  storeys: "",
+  buildingHeight_m: "",
+  roofPitch_deg: "",
+  architecturalStyle: "",
+  hasFrontFacingServiceAreas: "",
 };
 
 const toNumber = (value: string): number | null => {
   const num = Number(value);
   return Number.isFinite(num) ? num : null;
+};
+
+const parseOptionalNumberField = (
+  value: string
+): { ok: true; value?: number } | { ok: false } => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { ok: true, value: undefined };
+  }
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) {
+    return { ok: false };
+  }
+  return { ok: true, value: parsed };
 };
 
 type FloorPlanCrudProps = {
@@ -165,11 +199,21 @@ export const FloorPlanCrud = ({
       bathrooms: plan.bathrooms?.toString() ?? "",
       garages: plan.garages?.toString() ?? "",
       areaSqm: plan.areaSqm?.toString() ?? "",
-      minLotWidth: plan.minLotWidth?.toString() ?? "",
-      minLotDepth: plan.minLotDepth?.toString() ?? "",
+      width: plan.width?.toString() ?? "",
+      depth: plan.depth?.toString() ?? "",
       rumpus: Boolean(plan.rumpus),
       alfresco: Boolean(plan.alfresco),
       pergola: Boolean(plan.pergola),
+      storeys: plan.storeys?.toString() ?? "",
+      buildingHeight_m: plan.buildingHeight_m?.toString() ?? "",
+      roofPitch_deg: plan.roofPitch_deg?.toString() ?? "",
+      architecturalStyle: plan.architecturalStyle ?? "",
+      hasFrontFacingServiceAreas:
+        typeof plan.hasFrontFacingServiceAreas === "boolean"
+          ? plan.hasFrontFacingServiceAreas
+            ? "true"
+            : "false"
+          : "",
     });
     setFormErrorMessage(null);
     setFormSuccessMessage(null);
@@ -187,8 +231,8 @@ export const FloorPlanCrud = ({
     const bathrooms = toNumber(form.bathrooms);
     const garages = toNumber(form.garages);
     const areaSqm = toNumber(form.areaSqm);
-    const minLotWidth = toNumber(form.minLotWidth);
-    const minLotDepth = toNumber(form.minLotDepth);
+    const width = toNumber(form.width);
+    const depth = toNumber(form.depth);
 
     if (!name || !floorplanUrl) {
       setFormErrorMessage("Name and floorplan URL are required.");
@@ -199,10 +243,26 @@ export const FloorPlanCrud = ({
       bathrooms === null ||
       garages === null ||
       areaSqm === null ||
-      minLotWidth === null ||
-      minLotDepth === null
+      width === null ||
+      depth === null
     ) {
       setFormErrorMessage("All numeric fields are required.");
+      return;
+    }
+
+    const storeysResult = parseOptionalNumberField(form.storeys);
+    if (!storeysResult.ok) {
+      setFormErrorMessage("Storeys must be a number.");
+      return;
+    }
+    const heightResult = parseOptionalNumberField(form.buildingHeight_m);
+    if (!heightResult.ok) {
+      setFormErrorMessage("Building height must be a number.");
+      return;
+    }
+    const roofPitchResult = parseOptionalNumberField(form.roofPitch_deg);
+    if (!roofPitchResult.ok) {
+      setFormErrorMessage("Roof pitch must be a number.");
       return;
     }
 
@@ -213,12 +273,30 @@ export const FloorPlanCrud = ({
       bathrooms,
       garages,
       areaSqm,
-      minLotWidth,
-      minLotDepth,
+      width,
+      depth,
       rumpus: form.rumpus,
       alfresco: form.alfresco,
       pergola: form.pergola,
     };
+
+    if (storeysResult.value !== undefined) {
+      payload.storeys = storeysResult.value;
+    }
+    if (heightResult.value !== undefined) {
+      payload.buildingHeight_m = heightResult.value;
+    }
+    if (roofPitchResult.value !== undefined) {
+      payload.roofPitch_deg = roofPitchResult.value;
+    }
+    const trimmedStyle = form.architecturalStyle.trim();
+    if (trimmedStyle) {
+      payload.architecturalStyle = trimmedStyle;
+    }
+    if (form.hasFrontFacingServiceAreas !== "") {
+      payload.hasFrontFacingServiceAreas =
+        form.hasFrontFacingServiceAreas === "true";
+    }
 
     if (!editingId && builderId) {
       payload.builderId = builderId;
@@ -404,15 +482,15 @@ export const FloorPlanCrud = ({
                 />
               </div>
               <div className="grid gap-2">
-                <span className="text-sm font-medium">Min Lot Width</span>
+                <span className="text-sm font-medium">Design Width</span>
                 <Input
                   type="number"
                   step="0.1"
-                  value={form.minLotWidth}
+                  value={form.width}
                   onChange={(event) =>
                     setForm((prev) => ({
                       ...prev,
-                      minLotWidth: event.target.value,
+                      width: event.target.value,
                     }))
                   }
                   className="w-full"
@@ -420,15 +498,15 @@ export const FloorPlanCrud = ({
                 />
               </div>
               <div className="grid gap-2">
-                <span className="text-sm font-medium">Min Lot Depth</span>
+                <span className="text-sm font-medium">Design Depth</span>
                 <Input
                   type="number"
                   step="0.1"
-                  value={form.minLotDepth}
+                  value={form.depth}
                   onChange={(event) =>
                     setForm((prev) => ({
                       ...prev,
-                      minLotDepth: event.target.value,
+                      depth: event.target.value,
                     }))
                   }
                   className="w-full"
@@ -475,6 +553,91 @@ export const FloorPlanCrud = ({
                   />
                   Pergola
                 </label>
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Storeys</span>
+                <Input
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={form.storeys}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      storeys: event.target.value,
+                    }))
+                  }
+                  className="w-full"
+                  placeholder="2"
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Building Height (m)</span>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={form.buildingHeight_m}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      buildingHeight_m: event.target.value,
+                    }))
+                  }
+                  className="w-full"
+                  placeholder="9.8"
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Roof Pitch (deg)</span>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={form.roofPitch_deg}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      roofPitch_deg: event.target.value,
+                    }))
+                  }
+                  className="w-full"
+                  placeholder="22.5"
+                />
+              </div>
+              <div className="grid gap-2 md:col-span-2">
+                <span className="text-sm font-medium">Architectural Style</span>
+                <Input
+                  value={form.architecturalStyle}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      architecturalStyle: event.target.value,
+                    }))
+                  }
+                  className="w-full"
+                  placeholder="Traditional Australian"
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">
+                  Front-facing service areas
+                </span>
+                <select
+                  value={form.hasFrontFacingServiceAreas}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      hasFrontFacingServiceAreas: event.target
+                        .value as FloorPlanForm["hasFrontFacingServiceAreas"],
+                    }))
+                  }
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">(not set)</option>
+                  <option value="false">false</option>
+                  <option value="true">true</option>
+                </select>
               </div>
             </div>
           </form>
@@ -530,7 +693,8 @@ export const FloorPlanCrud = ({
                   <th className="p-2 border-b">Name</th>
                   <th className="p-2 border-b">Beds/Baths/Garages</th>
                   <th className="p-2 border-b">Area (sqm)</th>
-                  <th className="p-2 border-b">Min Lot (W x D)</th>
+                  <th className="p-2 border-b">Design (W x D)</th>
+                  <th className="p-2 border-b">Storeys / Height</th>
                   <th className="p-2 border-b">Features</th>
                   <th className="p-2 border-b text-right">Actions</th>
                 </tr>
@@ -554,7 +718,10 @@ export const FloorPlanCrud = ({
                       {plan.areaSqm ?? "--"}
                     </td>
                     <td className="p-2 border-b border-slate-100">
-                      {plan.minLotWidth ?? "--"} x {plan.minLotDepth ?? "--"}
+                      {plan.width ?? "--"} x {plan.depth ?? "--"}
+                    </td>
+                    <td className="p-2 border-b border-slate-100">
+                      {plan.storeys ?? "--"} / {plan.buildingHeight_m ?? "--"}
                     </td>
                     <td className="p-2 border-b border-slate-100">
                       {[

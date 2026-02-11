@@ -13,12 +13,17 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { adminApi, type CreateLotInput } from "@/lib/api/adminApi";
 import { getAdminApiErrorMessage } from "@/lib/api/adminApiErrors";
+import {
+  JURISDICTIONS,
+  type Jurisdiction,
+} from "@/lib/api/adminModels";
 import { useAdminSession } from "@/lib/admin/adminSession";
 import { resolveDashboardAccess } from "@/lib/dashboard/dashboardAccess";
 import { normalizeIdList } from "@/lib/utils/ids";
 
 type EstateForm = {
   name: string;
+  jurisdiction: Jurisdiction;
   address: string;
   email: string;
   phone: string;
@@ -63,6 +68,7 @@ type AdminInvitationResponse = {
 
 const emptyForm: EstateForm = {
   name: "",
+  jurisdiction: "NSW",
   address: "",
   email: "",
   phone: "",
@@ -74,6 +80,12 @@ const normalizeOptional = (value: string) => {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
 };
+
+const normalizeJurisdiction = (value: unknown): Jurisdiction =>
+  typeof value === "string" &&
+  JURISDICTIONS.includes(value as Jurisdiction)
+    ? (value as Jurisdiction)
+    : "NSW";
 
 const getEstateName = (estate: EstateRecord | null): string => {
   if (!estate) {
@@ -172,6 +184,7 @@ const DashboardEstatePage = () => {
     setEstate(data);
     const nextForm: EstateForm = {
       name: data.name ?? "",
+      jurisdiction: normalizeJurisdiction(data.jurisdiction),
       address: data.address ?? "",
       email: data.email ?? "",
       phone: data.phone ?? "",
@@ -298,6 +311,9 @@ const DashboardEstatePage = () => {
     const payload: Record<string, unknown> = {};
     if (trimmedName !== initialForm.name.trim()) {
       payload.name = trimmedName;
+    }
+    if (form.jurisdiction !== initialForm.jurisdiction) {
+      payload.jurisdiction = form.jurisdiction;
     }
 
     const currentAddress = normalizeOptional(form.address);
@@ -658,6 +674,26 @@ const DashboardEstatePage = () => {
                   className="w-full"
                   required
                 />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Jurisdiction *</span>
+                <select
+                  value={form.jurisdiction}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      jurisdiction: event.target.value as Jurisdiction,
+                    }))
+                  }
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  required
+                >
+                  {JURISDICTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid gap-2">
@@ -1024,6 +1060,7 @@ const DashboardEstatePage = () => {
         updateLot={updateLot}
         deleteLot={deleteLot}
         importLotsDxf={importLotsDxf}
+        recomputeEstateDesignOnLot={(id) => adminApi.recomputeEstateDesignOnLot(id)}
       />
     </DashboardLayout>
   );

@@ -5,6 +5,23 @@ import type {
   AxiosResponse,
 } from "axios";
 import { getAdminApiBaseUrl } from "@/lib/api/adminApiBase";
+import type {
+  CreateBuilderEstateApprovalPayload,
+  CreateBuilderEstateApprovalResponse,
+  CreateEstateRuleSetPayload,
+  CreateEstateRuleSetResponse,
+  CreateLotConstraintPayload,
+  CreateLotConstraintResponse,
+  CreateStateRuleSetPayload,
+  CreateStateRuleSetResponse,
+  RecomputeEstateSummary,
+  RuleSetRecordBase,
+  StateRuleSetRecord,
+  UpdateBuilderEstateApprovalPayload,
+  UpdateEstateRuleSetPayload,
+  UpdateLotConstraintPayload,
+  UpdateStateRuleSetPayload,
+} from "@/lib/api/adminModels";
 import { adminAuth } from "@/lib/auth/adminAuth";
 
 export type AdminId = string;
@@ -148,7 +165,49 @@ const floorPlanFacadesPath = (floorPlanId: AdminId) =>
 const floorPlanFacadePath = (floorPlanId: AdminId, id: AdminId) =>
   `${floorPlanFacadesPath(floorPlanId)}/${encodeId(id)}`;
 
+const stateRuleSetPath = (id: AdminId) =>
+  `${basePath("state-rule-sets")}/${encodeId(id)}`;
+
+const estateRuleSetsPath = (estateId: AdminId) =>
+  `${idPath("estates", estateId)}/rule-sets`;
+const estateRuleSetPath = (estateId: AdminId, id: AdminId) =>
+  `${estateRuleSetsPath(estateId)}/${encodeId(id)}`;
+
+const estateLotConstraintsPath = (estateId: AdminId) =>
+  `${idPath("estates", estateId)}/lot-constraints`;
+const estateLotConstraintPath = (estateId: AdminId, id: AdminId) =>
+  `${estateLotConstraintsPath(estateId)}/${encodeId(id)}`;
+
+const estateBuilderApprovalsPath = (estateId: AdminId) =>
+  `${idPath("estates", estateId)}/builder-approvals`;
+const estateBuilderApprovalPath = (estateId: AdminId, builderId: AdminId) =>
+  `${estateBuilderApprovalsPath(estateId)}/${encodeId(builderId)}`;
+
+const estateRecomputePath = (estateId: AdminId) =>
+  `${idPath("estates", estateId)}/recompute-design-on-lot`;
+
 export const adminApi = {
+  async getStateRuleSets<T = StateRuleSetRecord>(
+    params?: AdminQuery
+  ): Promise<T[]> {
+    return data(adminApiClient.get<T[]>(basePath("state-rule-sets"), { params }));
+  },
+  async createStateRuleSet<
+    T = CreateStateRuleSetResponse,
+    B extends CreateStateRuleSetPayload = CreateStateRuleSetPayload
+  >(payload: B): Promise<T> {
+    return data(adminApiClient.post<T>(basePath("state-rule-sets"), payload));
+  },
+  async updateStateRuleSet<
+    T = CreateStateRuleSetResponse,
+    B extends UpdateStateRuleSetPayload = UpdateStateRuleSetPayload
+  >(id: AdminId, payload: B): Promise<T> {
+    return data(adminApiClient.patch<T>(stateRuleSetPath(id), payload));
+  },
+  async deleteStateRuleSet<T = unknown>(id: AdminId): Promise<T> {
+    return data(adminApiClient.delete<T>(stateRuleSetPath(id)));
+  },
+
   async getEstates<T = unknown>(params?: AdminQuery): Promise<T[]> {
     return data(adminApiClient.get<T[]>(basePath("estates"), { params }));
   },
@@ -168,6 +227,102 @@ export const adminApi = {
   },
   async deleteEstate<T = unknown>(id: AdminId): Promise<T> {
     return data(adminApiClient.delete<T>(idPath("estates", id)));
+  },
+  async getEstateRuleSets<T = RuleSetRecordBase>(
+    estateId: AdminId,
+    params?: AdminQuery
+  ): Promise<T[]> {
+    return data(adminApiClient.get<T[]>(estateRuleSetsPath(estateId), { params }));
+  },
+  async createEstateRuleSet<
+    T = CreateEstateRuleSetResponse,
+    B extends CreateEstateRuleSetPayload = CreateEstateRuleSetPayload
+  >(estateId: AdminId, payload: B): Promise<T> {
+    return data(adminApiClient.post<T>(estateRuleSetsPath(estateId), payload));
+  },
+  async updateEstateRuleSet<
+    T = CreateEstateRuleSetResponse,
+    B extends UpdateEstateRuleSetPayload = UpdateEstateRuleSetPayload
+  >(estateId: AdminId, id: AdminId, payload: B): Promise<T> {
+    return data(adminApiClient.patch<T>(estateRuleSetPath(estateId, id), payload));
+  },
+  async deleteEstateRuleSet<T = unknown>(
+    estateId: AdminId,
+    id: AdminId
+  ): Promise<T> {
+    return data(adminApiClient.delete<T>(estateRuleSetPath(estateId, id)));
+  },
+  async getEstateLotConstraints<T = unknown>(
+    estateId: AdminId,
+    params?: AdminQuery
+  ): Promise<T[]> {
+    return data(
+      adminApiClient.get<T[]>(estateLotConstraintsPath(estateId), { params })
+    );
+  },
+  async createEstateLotConstraint<
+    T = CreateLotConstraintResponse,
+    B extends CreateLotConstraintPayload = CreateLotConstraintPayload
+  >(estateId: AdminId, payload: B): Promise<T> {
+    return data(
+      adminApiClient.post<T>(estateLotConstraintsPath(estateId), payload)
+    );
+  },
+  async updateEstateLotConstraint<
+    T = CreateLotConstraintResponse,
+    B extends UpdateLotConstraintPayload = UpdateLotConstraintPayload
+  >(estateId: AdminId, id: AdminId, payload: B): Promise<T> {
+    return data(
+      adminApiClient.patch<T>(estateLotConstraintPath(estateId, id), payload)
+    );
+  },
+  async deleteEstateLotConstraint<T = unknown>(
+    estateId: AdminId,
+    id: AdminId
+  ): Promise<T> {
+    return data(adminApiClient.delete<T>(estateLotConstraintPath(estateId, id)));
+  },
+  async getEstateBuilderApprovals<T = unknown>(
+    estateId: AdminId,
+    params?: AdminQuery
+  ): Promise<T[]> {
+    return data(
+      adminApiClient.get<T[]>(estateBuilderApprovalsPath(estateId), { params })
+    );
+  },
+  async createEstateBuilderApproval<
+    T = CreateBuilderEstateApprovalResponse,
+    B extends CreateBuilderEstateApprovalPayload =
+      CreateBuilderEstateApprovalPayload
+  >(estateId: AdminId, payload: B): Promise<T> {
+    return data(
+      adminApiClient.post<T>(estateBuilderApprovalsPath(estateId), payload)
+    );
+  },
+  async updateEstateBuilderApproval<
+    T = CreateBuilderEstateApprovalResponse,
+    B extends UpdateBuilderEstateApprovalPayload =
+      UpdateBuilderEstateApprovalPayload
+  >(estateId: AdminId, builderId: AdminId, payload: B): Promise<T> {
+    return data(
+      adminApiClient.patch<T>(
+        estateBuilderApprovalPath(estateId, builderId),
+        payload
+      )
+    );
+  },
+  async deleteEstateBuilderApproval<T = unknown>(
+    estateId: AdminId,
+    builderId: AdminId
+  ): Promise<T> {
+    return data(
+      adminApiClient.delete<T>(estateBuilderApprovalPath(estateId, builderId))
+    );
+  },
+  async recomputeEstateDesignOnLot<T = RecomputeEstateSummary>(
+    estateId: AdminId
+  ): Promise<T> {
+    return data(adminApiClient.post<T>(estateRecomputePath(estateId)));
   },
 
   async getLots<T = unknown>(params?: AdminQuery): Promise<T[]> {

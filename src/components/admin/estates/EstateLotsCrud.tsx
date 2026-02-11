@@ -1,8 +1,17 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { RecomputeSummaryCard } from "@/components/admin/rules/RecomputeSummaryCard";
+import { RuleLayerEditor } from "@/components/admin/rules/RuleLayerEditor";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import type { CreateLotInput } from "@/lib/api/adminApi";
+import { adminApi, type CreateLotInput } from "@/lib/api/adminApi";
+import { getAdminApiErrorMessage } from "@/lib/api/adminApiErrors";
+import type {
+  CreateLotConstraintResponse,
+  EstateRuleSetRecord,
+  LotConstraintRecord,
+  RuleLayer,
+} from "@/lib/api/adminModels";
 
 export type EstateLotRecord = {
   id?: string | number;
@@ -20,6 +29,11 @@ export type EstateLotRecord = {
   status?: string | null;
   overlays?: string[] | null;
   geojson?: Record<string, unknown> | null;
+  frontageM?: number | null;
+  lotType?: string | null;
+  roadFacing?: string | null;
+  precinct?: string | null;
+  ruleOverrides?: Record<string, unknown> | null;
   [key: string]: unknown;
 };
 
@@ -37,6 +51,9 @@ type LotForm = {
   geojson: string;
   estateId: string;
   lotType: string;
+  frontageM: string;
+  roadFacing: string;
+  precinct: string;
   frontageType: string;
   planningId: string;
   maxHeight: string;
@@ -51,8 +68,6 @@ type LotForm = {
   rearYardMinSetback: string;
   exampleArea: string;
   exampleLotSize: string;
-  apiZoning: string;
-  apiMatches: string;
   frontageCoordinate: string;
   width: string;
   depth: string;
@@ -60,9 +75,6 @@ type LotForm = {
   s2: string;
   s3: string;
   s4: string;
-  zoningFrontSetback: string;
-  zoningSideSetback: string;
-  zoningRearSetback: string;
   highFall: boolean;
 };
 
@@ -90,6 +102,15 @@ export type DxfImportResult = {
   targetSrid?: number;
   boundary?: { areaSqm?: number; layer?: string };
   lots?: Array<{ id?: string; blockKey?: string; areaSqm?: number }>;
+  recompute?: {
+    estateId?: string;
+    lotsProcessed?: number;
+    combinationsProcessed?: number;
+    pass?: number;
+    fail?: number;
+    manualReview?: number;
+    [key: string]: unknown;
+  };
 };
 
 type EstateLotsCrudProps = {
@@ -99,6 +120,7 @@ type EstateLotsCrudProps = {
   updateLot: (id: string, payload: Record<string, unknown>) => Promise<unknown>;
   deleteLot: (id: string) => Promise<unknown>;
   importLotsDxf?: (estateId: string, payload: FormData) => Promise<DxfImportResult>;
+  recomputeEstateDesignOnLot?: (estateId: string) => Promise<unknown>;
   enableDxfImport?: boolean;
 };
 
@@ -116,6 +138,9 @@ const createEmptyLotForm = (estateIdValue: string): LotForm => ({
   geojson: "",
   estateId: estateIdValue,
   lotType: "",
+  frontageM: "",
+  roadFacing: "",
+  precinct: "",
   frontageType: "",
   planningId: "",
   maxHeight: "",
@@ -130,8 +155,6 @@ const createEmptyLotForm = (estateIdValue: string): LotForm => ({
   rearYardMinSetback: "",
   exampleArea: "",
   exampleLotSize: "",
-  apiZoning: "",
-  apiMatches: "",
   frontageCoordinate: "",
   width: "",
   depth: "",
@@ -139,9 +162,6 @@ const createEmptyLotForm = (estateIdValue: string): LotForm => ({
   s2: "",
   s3: "",
   s4: "",
-  zoningFrontSetback: "",
-  zoningSideSetback: "",
-  zoningRearSetback: "",
   highFall: false,
 });
 
@@ -210,6 +230,14 @@ const parseGeojson = (value: string) => {
       error: error instanceof Error ? error.message : "Invalid JSON.",
     };
   }
+};
+
+const parseRulesJson = (value: string): RuleLayer => {
+  const parsed = JSON.parse(value) as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Rules must be a JSON object.");
+  }
+  return parsed as RuleLayer;
 };
 
 const stringifyValue = (value: unknown) =>
@@ -419,14 +447,6 @@ const buildLotForm = (lot: EstateLotRecord, estateIdValue: string): LotForm => {
     geojsonRecord?.[key];
   const readMetadataOnly = (key: string) =>
     (lot as Record<string, unknown>)[key] ?? metadata?.[key];
-  const zoningSetbacks = readValue("zoningSetbacks");
-  const zoningSetbacksRecord =
-    zoningSetbacks &&
-    typeof zoningSetbacks === "object" &&
-    !Array.isArray(zoningSetbacks)
-      ? (zoningSetbacks as Record<string, unknown>)
-      : null;
-
   return {
     blockKey: stringifyValue(
       lot.blockKey ?? (lot as { BLOCK_KEY?: string }).BLOCK_KEY
@@ -442,7 +462,14 @@ const buildLotForm = (lot: EstateLotRecord, estateIdValue: string): LotForm => {
     overlays: Array.isArray(lot.overlays) ? lot.overlays.join(", ") : "",
     geojson: lot.geojson ? JSON.stringify(lot.geojson, null, 2) : "",
     estateId: stringifyValue(extractLotEstateId(lot) ?? estateIdValue),
-    lotType: stringifyValue(readMetadataOnly("type")),
+    lotType: stringifyValue(
+      (lot as Record<string, unknown>)["lotType"] ??
+        readMetadataOnly("lotType") ??
+        readMetadataOnly("type")
+    ),
+    frontageM: stringifyValue(readValue("frontageM")),
+    roadFacing: stringifyValue(readValue("roadFacing")),
+    precinct: stringifyValue(readValue("precinct")),
     frontageType: stringifyValue(readValue("frontageType")),
     planningId: stringifyValue(readValue("planningId")),
     maxHeight: stringifyValue(readValue("maxHeight")),
@@ -457,8 +484,6 @@ const buildLotForm = (lot: EstateLotRecord, estateIdValue: string): LotForm => {
     rearYardMinSetback: stringifyValue(readValue("rearYardMinSetback")),
     exampleArea: stringifyValue(readValue("exampleArea")),
     exampleLotSize: stringifyValue(readValue("exampleLotSize")),
-    apiZoning: stringifyValue(readValue("apiZoning")),
-    apiMatches: stringifyJsonValue(readValue("apiMatches")),
     frontageCoordinate: stringifyJsonValue(readValue("frontageCoordinate")),
     width: stringifyValue(readValue("width")),
     depth: stringifyValue(readValue("depth")),
@@ -466,9 +491,6 @@ const buildLotForm = (lot: EstateLotRecord, estateIdValue: string): LotForm => {
     s2: stringifyValue(getGeojsonSValue(geojsonRecord, "s2")),
     s3: stringifyValue(getGeojsonSValue(geojsonRecord, "s3")),
     s4: stringifyValue(getGeojsonSValue(geojsonRecord, "s4")),
-    zoningFrontSetback: stringifyValue(zoningSetbacksRecord?.frontSetback),
-    zoningSideSetback: stringifyValue(zoningSetbacksRecord?.sideSetback),
-    zoningRearSetback: stringifyValue(zoningSetbacksRecord?.rearSetback),
     highFall: coerceBoolean(readValue("highFall")),
   };
 };
@@ -535,6 +557,7 @@ export const EstateLotsCrud = ({
   updateLot,
   deleteLot,
   importLotsDxf,
+  recomputeEstateDesignOnLot,
   enableDxfImport,
 }: EstateLotsCrudProps) => {
   const canImportDxf = enableDxfImport ?? Boolean(importLotsDxf);
@@ -555,6 +578,42 @@ export const EstateLotsCrud = ({
   const [lotDeleteId, setLotDeleteId] = useState<string | null>(null);
   const [lotFormError, setLotFormError] = useState<string | null>(null);
   const [lotFormSuccess, setLotFormSuccess] = useState<string | null>(null);
+  const [lotSaveRecompute, setLotSaveRecompute] = useState<
+    Record<string, unknown> | null
+  >(null);
+  const [lotConstraints, setLotConstraints] = useState<LotConstraintRecord[]>([]);
+  const [lotConstraintsLoading, setLotConstraintsLoading] = useState(false);
+  const [lotConstraintsError, setLotConstraintsError] = useState<string | null>(
+    null
+  );
+  const [showLotConstraints, setShowLotConstraints] = useState(false);
+  const [constraintName, setConstraintName] = useState("");
+  const [constraintActive, setConstraintActive] = useState(true);
+  const [constraintRulesJson, setConstraintRulesJson] = useState(
+    `{
+  "minFrontSetbackM": 7.5,
+  "maxSiteCoverageRatio": 0.4
+}`
+  );
+  const [constraintNotes, setConstraintNotes] = useState("");
+  const [constraintEstateRuleSetId, setConstraintEstateRuleSetId] = useState("");
+  const [constraintSaving, setConstraintSaving] = useState(false);
+  const [constraintDeleteId, setConstraintDeleteId] = useState<string | null>(null);
+  const [constraintErrorMessage, setConstraintErrorMessage] = useState<
+    string | null
+  >(null);
+  const [constraintSuccessMessage, setConstraintSuccessMessage] = useState<
+    string | null
+  >(null);
+  const [constraintRecompute, setConstraintRecompute] = useState<
+    Record<string, unknown> | null
+  >(null);
+  const [editingConstraintId, setEditingConstraintId] = useState<string | null>(
+    null
+  );
+  const [constraintRuleSetOptions, setConstraintRuleSetOptions] = useState<
+    EstateRuleSetRecord[]
+  >([]);
   const [showDxfImport, setShowDxfImport] = useState(false);
   const [dxfFile, setDxfFile] = useState<File | null>(null);
   const [dxfForm, setDxfForm] = useState<DxfImportForm>(() =>
@@ -563,6 +622,11 @@ export const EstateLotsCrud = ({
   const [dxfImporting, setDxfImporting] = useState(false);
   const [dxfError, setDxfError] = useState<string | null>(null);
   const [dxfResult, setDxfResult] = useState<DxfImportResult | null>(null);
+  const [recomputeLoading, setRecomputeLoading] = useState(false);
+  const [recomputeError, setRecomputeError] = useState<string | null>(null);
+  const [recomputeResult, setRecomputeResult] = useState<Record<string, unknown> | null>(
+    null
+  );
 
   const frontageLine = useMemo(
     () => parseLineString(lotForm.frontageCoordinate),
@@ -661,14 +725,196 @@ export const EstateLotsCrud = ({
     handleLoadLots();
   }, [handleLoadLots]);
 
+  const handleManualRecompute = useCallback(async () => {
+    if (!estateId) {
+      setRecomputeError("Missing estate id.");
+      return;
+    }
+    if (!recomputeEstateDesignOnLot) {
+      setRecomputeError("Manual recompute is not available.");
+      return;
+    }
+    setRecomputeLoading(true);
+    setRecomputeError(null);
+    try {
+      const response = await recomputeEstateDesignOnLot(estateId);
+      if (response && typeof response === "object") {
+        setRecomputeResult(response as Record<string, unknown>);
+      } else {
+        setRecomputeResult({ result: response });
+      }
+      await handleLoadLots();
+    } catch (error) {
+      setRecomputeError(
+        error instanceof Error ? error.message : "Failed to recompute designs."
+      );
+    } finally {
+      setRecomputeLoading(false);
+    }
+  }, [estateId, handleLoadLots, recomputeEstateDesignOnLot]);
+
+  const resetConstraintForm = useCallback(() => {
+    setEditingConstraintId(null);
+    setConstraintName("");
+    setConstraintActive(true);
+    setConstraintRulesJson(
+      `{
+  "minFrontSetbackM": 7.5,
+  "maxSiteCoverageRatio": 0.4
+}`
+    );
+    setConstraintNotes("");
+    setConstraintEstateRuleSetId("");
+    setConstraintErrorMessage(null);
+    setConstraintSuccessMessage(null);
+    setConstraintRecompute(null);
+  }, []);
+
+  const loadLotConstraintContext = useCallback(
+    async (lotId: string) => {
+      if (!estateId || !lotId) {
+        setLotConstraints([]);
+        setConstraintRuleSetOptions([]);
+        setLotConstraintsLoading(false);
+        return;
+      }
+      setLotConstraintsLoading(true);
+      setLotConstraintsError(null);
+      try {
+        const [constraints, ruleSets] = await Promise.all([
+          adminApi.getEstateLotConstraints<LotConstraintRecord>(estateId, {
+            lotId,
+          }),
+          adminApi.getEstateRuleSets<EstateRuleSetRecord>(estateId),
+        ]);
+        setLotConstraints(
+          constraints.filter((item) => String(item.lotId ?? "") === lotId)
+        );
+        setConstraintRuleSetOptions(ruleSets);
+      } catch (error) {
+        setLotConstraints([]);
+        setConstraintRuleSetOptions([]);
+        setLotConstraintsError(
+          getAdminApiErrorMessage(error, "Failed to load lot constraints.")
+        );
+      } finally {
+        setLotConstraintsLoading(false);
+      }
+    },
+    [estateId]
+  );
+
+  const handleEditConstraint = (constraint: LotConstraintRecord) => {
+    setEditingConstraintId(constraint.id);
+    setConstraintName(constraint.name ?? "");
+    setConstraintActive(constraint.isActive ?? true);
+    setConstraintRulesJson(JSON.stringify(constraint.rules ?? {}, null, 2));
+    setConstraintNotes(constraint.notes ?? "");
+    setConstraintEstateRuleSetId(constraint.estateRuleSetId ?? "");
+    setConstraintErrorMessage(null);
+    setConstraintSuccessMessage(null);
+    setConstraintRecompute(null);
+  };
+
+  const handleDeleteConstraint = async (constraintId: string) => {
+    if (!estateId || !editingLotId) {
+      return;
+    }
+    const confirmed = window.confirm("Delete this lot constraint?");
+    if (!confirmed) {
+      return;
+    }
+    setConstraintDeleteId(constraintId);
+    setConstraintErrorMessage(null);
+    setConstraintSuccessMessage(null);
+    try {
+      await adminApi.deleteEstateLotConstraint(estateId, constraintId);
+      if (editingConstraintId === constraintId) {
+        resetConstraintForm();
+      }
+      setConstraintSuccessMessage("Lot constraint deleted.");
+      await loadLotConstraintContext(editingLotId);
+    } catch (error) {
+      setConstraintErrorMessage(
+        getAdminApiErrorMessage(error, "Failed to delete lot constraint.")
+      );
+    } finally {
+      setConstraintDeleteId(null);
+    }
+  };
+
+  const handleSaveConstraint = async () => {
+    if (!estateId || !editingLotId) {
+      setConstraintErrorMessage("Select a saved lot to manage constraints.");
+      return;
+    }
+    const trimmedConstraintName = constraintName.trim();
+    if (!trimmedConstraintName) {
+      setConstraintErrorMessage("Constraint name is required.");
+      return;
+    }
+    setConstraintSaving(true);
+    setConstraintErrorMessage(null);
+    setConstraintSuccessMessage(null);
+    setConstraintRecompute(null);
+    try {
+      const rules = parseRulesJson(constraintRulesJson);
+      const payload = {
+        lotId: editingLotId,
+        name: trimmedConstraintName,
+        isActive: constraintActive,
+        rules,
+        notes: constraintNotes.trim() || null,
+        estateRuleSetId: constraintEstateRuleSetId.trim() || null,
+      };
+      const response = editingConstraintId
+        ? await adminApi.updateEstateLotConstraint<CreateLotConstraintResponse>(
+            estateId,
+            editingConstraintId,
+            payload
+          )
+        : await adminApi.createEstateLotConstraint<CreateLotConstraintResponse>(
+            estateId,
+            payload
+          );
+      setConstraintSuccessMessage(
+        editingConstraintId ? "Lot constraint updated." : "Lot constraint created."
+      );
+      setConstraintRecompute(
+        (response.recompute as Record<string, unknown> | undefined) ?? null
+      );
+      if (editingConstraintId) {
+        setEditingConstraintId(null);
+      } else {
+        setConstraintName("");
+        setConstraintActive(true);
+      }
+      setConstraintNotes("");
+      setConstraintEstateRuleSetId("");
+      await loadLotConstraintContext(editingLotId);
+    } catch (error) {
+      setConstraintErrorMessage(
+        getAdminApiErrorMessage(error, "Failed to save lot constraint.")
+      );
+    } finally {
+      setConstraintSaving(false);
+    }
+  };
+
   const closeLotForm = useCallback(() => {
     setEditingLotId(null);
     setLotForm(createEmptyLotForm(estateId ?? ""));
     setLotGeometry(null);
     setLotFormError(null);
     setLotFormSuccess(null);
+    setLotSaveRecompute(null);
+    setShowLotConstraints(false);
+    setLotConstraints([]);
+    setConstraintRuleSetOptions([]);
+    setLotConstraintsError(null);
+    resetConstraintForm();
     setShowLotForm(false);
-  }, [estateId]);
+  }, [estateId, resetConstraintForm]);
 
   useEffect(() => {
     if (!estateId) {
@@ -680,6 +926,8 @@ export const EstateLotsCrud = ({
     setDxfError(null);
     setDxfResult(null);
     setShowDxfImport(false);
+    setRecomputeError(null);
+    setRecomputeResult(null);
   }, [closeLotForm, estateId]);
 
   const openNewLotForm = useCallback(() => {
@@ -688,8 +936,14 @@ export const EstateLotsCrud = ({
     setLotGeometry(null);
     setLotFormError(null);
     setLotFormSuccess(null);
+    setLotSaveRecompute(null);
+    setShowLotConstraints(false);
+    setLotConstraints([]);
+    setConstraintRuleSetOptions([]);
+    setLotConstraintsError(null);
+    resetConstraintForm();
     setShowLotForm(true);
-  }, [estateId]);
+  }, [estateId, resetConstraintForm]);
 
   const handleDxfFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -808,8 +1062,9 @@ export const EstateLotsCrud = ({
     }
   };
 
-  const handleEditLot = (lot: EstateLotRecord) => {
-    setEditingLotId(String(lot.id ?? ""));
+  const handleEditLot = async (lot: EstateLotRecord) => {
+    const lotId = String(lot.id ?? "");
+    setEditingLotId(lotId);
     setLotForm(buildLotForm(lot, estateId ?? ""));
     setLotGeometry(
       ((lot as { geometry?: Record<string, unknown> }).geometry as
@@ -818,7 +1073,13 @@ export const EstateLotsCrud = ({
     );
     setLotFormError(null);
     setLotFormSuccess(null);
+    setLotSaveRecompute(null);
+    setShowLotConstraints(false);
+    resetConstraintForm();
     setShowLotForm(true);
+    if (lotId) {
+      await loadLotConstraintContext(lotId);
+    }
   };
 
   const handleSaveLot = async (event: FormEvent<HTMLFormElement>) => {
@@ -826,6 +1087,7 @@ export const EstateLotsCrud = ({
     setLotSaving(true);
     setLotFormError(null);
     setLotFormSuccess(null);
+    setLotSaveRecompute(null);
 
     const trimmedBlockKey = lotForm.blockKey.trim();
     if (!trimmedBlockKey) {
@@ -890,23 +1152,6 @@ export const EstateLotsCrud = ({
       return { ok: true, value: parsed };
     };
 
-    const parseOptionalJsonField = (value: string, label: string) => {
-      const trimmed = value.trim();
-      if (!trimmed) {
-        return { ok: true, value: null as unknown };
-      }
-      try {
-        return { ok: true, value: JSON.parse(trimmed) };
-      } catch (error) {
-        setLotFormError(
-          error instanceof Error
-            ? `${label} must be valid JSON. ${error.message}`
-            : `${label} must be valid JSON.`
-        );
-        return { ok: false, value: null as unknown };
-      }
-    };
-
     const s1Result = parseOptionalNumberField(lotForm.s1, "S1");
     if (!s1Result.ok) {
       setLotSaving(false);
@@ -937,44 +1182,14 @@ export const EstateLotsCrud = ({
       setLotSaving(false);
       return;
     }
-    const zoningFrontResult = parseOptionalNumberField(
-      lotForm.zoningFrontSetback,
-      "Zoning front setback"
+    const frontageMResult = parseOptionalNumberField(
+      lotForm.frontageM,
+      "Frontage (m)"
     );
-    if (!zoningFrontResult.ok) {
+    if (!frontageMResult.ok) {
       setLotSaving(false);
       return;
     }
-    const zoningSideResult = parseOptionalNumberField(
-      lotForm.zoningSideSetback,
-      "Zoning side setback"
-    );
-    if (!zoningSideResult.ok) {
-      setLotSaving(false);
-      return;
-    }
-    const zoningRearResult = parseOptionalNumberField(
-      lotForm.zoningRearSetback,
-      "Zoning rear setback"
-    );
-    if (!zoningRearResult.ok) {
-      setLotSaving(false);
-      return;
-    }
-    const apiMatchesResult = parseOptionalJsonField(
-      lotForm.apiMatches,
-      "API matches"
-    );
-    if (!apiMatchesResult.ok) {
-      setLotSaving(false);
-      return;
-    }
-
-    const hasZoningSetbacks =
-      zoningFrontResult.value !== null ||
-      zoningSideResult.value !== null ||
-      zoningRearResult.value !== null;
-
     const lotMetadata = {
       type: normalizeOptional(lotForm.lotType),
       frontageType: normalizeOptional(lotForm.frontageType),
@@ -991,21 +1206,12 @@ export const EstateLotsCrud = ({
       rearYardMinSetback: normalizeOptional(lotForm.rearYardMinSetback),
       exampleArea: normalizeOptional(lotForm.exampleArea),
       exampleLotSize: normalizeOptional(lotForm.exampleLotSize),
-      apiZoning: normalizeOptional(lotForm.apiZoning),
-      apiMatches: apiMatchesResult.value,
       frontageCoordinate: normalizeOptional(lotForm.frontageCoordinate),
       highFall: lotForm.highFall,
-      zoningSetbacks: hasZoningSetbacks
-        ? {
-            frontSetback: zoningFrontResult.value,
-            sideSetback: zoningSideResult.value,
-            rearSetback: zoningRearResult.value,
-          }
-        : null,
     };
 
     const hasMetadataValue = Object.entries(lotMetadata)
-      .filter(([key]) => key !== "highFall")
+      .filter(([key]) => key !== "highFall" && key !== "type")
       .some(([, value]) => value !== null && value !== undefined && value !== "");
     const sValues = [
       s1Result.value,
@@ -1030,6 +1236,10 @@ export const EstateLotsCrud = ({
       division: normalizeOptional(lotForm.division),
       lifecycleStage: normalizeOptional(lotForm.lifecycleStage),
       overlays: parseOverlays(lotForm.overlays),
+      frontageM: frontageMResult.value,
+      lotType: normalizeOptional(lotForm.lotType),
+      roadFacing: normalizeOptional(lotForm.roadFacing),
+      precinct: normalizeOptional(lotForm.precinct),
     };
 
     if (geojsonValue.data === null) {
@@ -1086,13 +1296,24 @@ export const EstateLotsCrud = ({
     }
 
     try {
+      let response: unknown;
       if (editingLotId) {
-        await updateLot(String(editingLotId), payload);
+        response = await updateLot(String(editingLotId), payload);
         setLotFormSuccess("Lot updated.");
       } else {
-        await createLot(payload as CreateLotInput);
-        setLotFormSuccess("Lot created.");
+        response = await createLot(payload as CreateLotInput);
         openNewLotForm();
+        setLotFormSuccess("Lot created.");
+      }
+      const recompute = (
+        response &&
+        typeof response === "object" &&
+        "recompute" in response
+          ? (response as { recompute?: Record<string, unknown> }).recompute
+          : null
+      ) as Record<string, unknown> | null;
+      if (recompute) {
+        setLotSaveRecompute(recompute);
       }
       await handleLoadLots();
     } catch (error) {
@@ -1202,12 +1423,36 @@ export const EstateLotsCrud = ({
               onClick={openDxfImport}
             />
           )}
+          {recomputeEstateDesignOnLot && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-8 px-2 text-xs"
+              label="Recompute designs"
+              onClick={handleManualRecompute}
+              disabled={recomputeLoading}
+              loading={recomputeLoading}
+            />
+          )}
         </div>
       </div>
 
       {lotsErrorMessage && (
         <div className="mb-3 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
           {lotsErrorMessage}
+        </div>
+      )}
+      {recomputeError && (
+        <div className="mb-3 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
+          {recomputeError}
+        </div>
+      )}
+      {recomputeResult && (
+        <div className="mb-3">
+          <RecomputeSummaryCard
+            summary={recomputeResult}
+            title="Recompute summary"
+          />
         </div>
       )}
 
@@ -1448,7 +1693,12 @@ export const EstateLotsCrud = ({
               {dxfResult && (
                 <span className="text-sm text-emerald-600">
                   Imported {dxfResult.created ?? 0} lot
-                  {(dxfResult.created ?? 0) === 1 ? "" : "s"}.
+                  {(dxfResult.created ?? 0) === 1 ? "" : "s"}
+                  {dxfResult.recompute
+                    ? `. Recompute: ${dxfResult.recompute.pass ?? 0} pass / ${
+                        dxfResult.recompute.fail ?? 0
+                      } fail / ${dxfResult.recompute.manualReview ?? 0} manual review.`
+                    : "."}
                 </span>
               )}
             </div>
@@ -1625,23 +1875,6 @@ export const EstateLotsCrud = ({
                   className="w-full"
                 />
               </div>
-              <div className="grid gap-2 md:col-span-2 lg:col-span-3">
-                <span className="text-sm font-medium">Overlays</span>
-                <Input
-                  value={lotForm.overlays}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      overlays: event.target.value,
-                    }))
-                  }
-                  placeholder="Flood, Heritage"
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Width</span>
                 <Input
@@ -1726,10 +1959,21 @@ export const EstateLotsCrud = ({
                   className="w-full"
                 />
               </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-              <div className="grid gap-2">
+              <div className="grid gap-2 md:col-span-2 lg:col-span-3">
+                <span className="text-sm font-medium">Overlays</span>
+                <Input
+                  value={lotForm.overlays}
+                  onChange={(event) =>
+                    setLotForm((prev) => ({
+                      ...prev,
+                      overlays: event.target.value,
+                    }))
+                  }
+                  placeholder="Flood, Heritage"
+                  className="w-full"
+                />
+              </div>
+              <div className="grid gap-2 md:col-span-2 lg:col-span-2">
                 <span className="text-sm font-medium">Lot boundary preview</span>
                 <div className="rounded-md border border-slate-200 bg-white p-3">
                   {frontagePreview.error || !frontageEdges ? (
@@ -1808,7 +2052,7 @@ export const EstateLotsCrud = ({
                   />
                 </div>
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-2 md:col-span-2 lg:col-span-1">
                 <span className="text-sm font-medium">
                   Frontage coordinate (GeoJSON LineString)
                 </span>
@@ -1846,7 +2090,7 @@ export const EstateLotsCrud = ({
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Lot type</span>
-                <Input
+                <select
                   value={lotForm.lotType}
                   onChange={(event) =>
                     setLotForm((prev) => ({
@@ -1854,7 +2098,62 @@ export const EstateLotsCrud = ({
                       lotType: event.target.value,
                     }))
                   }
-                  placeholder="Standard"
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">(not set)</option>
+                  <option value="standard">standard</option>
+                  <option value="corner">corner</option>
+                  <option value="battle_axe">battle_axe</option>
+                  <option value="other">other</option>
+                  {lotForm.lotType &&
+                    !["standard", "corner", "battle_axe", "other"].includes(
+                      lotForm.lotType
+                    ) && (
+                      <option value={lotForm.lotType}>{lotForm.lotType}</option>
+                    )}
+                </select>
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Frontage (m)</span>
+                <Input
+                  value={lotForm.frontageM}
+                  onChange={(event) =>
+                    setLotForm((prev) => ({
+                      ...prev,
+                      frontageM: event.target.value,
+                    }))
+                  }
+                  type="number"
+                  step="0.1"
+                  placeholder="18.2"
+                  className="w-full"
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Road facing</span>
+                <Input
+                  value={lotForm.roadFacing}
+                  onChange={(event) =>
+                    setLotForm((prev) => ({
+                      ...prev,
+                      roadFacing: event.target.value,
+                    }))
+                  }
+                  placeholder="Yass Valley Way"
+                  className="w-full"
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Precinct</span>
+                <Input
+                  value={lotForm.precinct}
+                  onChange={(event) =>
+                    setLotForm((prev) => ({
+                      ...prev,
+                      precinct: event.target.value,
+                    }))
+                  }
+                  placeholder="Stage 1"
                   className="w-full"
                 />
               </div>
@@ -2059,97 +2358,6 @@ export const EstateLotsCrud = ({
                 />
               </div>
             </div>
-
-            <div className="md:col-span-2 pt-2 text-sm font-semibold text-slate-600">
-              Zoning setbacks (API)
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Front setback</span>
-                <Input
-                  value={lotForm.zoningFrontSetback}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      zoningFrontSetback: event.target.value,
-                    }))
-                  }
-                  type="number"
-                  step="0.01"
-                  placeholder="4"
-                  className="w-full"
-                />
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Side setback</span>
-                <Input
-                  value={lotForm.zoningSideSetback}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      zoningSideSetback: event.target.value,
-                    }))
-                  }
-                  type="number"
-                  step="0.01"
-                  placeholder="3"
-                  className="w-full"
-                />
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Rear setback</span>
-                <Input
-                  value={lotForm.zoningRearSetback}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      zoningRearSetback: event.target.value,
-                    }))
-                  }
-                  type="number"
-                  step="0.01"
-                  placeholder="3"
-                  className="w-full"
-                />
-              </div>
-            </div>
-
-            <div className="md:col-span-2 pt-2 text-sm font-semibold text-slate-600">
-              API metadata
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">API zoning</span>
-                <Input
-                  value={lotForm.apiZoning}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      apiZoning: event.target.value,
-                    }))
-                  }
-                  placeholder="RZ1"
-                  className="w-full"
-                />
-              </div>
-              <div className="grid gap-2 md:col-span-2">
-                <span className="text-sm font-medium">API matches (JSON)</span>
-                <textarea
-                  value={lotForm.apiMatches}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      apiMatches: event.target.value,
-                    }))
-                  }
-                  rows={4}
-                  spellCheck={false}
-                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  placeholder='[{"houseDesignId":"abc","floorplanUrl":"/path.png","spacing":{"front":4,"rear":3,"side":3},"maxCoverageArea":200,"houseArea":180,"lotDimensions":{"width":12,"depth":30}}]'
-                />
-              </div>
-            </div>
-
             <div className="grid gap-2">
               <span className="text-sm font-medium">GeoJSON</span>
               <textarea
@@ -2192,7 +2400,236 @@ export const EstateLotsCrud = ({
                   {lotFormSuccess}
                 </span>
               )}
+              {lotFormSuccess && recomputeEstateDesignOnLot && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-8 px-2 text-xs"
+                  label="Recompute now"
+                  onClick={handleManualRecompute}
+                  disabled={recomputeLoading}
+                  loading={recomputeLoading}
+                />
+              )}
             </div>
+            {lotSaveRecompute && (
+              <RecomputeSummaryCard
+                summary={lotSaveRecompute}
+                title="Lot save recompute summary"
+              />
+            )}
+            {editingLotId && (
+              <div className="md:col-span-2 rounded-md border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                  <div>
+                    <h3 className="text-sm font-semibold m-0">Lot Constraints</h3>
+                    <p className="text-xs text-slate-500 mt-1 mb-0">
+                      Manage formal S88B-style constraints for this lot.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-8 px-2 text-xs"
+                      label={showLotConstraints ? "Hide" : "Manage"}
+                      onClick={() => setShowLotConstraints((prev) => !prev)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-8 px-2 text-xs"
+                      label="Refresh"
+                      onClick={() => loadLotConstraintContext(editingLotId)}
+                      disabled={lotConstraintsLoading}
+                      loading={lotConstraintsLoading}
+                    />
+                  </div>
+                </div>
+
+                {lotConstraintsError && (
+                  <div className="mb-3 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
+                    {lotConstraintsError}
+                  </div>
+                )}
+
+                {showLotConstraints && (
+                  <div className="grid gap-4">
+                    <div className="overflow-auto border rounded-lg bg-white">
+                      <table className="w-full border-collapse min-w-[620px]">
+                        <thead>
+                          <tr className="bg-slate-100 text-left">
+                            <th className="p-2 border-b text-xs font-medium text-slate-700">
+                              Name
+                            </th>
+                            <th className="p-2 border-b text-xs font-medium text-slate-700">
+                              Active
+                            </th>
+                            <th className="p-2 border-b text-xs font-medium text-slate-700">
+                              Rule Set
+                            </th>
+                            <th className="p-2 border-b text-xs font-medium text-slate-700">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {lotConstraints.map((item) => (
+                            <tr key={item.id}>
+                              <td className="p-2 border-b border-slate-100 text-sm">
+                                {item.name ?? "--"}
+                              </td>
+                              <td className="p-2 border-b border-slate-100 text-sm">
+                                {typeof item.isActive === "boolean"
+                                  ? String(item.isActive)
+                                  : "--"}
+                              </td>
+                              <td className="p-2 border-b border-slate-100 text-xs font-mono">
+                                {item.estateRuleSetId ?? "--"}
+                              </td>
+                              <td className="p-2 border-b border-slate-100 text-sm">
+                                <div className="flex flex-wrap gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="h-7 px-2 text-xs"
+                                    label="Edit"
+                                    onClick={() => handleEditConstraint(item)}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="h-7 px-2 text-xs text-destructive hover:bg-red-50 hover:text-destructive"
+                                    label="Delete"
+                                    onClick={() => handleDeleteConstraint(item.id)}
+                                    disabled={constraintDeleteId === item.id}
+                                    loading={constraintDeleteId === item.id}
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                          {lotConstraints.length === 0 && (
+                            <tr>
+                              <td
+                                colSpan={4}
+                                className="p-3 text-center text-sm text-muted-foreground"
+                              >
+                                No constraints for this lot.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="grid gap-3">
+                      <div className="flex flex-wrap gap-2">
+                        {editingConstraintId && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="h-8 px-2 text-xs"
+                            label="Cancel edit"
+                            onClick={resetConstraintForm}
+                          />
+                        )}
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="grid gap-2">
+                          <span className="text-sm font-medium">Constraint name *</span>
+                          <Input
+                            value={constraintName}
+                            onChange={(event) =>
+                              setConstraintName(event.target.value)
+                            }
+                            className="w-full"
+                            required
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <span className="text-sm font-medium">Active</span>
+                          <select
+                            value={constraintActive ? "true" : "false"}
+                            onChange={(event) =>
+                              setConstraintActive(event.target.value === "true")
+                            }
+                            className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          >
+                            <option value="true">true</option>
+                            <option value="false">false</option>
+                          </select>
+                        </div>
+                        <div className="grid gap-2 md:col-span-2">
+                          <span className="text-sm font-medium">Estate rule set</span>
+                          <select
+                            value={constraintEstateRuleSetId}
+                            onChange={(event) =>
+                              setConstraintEstateRuleSetId(event.target.value)
+                            }
+                            className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                          >
+                            <option value="">(none)</option>
+                            {constraintRuleSetOptions.map((option) => (
+                              <option key={option.id} value={option.id}>
+                                {`${option.name ?? "Unnamed"} v${option.version ?? "--"}`}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        <span className="text-sm font-medium">Rules JSON *</span>
+                        <RuleLayerEditor
+                          value={constraintRulesJson}
+                          onChange={setConstraintRulesJson}
+                          idPrefix={`lot-constraint-${editingLotId}`}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <span className="text-sm font-medium">Notes</span>
+                        <Input
+                          value={constraintNotes}
+                          onChange={(event) =>
+                            setConstraintNotes(event.target.value)
+                          }
+                          className="w-full"
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                          type="button"
+                          onClick={handleSaveConstraint}
+                          disabled={constraintSaving}
+                          loading={constraintSaving}
+                          label={
+                            editingConstraintId
+                              ? "Update lot constraint"
+                              : "Create lot constraint"
+                          }
+                        />
+                        {constraintErrorMessage && (
+                          <span className="text-sm text-destructive">
+                            {constraintErrorMessage}
+                          </span>
+                        )}
+                        {constraintSuccessMessage && (
+                          <span className="text-sm text-emerald-600">
+                            {constraintSuccessMessage}
+                          </span>
+                        )}
+                      </div>
+                      {constraintRecompute && (
+                        <RecomputeSummaryCard
+                          summary={constraintRecompute}
+                          title="Constraint recompute summary"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </form>
         </div>
       )}

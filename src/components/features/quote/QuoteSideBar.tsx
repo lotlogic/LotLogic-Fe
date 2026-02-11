@@ -139,7 +139,7 @@ export const GetYourQuoteSidebar = ({
         number: formData.phoneNumber,
         builders: formData.selectedBuilders,
         comments: formData.additionalComments || "",
-        lot_id: parseInt(lotDetails.id.toString()),
+        lot_id: lotDetails.id.toString(),
         house_design_id: selectedHouseDesign?.id || "",
         facade_id: "",
       };
@@ -356,7 +356,7 @@ export const GetYourQuoteSidebar = ({
                         comments: `[HOT LEAD] User secured this lot. ${
                           formData.additionalComments || ""
                         }`.trim(),
-                        lot_id: parseInt(lotDetails.id.toString()),
+                        lot_id: lotDetails.id.toString(),
                         house_design_id: selectedHouseDesign?.id || "",
                         facade_id: "",
                         hot_lead: true,

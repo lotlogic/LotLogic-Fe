@@ -3,6 +3,10 @@ import { useState } from "react";
 import { AdminUploadField } from "@/components/admin/AdminUploadField";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import {
+  JURISDICTIONS,
+  type Jurisdiction,
+} from "@/lib/api/adminModels";
 import type { EstateCreatePayload } from "./types";
 
 type EstateCreateFormProps = {
@@ -21,6 +25,7 @@ export const EstateCreateForm = ({
   openLabel = "Open",
 }: EstateCreateFormProps) => {
   const [name, setName] = useState("");
+  const [jurisdiction, setJurisdiction] = useState<Jurisdiction>("NSW");
   const [address, setAddress] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -55,6 +60,7 @@ export const EstateCreateForm = ({
 
     const payload: EstateCreatePayload = {
       name: trimmedName,
+      jurisdiction,
     };
     if (trimmedAddress) {
       payload.address = trimmedAddress;
@@ -76,6 +82,7 @@ export const EstateCreateForm = ({
     try {
       const created = await onCreate(payload);
       setName("");
+      setJurisdiction("NSW");
       setAddress("");
       setEmail("");
       setPhone("");
@@ -112,6 +119,23 @@ export const EstateCreateForm = ({
           placeholder="Estate name"
           required
         />
+      </div>
+      <div className="grid gap-2">
+        <span className="text-sm font-medium">Jurisdiction *</span>
+        <select
+          value={jurisdiction}
+          onChange={(event) =>
+            setJurisdiction(event.target.value as Jurisdiction)
+          }
+          className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          required
+        >
+          {JURISDICTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="grid gap-2">
         <span className="text-sm font-medium">Address</span>

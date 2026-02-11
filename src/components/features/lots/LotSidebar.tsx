@@ -81,7 +81,10 @@ export const LotSidebar = ({
     bathroom.length > 0 ||
     car.length > 0 ||
     (!isNaN(min_size) && min_size > 0) ||
-    (!isNaN(max_size) && max_size > 0);
+    (!isNaN(max_size) && max_size > 0) ||
+    design.rumpus ||
+    design.alfresco ||
+    design.pergola;
 
   const filtersToPass = React.useMemo(() => {
     if (!hasAnyFilters) {
@@ -94,8 +97,21 @@ export const LotSidebar = ({
       car: car.length > 0 ? car : [],
       min_size: !isNaN(min_size) && min_size > 0 ? min_size : undefined,
       max_size: !isNaN(max_size) && max_size > 0 ? max_size : undefined,
+      rumpus: design.rumpus ? true : undefined,
+      alfresco: design.alfresco ? true : undefined,
+      pergola: design.pergola ? true : undefined,
     };
-  }, [hasAnyFilters, bedroom, bathroom, car, min_size, max_size]);
+  }, [
+    hasAnyFilters,
+    bedroom,
+    bathroom,
+    car,
+    min_size,
+    max_size,
+    design.rumpus,
+    design.alfresco,
+    design.pergola,
+  ]);
   const { data: houseDesignsData } = useHouseDesigns(
     lotId,
     filtersToPass,
@@ -199,8 +215,8 @@ export const LotSidebar = ({
           url: floorPlanUrl,
           coordinates,
           houseArea: houseArea,
-          houseWidth: design.minLotWidth,
-          houseDepth: design.minLotDepth,
+          houseWidth: design.width,
+          houseDepth: design.depth,
         });
       }
     } else if (!design && onSelectFloorPlan) {
@@ -297,7 +313,16 @@ export const LotSidebar = ({
           {/* Conditional rendering for sidebar content */}
           {showHouseDesigns ? (
             <HouseDesignList
-              filter={{ bedroom, bathroom, car, min_size, max_size }}
+              filter={{
+                bedroom,
+                bathroom,
+                car,
+                min_size,
+                max_size,
+                rumpus: design.rumpus ? true : undefined,
+                alfresco: design.alfresco ? true : undefined,
+                pergola: design.pergola ? true : undefined,
+              }}
               lot={{
                 lotId: lot.id ?? "",
                 suburb: lot.suburb ?? "",

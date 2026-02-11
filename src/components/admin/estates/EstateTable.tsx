@@ -42,7 +42,7 @@ export const EstateTable = ({
   }, [estates, filterText]);
 
   const showActions = Boolean(onOpenEstate);
-  const colSpan = showActions ? 4 : 3;
+  const colSpan = showActions ? 5 : 4;
 
   return (
     <>
@@ -73,6 +73,9 @@ export const EstateTable = ({
                   Status
                 </th>
                 <th className="p-3 border-b font-medium text-sm text-slate-700">
+                  Jurisdiction
+                </th>
+                <th className="p-3 border-b font-medium text-sm text-slate-700">
                   ID
                 </th>
                 {showActions && (
@@ -90,6 +93,9 @@ export const EstateTable = ({
                   </td>
                   <td className="p-3 border-b border-slate-100 text-sm">
                     {estate.status ?? "--"}
+                  </td>
+                  <td className="p-3 border-b border-slate-100 text-sm">
+                    {estate.jurisdiction ?? "--"}
                   </td>
                   <td className="p-3 border-b border-slate-100 text-xs text-slate-400 font-mono">
                     {estate.id}
