@@ -9,6 +9,8 @@ export interface HouseDesignItem {
   id: string;
   title: string;
   area: string;
+  builderId?: string;
+  builderName?: string;
   width?: number;
   depth?: number;
   image: string;
@@ -179,7 +181,7 @@ export const quoteFormSchema = z.object({
 
   selectedBuilders: z
     .array(z.string())
-    .min(1, "Please select at least one builder"),
+    .default([]),
 
   additionalComments: z
     .string()

@@ -2,12 +2,10 @@ import Button from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { TextModal } from "@/components/ui/DynamicModal";
 import Input from "@/components/ui/Input";
-import MultiSelect from "@/components/ui/MultiSelect";
 import PrivacyPolicyContent from "@/components/ui/PrivacyPolicyContent";
 import Sidebar from "@/components/ui/Sidebar";
 import showToast from "@/components/ui/Toast";
 import { formatContent, quote } from "@/constants/content";
-import { convertBuildersToOptions, useBuilders } from "@/hooks/useBuilders";
 import {
   trackEnquirySubmitted,
   trackQuoteFormInteraction,
@@ -15,11 +13,48 @@ import {
 import { getImageUrl, submitEnquiry } from "@/lib/api/lotApi";
 import { useUIStore } from "@/stores/uiStore";
 import type {
+  HouseDesignItem,
   GetYourQuoteSidebarProps,
   QuoteFormData,
 } from "@/types/houseDesign";
 import { quoteFormSchema } from "@/types/houseDesign";
 import React, { useState } from "react";
+
+const normalizeText = (value: unknown) => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed || undefined;
+};
+
+const resolveBuilderForDesign = (selectedHouseDesign: HouseDesignItem | null) => {
+  if (!selectedHouseDesign) {
+    return {
+      builderIds: [] as string[],
+      builderLabel: undefined as string | undefined,
+    };
+  }
+
+  let builderId = normalizeText(selectedHouseDesign.builderId);
+  let builderName = normalizeText(selectedHouseDesign.builderName);
+  const designRecord = selectedHouseDesign as unknown as Record<string, unknown>;
+  const rawBuilder = designRecord.builder;
+
+  if (typeof rawBuilder === "string") {
+    builderId = builderId || normalizeText(rawBuilder);
+    builderName = builderName || normalizeText(rawBuilder);
+  } else if (rawBuilder && typeof rawBuilder === "object") {
+    const builderObj = rawBuilder as Record<string, unknown>;
+    builderId = builderId || normalizeText(builderObj.id);
+    builderName = builderName || normalizeText(builderObj.name);
+  }
+
+  return {
+    builderIds: builderId ? [builderId] : [],
+    builderLabel: builderName || builderId || undefined,
+  };
+};
 
 export const GetYourQuoteSidebar = ({
   open,
@@ -28,7 +63,6 @@ export const GetYourQuoteSidebar = ({
   selectedHouseDesign,
   lotDetails,
 }: GetYourQuoteSidebarProps) => {
-  const [selectedBuilders, setSelectedBuilders] = useState<string[]>([]);
   const [showThankYou, setShowThankYou] = useState(false);
   const [lotSecured, setLotSecured] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -40,13 +74,10 @@ export const GetYourQuoteSidebar = ({
     return () => setHideRotationControls(false);
   }, [showThankYou, lotSecured, setHideRotationControls]);
   const [showTerms, setShowTerms] = useState(false);
-  // Fetch builders from backend
-  const {
-    data: builders,
-    isLoading: buildersLoading,
-    error: buildersError,
-  } = useBuilders();
-  const builderOptions = builders ? convertBuildersToOptions(builders) : [];
+  const inferredBuilder = resolveBuilderForDesign(selectedHouseDesign);
+  const builderDescription =
+    inferredBuilder.builderLabel ||
+    "Quote requests are sent to the builder linked to this house design.";
 
   // Form state
   const [formData, setFormData] = useState<QuoteFormData>({
@@ -62,11 +93,6 @@ export const GetYourQuoteSidebar = ({
     Partial<Record<keyof QuoteFormData, string>>
   >({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Update selectedBuilders in formData when it changes
-  React.useEffect(() => {
-    setFormData((prev) => ({ ...prev, selectedBuilders }));
-  }, [selectedBuilders]);
 
   // Reset form when sidebar opens
   React.useEffect(() => {
@@ -131,13 +157,14 @@ export const GetYourQuoteSidebar = ({
     try {
       // Validate form data
       quoteFormSchema.parse(formData);
+      const builderIds = inferredBuilder.builderIds;
 
       // Prepare enquiry data for API
       const enquiryData = {
         name: formData.yourName,
         email: formData.emailAddress,
         number: formData.phoneNumber,
-        builders: formData.selectedBuilders,
+        builders: builderIds,
         comments: formData.additionalComments || "",
         lot_id: lotDetails.id.toString(),
         house_design_id: selectedHouseDesign?.id || "",
@@ -152,7 +179,7 @@ export const GetYourQuoteSidebar = ({
         lotId: lotDetails.id,
         houseDesignId: selectedHouseDesign?.id || "",
         facadeId: null,
-        builder: formData.selectedBuilders,
+        builder: builderIds,
       });
 
       setShowThankYou(true);
@@ -352,7 +379,7 @@ export const GetYourQuoteSidebar = ({
                         name: formData.yourName,
                         email: formData.emailAddress,
                         number: formData.phoneNumber,
-                        builders: formData.selectedBuilders,
+                        builders: inferredBuilder.builderIds,
                         comments: `[HOT LEAD] User secured this lot. ${
                           formData.additionalComments || ""
                         }`.trim(),
@@ -467,28 +494,12 @@ export const GetYourQuoteSidebar = ({
                 )}
               </div>
               <div>
-                {buildersLoading ? (
-                  <div className="text-sm text-brand-muted">
-                    Loading builders...
-                  </div>
-                ) : buildersError ? (
-                  <div className="text-sm text-red-500">
-                    Error loading builders. Please try again.
-                  </div>
-                ) : (
-                  <MultiSelect
-                    options={builderOptions}
-                    selectedOptions={selectedBuilders}
-                    onSelectionChange={setSelectedBuilders}
-                    placeholder={quote.chooseBuilders}
-                    label={quote.selectBuilders}
-                  />
-                )}
-                {errors.selectedBuilders && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.selectedBuilders}
-                  </p>
-                )}
+                <label className="block text-sm font-medium text-brand mb-1">
+                  Builder
+                </label>
+                <div className="rounded-lg border border-brand bg-brand-accent px-3 py-3 text-sm text-brand">
+                  {builderDescription}
+                </div>
               </div>
               <div>
                 <label

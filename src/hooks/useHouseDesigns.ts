@@ -13,6 +13,8 @@ const convertApiResponseToHouseDesign = (
   return {
     ...apiDesign,
     area: apiDesign.area.toString(),
+    builderId: apiDesign.builderId ?? undefined,
+    builderName: apiDesign.builderName ?? undefined,
     storeys: 1, // Default to 1 storey
     floorPlanImage: apiDesign.floorPlanImage || undefined,
   };

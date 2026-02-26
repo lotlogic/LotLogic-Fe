@@ -67,6 +67,15 @@ export interface HouseDesignItemResponse {
   id: string;
   title: string;
   area: number;
+  builderId?: string | null;
+  builderName?: string | null;
+  builder?:
+    | {
+        id?: string | null;
+        name?: string | null;
+      }
+    | string
+    | null;
   width: number;
   depth: number;
   image: string;

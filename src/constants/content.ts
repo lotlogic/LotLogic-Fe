@@ -66,7 +66,7 @@ export const APP_CONTENT = {
   // Quote sidebar content
   quote: {
     title: "Get Building Cost Estimate",
-    subtitle: "Select builders and get quotes for your dream home",
+    subtitle: "Get a quote for this builder's house design",
     yourName: "Your Name",
     emailAddress: "Email Address",
     phoneNumber: "Phone Number",

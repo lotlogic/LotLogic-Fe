@@ -87,6 +87,8 @@ const toHouseDesignItem = (
   id: houseDesign.id,
   title: houseDesign.title,
   area: houseDesign.area || "",
+  builderId: houseDesign.builderId,
+  builderName: houseDesign.builderName,
   image: houseDesign.image || "",
   images: houseDesign.images || [],
   bedrooms: houseDesign.bedrooms,
