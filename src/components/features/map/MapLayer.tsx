@@ -169,9 +169,25 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
     // Close mobile navigation panels when viewing lot details
     closeAllPanels();
     const lotId = String(property.lotId);
-    const lotData = lotsData?.find(
-      (lot) => lot.id?.toString() === lotId || lot.blockKey === lotId
-    );
+    const targetEstateId =
+      property.estateId !== undefined && property.estateId !== null
+        ? String(property.estateId) === "default"
+          ? ""
+          : String(property.estateId)
+        : estateId || "";
+
+    const lotData = lotsData?.find((lot) => {
+      const lotMatches = lot.id?.toString() === lotId || lot.blockKey === lotId;
+      if (!lotMatches) {
+        return false;
+      }
+
+      if (!targetEstateId) {
+        return true;
+      }
+
+      return String(lot.estateId || "") === targetEstateId;
+    });
     if (!lotData) return;
 
     const lotFeature = {
@@ -194,7 +210,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
         DISTRICT_CODE: 1,
         OBJECTID: lotId,
         division: "",
-        estateId: "",
+        estateId: lotData.estateId || targetEstateId,
         isRed: true,
       },
     } as unknown as MapboxGeoJSONFeature & { properties: LotProperties };
@@ -483,6 +499,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
           open={!!selectedLot}
           onClose={handleCloseSidebar}
           lot={{
+            estateId: selectedLot.properties.estateId || estateId || "",
             id:
               selectedLot.properties.ID?.toString() ||
               selectedLot.properties.databaseId,

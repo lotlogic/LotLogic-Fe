@@ -43,6 +43,7 @@ export interface SavedPropertiesSidebarProps {
 
 export interface SavedProperty {
   id: string;
+  estateId?: string | number;
   lotId: string | number;
   suburb?: string;
   address?: string;

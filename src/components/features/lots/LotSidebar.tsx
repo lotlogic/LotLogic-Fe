@@ -229,9 +229,12 @@ export const LotSidebar = ({
     setShowFloorPlanModal(true);
   };
 
-  const handleViewFacadesClick = (design: HouseDesignItem) => {
+  const handleViewFacadesClick = (
+    design: HouseDesignItem,
+    startIndex: number = 0
+  ) => {
     setSelectedHouseDesignForModals(design);
-    setCurrentModalFacadeIdx(0); // Reset to first facade
+    setCurrentModalFacadeIdx(startIndex);
     setShowFacadeModal(true);
   };
 
@@ -324,6 +327,7 @@ export const LotSidebar = ({
                 pergola: design.pergola ? true : undefined,
               }}
               lot={{
+                estateId: lot.estateId ?? "",
                 lotId: lot.id ?? "",
                 suburb: lot.suburb ?? "",
                 address: lot.address ?? "",

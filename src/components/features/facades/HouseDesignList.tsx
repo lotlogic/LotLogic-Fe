@@ -23,10 +23,62 @@ import {
   BedDouble,
   Bookmark,
   Car,
+  ChevronLeft,
+  ChevronRight,
   Funnel,
   MailQuestionMark,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+
+type DesignMediaItem = {
+  kind: "floorplan" | "facade";
+  src: string;
+  alt: string;
+  label: string;
+  facadeIndex?: number;
+};
+
+const SWIPE_THRESHOLD_PX = 36;
+const SWIPE_MAX_VERTICAL_PX = 28;
+
+const buildDesignMedia = (house: HouseDesignItem): DesignMediaItem[] => {
+  const items: DesignMediaItem[] = [];
+
+  if (house.floorPlanImage) {
+    items.push({
+      kind: "floorplan",
+      src: getImageUrl(house.floorPlanImage),
+      alt: `${house.title} floor plan`,
+      label: "Floor plan",
+    });
+  }
+
+  house.images.forEach((image, index) => {
+    items.push({
+      kind: "facade",
+      src: getImageUrl(image.src),
+      alt: `${house.title} ${image.faced || `Facade ${index + 1}`}`,
+      label: image.faced || `Facade ${index + 1}`,
+      facadeIndex: index,
+    });
+  });
+
+  if (items.length === 0 && house.image) {
+    items.push({
+      kind: "facade",
+      src: getImageUrl(house.image),
+      alt: `${house.title} facade`,
+      label: "Facade",
+      facadeIndex: 0,
+    });
+  }
+
+  return items;
+};
+
+const stopInteractionPropagation = (event: React.SyntheticEvent) => {
+  event.stopPropagation();
+};
 
 export const HouseDesignList = ({
   filter,
@@ -37,8 +89,14 @@ export const HouseDesignList = ({
   onViewFloorPlan,
   onViewFacades,
 }: HouseDesignListProps) => {
-  const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
-  const [, setSelectedImageIdx] = useState(0);
+  const [selectedDesignId, setSelectedDesignId] = useState<string | null>(null);
+  const [mediaIndexByDesignId, setMediaIndexByDesignId] = useState<
+    Record<string, number>
+  >({});
+  const touchStartByDesignIdRef = useRef<
+    Record<string, { x: number; y: number } | undefined>
+  >({});
+  const suppressNextMediaClickRef = useRef<Record<string, boolean>>({});
   const [showToastMessage, setShowToastMessage] = useState<{
     message: string;
     type: "success" | "error" | "warning";
@@ -80,6 +138,19 @@ export const HouseDesignList = ({
 
   const filteredHouses = houseDesigns;
 
+  useEffect(() => {
+    if (!selectedDesignId) {
+      return;
+    }
+    const selectedStillExists = filteredHouses.some(
+      (house) => house.id === selectedDesignId
+    );
+    if (!selectedStillExists) {
+      setSelectedDesignId(null);
+      onDesignClick(null);
+    }
+  }, [filteredHouses, onDesignClick, selectedDesignId]);
+
   const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
     event.stopPropagation();
 
@@ -88,7 +159,11 @@ export const HouseDesignList = ({
     );
     if (!clickedHouse) return;
 
-    const isCurrentlySaved = isDesignSaved(lot.lotId, clickedHouseId);
+    const isCurrentlySaved = isDesignSaved(
+      lot.lotId,
+      clickedHouseId,
+      lot.estateId
+    );
 
     // Track property save/remove
     trackPropertySaved(
@@ -99,6 +174,7 @@ export const HouseDesignList = ({
     // Toggle saved state using Zustand store
     toggleSaved({
       id: lot.lotId?.toString() || "",
+      estateId: lot.estateId,
       ...lot,
       houseDesign: { ...clickedHouse, isFavorite: !isCurrentlySaved },
     });
@@ -110,6 +186,136 @@ export const HouseDesignList = ({
         type: "success",
       });
     }
+  };
+
+  const setMediaIndex = (
+    designId: string,
+    nextIndex: number,
+    mediaLength: number
+  ) => {
+    if (mediaLength === 0) {
+      return;
+    }
+    const normalized = ((nextIndex % mediaLength) + mediaLength) % mediaLength;
+    setMediaIndexByDesignId((prev) => ({
+      ...prev,
+      [designId]: normalized,
+    }));
+  };
+
+  const handleSelectDesign = (house: HouseDesignItem) => {
+    if (selectedDesignId === house.id) {
+      setSelectedDesignId(null);
+      onDesignClick(null);
+      return;
+    }
+
+    setSelectedDesignId(house.id);
+    const houseWithOverlayOnly = { ...house, overlayOnly: true };
+    onDesignClick(houseWithOverlayOnly);
+
+    trackHouseDesignInteraction("Viewed", {
+      id: house.id,
+      title: house.title,
+      bedrooms: house.bedrooms,
+      bathrooms: house.bathrooms,
+      area: house.area,
+      lotId: lot.lotId,
+    });
+  };
+
+  const handleMediaOpen = (
+    event: React.MouseEvent,
+    house: HouseDesignItem,
+    media: DesignMediaItem
+  ) => {
+    event.stopPropagation();
+    if (suppressNextMediaClickRef.current[house.id]) {
+      suppressNextMediaClickRef.current[house.id] = false;
+      return;
+    }
+
+    if (media.kind === "floorplan") {
+      if (onViewFloorPlan) {
+        onViewFloorPlan(house);
+      }
+
+      trackHouseDesignInteraction("Floor Plan Viewed", {
+        id: house.id,
+        title: house.title,
+        bedrooms: house.bedrooms,
+        bathrooms: house.bathrooms,
+        area: house.area,
+        lotId: lot.lotId,
+      });
+      return;
+    }
+
+    if (onViewFacades) {
+      onViewFacades(house, media.facadeIndex ?? 0);
+    }
+
+    trackHouseDesignInteraction("Facades Viewed", {
+      id: house.id,
+      title: house.title,
+      bedrooms: house.bedrooms,
+      bathrooms: house.bathrooms,
+      area: house.area,
+      lotId: lot.lotId,
+    });
+  };
+
+  const handleMediaTouchStart = (
+    designId: string,
+    event: React.TouchEvent
+  ) => {
+    if (event.touches.length !== 1) {
+      touchStartByDesignIdRef.current[designId] = undefined;
+      return;
+    }
+    const touch = event.touches[0];
+    touchStartByDesignIdRef.current[designId] = {
+      x: touch.clientX,
+      y: touch.clientY,
+    };
+  };
+
+  const handleMediaTouchEnd = (
+    designId: string,
+    activeMediaIndex: number,
+    mediaCount: number,
+    event: React.TouchEvent
+  ) => {
+    const start = touchStartByDesignIdRef.current[designId];
+    touchStartByDesignIdRef.current[designId] = undefined;
+
+    if (!start || event.changedTouches.length !== 1 || mediaCount <= 1) {
+      return;
+    }
+
+    const touch = event.changedTouches[0];
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    const horizontalDistance = Math.abs(deltaX);
+    const verticalDistance = Math.abs(deltaY);
+
+    if (
+      horizontalDistance < SWIPE_THRESHOLD_PX ||
+      verticalDistance > SWIPE_MAX_VERTICAL_PX ||
+      verticalDistance > horizontalDistance
+    ) {
+      return;
+    }
+
+    event.stopPropagation();
+    suppressNextMediaClickRef.current[designId] = true;
+
+    if (deltaX < 0) {
+      setMediaIndex(designId, activeMediaIndex + 1, mediaCount);
+      return;
+    }
+
+    setMediaIndex(designId, activeMediaIndex - 1, mediaCount);
   };
 
   // Show loading state
@@ -234,15 +440,6 @@ export const HouseDesignList = ({
             </span>{" "}
             {houseDesign.title}
           </span>
-          <p className="text-xs text-brand-muted mt-1">
-            Showing precomputed PASS designs only. MANUAL_REVIEW results are
-            excluded.
-          </p>
-          {/* {(apiHouseDesigns as HouseDesignItem[])?.length > 0 && (
-            <div className="text-xs text-green-600 mt-1">
-              ✓ Loaded from database
-            </div>
-          )} */}
         </div>
         <Button
           label={filterContent.title}
@@ -253,173 +450,247 @@ export const HouseDesignList = ({
         />
       </div>
       <div className="space-y-6">
-        {filteredHouses.map((house, idx) => {
-          const isExpanded = expandedIdx === idx;
-          const images = house.images;
+        {filteredHouses.map((house) => {
+          const isSelected = selectedDesignId === house.id;
+          const mediaItems = buildDesignMedia(house);
+          const mediaCount = mediaItems.length;
+          const rawMediaIndex = mediaIndexByDesignId[house.id] ?? 0;
+          const activeMediaIndex =
+            mediaCount === 0
+              ? 0
+              : rawMediaIndex >= 0 && rawMediaIndex < mediaCount
+              ? rawMediaIndex
+              : 0;
+          const activeMedia = mediaItems[activeMediaIndex];
+
+          const areaLabel = `${lotSidebar.singleStorey} ${houseDesign.area}: ${
+            house.area
+          } ${houseDesign.m2}`;
 
           return (
             <div
               key={house.id}
               className={`rounded-2xl border border-brand p-4 transition-all duration-300 ${
-                isExpanded
-                  ? "bg-brand-accent"
-                  : "bg-brand hover:shadow-md"
+                isSelected ? "bg-brand-accent" : "bg-brand hover:shadow-md"
               }`}
-              onClick={() => {
-                if (expandedIdx === idx) {
-                  setExpandedIdx(null);
-                  onDesignClick(null);
-                } else {
-                  setExpandedIdx(idx);
-                  setSelectedImageIdx(0);
-                  const houseWithOverlayOnly = { ...house, overlayOnly: true };
-                  onDesignClick(houseWithOverlayOnly);
-
-                  // Track house design view
-                  trackHouseDesignInteraction("Viewed", {
-                    id: house.id,
-                    title: house.title,
-                    bedrooms: house.bedrooms,
-                    bathrooms: house.bathrooms,
-                    area: house.area,
-                    lotId: lot.lotId,
-                  });
-                }
-              }}
+              onClick={() => handleSelectDesign(house)}
             >
-              <div className="flex gap-4 items-start">
-                {/* Floor Plan Thumbnail on the left */}
-                <img
-                  src={
-                    getImageUrl(house.floorPlanImage) ||
-                    getImageUrl(images[0]?.src) ||
-                    house.image
-                  }
-                  alt="Floor Plan"
-                  className="w-24 h-24 rounded-lg object-cover shrink-0"
-                />
-
-                {/* House Details and Buttons on the right */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-1">
-                    <div className="min-w-0 pr-2">
-                      <div className="font-bold text-lg mb-1 truncate">
-                        {house.title}
-                      </div>
-                      <div className="text-brand text-sm whitespace-nowrap overflow-hidden text-ellipsis">
-                        {lotSidebar.singleStorey} {houseDesign.area}:{" "}
-                        {house.area} {houseDesign.m2}
-                      </div>
-                    </div>
-                    <Bookmark
-                      className={`h-6 w-6 cursor-pointer transition-colors duration-200 shrink-0 ${
-                        isDesignSaved(lot.lotId, house.id)
-                          ? "fill-current"
-                          : "text-brand-muted"
-                      }`}
-                      style={{
-                        color: isDesignSaved(lot.lotId, house.id)
-                          ? colors.primary
-                          : undefined,
-                      }}
-                      onClick={(e) => handleStarClick(e, house.id)}
-                      data-star-icon
+              <div className="relative overflow-hidden rounded-xl border border-brand bg-brand-muted">
+                {activeMedia ? (
+                  <button
+                    type="button"
+                    className="block h-full w-full cursor-zoom-in"
+                    onClick={(event) => handleMediaOpen(event, house, activeMedia)}
+                    onTouchStart={(event) => handleMediaTouchStart(house.id, event)}
+                    onTouchEnd={(event) =>
+                      handleMediaTouchEnd(
+                        house.id,
+                        activeMediaIndex,
+                        mediaCount,
+                        event
+                      )
+                    }
+                    style={{ touchAction: "pan-y" }}
+                  >
+                    <img
+                      src={activeMedia.src}
+                      alt={activeMedia.alt}
+                      className="h-56 w-full object-cover sm:h-64"
                     />
+                  </button>
+                ) : (
+                  <div className="flex h-56 w-full items-center justify-center text-sm text-brand-muted sm:h-64">
+                    No media available
                   </div>
+                )}
 
-                  {/* Specifications Icons */}
-                  <div className="flex gap-4 mt-2 text-brand text-sm font-medium bold flex-wrap">
-                    <span className="flex items-center gap-1">
-                      <BedDouble className="h-5 w-5 text-brand" />
-                      {house.bedrooms}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Bath className="h-5 w-5 text-brand" />
-                      {house.bathrooms}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Car className="h-5 w-5 text-brand" />
-                      {house.cars}
-                    </span>
+                {mediaCount > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Previous media"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/60"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setMediaIndex(house.id, activeMediaIndex - 1, mediaCount);
+                      }}
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next media"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/60"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setMediaIndex(house.id, activeMediaIndex + 1, mediaCount);
+                      }}
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </>
+                )}
+
+                {activeMedia && (
+                  <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/55 px-3 py-1 text-xs font-medium text-white">
+                    {activeMedia.label}
                   </div>
-                </div>
+                )}
+
+                {mediaCount > 1 && (
+                  <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white">
+                    {activeMediaIndex + 1}/{mediaCount}
+                  </div>
+                )}
               </div>
 
-              {/* Expanded content for detailed view */}
-              {isExpanded && (
-                <div className="mt-4 pt-1">
-                  {/* Action Buttons for Expanded View */}
-                  <div className="space-y-3">
-                    {/* First Row: View Floor plan and View Facades */}
-                    <div className="flex gap-3">
-                      <Button
-                        label="View Floor plan"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (onViewFloorPlan) {
-                            onViewFloorPlan(house);
-                          }
-
-                          // Track floor plan view
-                          trackHouseDesignInteraction("Floor Plan Viewed", {
-                            id: house.id,
-                            title: house.title,
-                            bedrooms: house.bedrooms,
-                            bathrooms: house.bathrooms,
-                            area: house.area,
-                            lotId: lot.lotId,
-                          });
-                        }}
-                        className="bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors flex-1 cursor-pointer"
-                      />
-                      <Button
-                        label="View Facades"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (onViewFacades) {
-                            onViewFacades(house);
-                          }
-
-                          // Track facades view
-                          trackHouseDesignInteraction("Facades Viewed", {
-                            id: house.id,
-                            title: house.title,
-                            bedrooms: house.bedrooms,
-                            bathrooms: house.bathrooms,
-                            area: house.area,
-                            lotId: lot.lotId,
-                          });
-                        }}
-                        className="bg-brand-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors flex-1 cursor-pointer"
-                      />
-                    </div>
-
-                    {/* Second Row: Enquire Now */}
-                    <Button
-                      label="Get Cost Estimates"
-                      leftIcon={<MailQuestionMark className="h-4 w-4" />}
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onEnquireNow) {
-                          onEnquireNow(house);
-                        }
-
-                        // Track enquiry initiation
-                        trackHouseDesignInteraction("Enquiry Initiated", {
-                          id: house.id,
-                          title: house.title,
-                          bedrooms: house.bedrooms,
-                          bathrooms: house.bathrooms,
-                          area: house.area,
-                          lotId: lot.lotId,
-                        });
+              {mediaItems.length > 1 && (
+                <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                  {mediaItems.map((media, mediaIndex) => (
+                    <button
+                      key={`${house.id}-${media.kind}-${mediaIndex}`}
+                      type="button"
+                      className={`h-14 w-20 shrink-0 overflow-hidden rounded-md border-2 transition ${
+                        mediaIndex === activeMediaIndex
+                          ? "border-brand-primary"
+                          : "border-transparent opacity-80 hover:opacity-100"
+                      }`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setMediaIndex(house.id, mediaIndex, mediaItems.length);
                       }}
-                      className="border border-brand bg-brand text-brand py-3 px-4 rounded-lg font-medium hover:bg-brand-primary hover:text-white hover:border-brand-primary transition-colors w-full flex items-center justify-center gap-2 cursor-pointer"
-                    />
-                  </div>
+                    >
+                      <img
+                        src={media.src}
+                        alt={media.alt}
+                        className="h-full w-full object-cover"
+                      />
+                    </button>
+                  ))}
                 </div>
               )}
+
+              <div className="mt-4 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-lg font-bold text-brand">
+                    {house.title}
+                  </div>
+                  <div className="mt-1 text-sm text-brand-muted">{areaLabel}</div>
+                </div>
+                <button
+                  type="button"
+                  className="shrink-0 rounded-full p-2 -m-2 touch-manipulation"
+                  aria-label={
+                    isDesignSaved(lot.lotId, house.id, lot.estateId)
+                      ? "Remove from shortlist"
+                      : "Save to shortlist"
+                  }
+                  onPointerDown={stopInteractionPropagation}
+                  onTouchStart={stopInteractionPropagation}
+                  onMouseDown={stopInteractionPropagation}
+                  onClick={(event) => handleStarClick(event, house.id)}
+                  data-star-icon
+                >
+                  <Bookmark
+                    className={`h-6 w-6 transition-colors duration-200 ${
+                      isDesignSaved(lot.lotId, house.id, lot.estateId)
+                        ? "fill-current"
+                        : "text-brand-muted"
+                    }`}
+                    style={{
+                      color: isDesignSaved(lot.lotId, house.id, lot.estateId)
+                        ? colors.primary
+                        : undefined,
+                    }}
+                  />
+                </button>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-4 text-sm font-medium text-brand">
+                <span className="flex items-center gap-1">
+                  <BedDouble className="h-5 w-5 text-brand" />
+                  {house.bedrooms}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Bath className="h-5 w-5 text-brand" />
+                  {house.bathrooms}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Car className="h-5 w-5 text-brand" />
+                  {house.cars}
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Button
+                  label="View Floor plan"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (onViewFloorPlan) {
+                      onViewFloorPlan(house);
+                    }
+
+                    trackHouseDesignInteraction("Floor Plan Viewed", {
+                      id: house.id,
+                      title: house.title,
+                      bedrooms: house.bedrooms,
+                      bathrooms: house.bathrooms,
+                      area: house.area,
+                      lotId: lot.lotId,
+                    });
+                  }}
+                  className="cursor-pointer rounded-lg bg-brand-primary py-2 px-4 font-medium text-white transition-colors hover:bg-[var(--color-primary-hover)]"
+                />
+                <Button
+                  label="View Facades"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (onViewFacades) {
+                      onViewFacades(house, 0);
+                    }
+
+                    trackHouseDesignInteraction("Facades Viewed", {
+                      id: house.id,
+                      title: house.title,
+                      bedrooms: house.bedrooms,
+                      bathrooms: house.bathrooms,
+                      area: house.area,
+                      lotId: lot.lotId,
+                    });
+                  }}
+                  className="cursor-pointer rounded-lg bg-brand-primary py-2 px-4 font-medium text-white transition-colors hover:bg-[var(--color-primary-hover)]"
+                />
+              </div>
+
+              <div className="mt-3">
+                <Button
+                  label="Get Cost Estimates"
+                  leftIcon={<MailQuestionMark className="h-4 w-4" />}
+                  variant="outline"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (onEnquireNow) {
+                      onEnquireNow(house);
+                    }
+
+                    trackHouseDesignInteraction("Enquiry Initiated", {
+                      id: house.id,
+                      title: house.title,
+                      bedrooms: house.bedrooms,
+                      bathrooms: house.bathrooms,
+                      area: house.area,
+                      lotId: lot.lotId,
+                    });
+                  }}
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-brand bg-brand py-3 px-4 font-medium text-brand transition-colors hover:border-brand-primary hover:bg-brand-primary hover:text-white"
+                />
+              </div>
+
+              <div className="mt-3 text-xs text-brand-muted">
+                {isSelected
+                  ? "Selected for lot preview."
+                  : "Click the card to preview this design on the lot."}
+              </div>
             </div>
           );
         })}

@@ -33,6 +33,7 @@ export interface HouseDesignListProps {
     pergola?: boolean;
   };
   lot: {
+    estateId?: string | number;
     lotId: string | number;
     suburb: string;
     address: string;
@@ -44,7 +45,7 @@ export interface HouseDesignListProps {
   onDesignClick: (design: HouseDesignItem | null) => void;
   onEnquireNow?: (design: HouseDesignItem) => void;
   onViewFloorPlan?: (design: HouseDesignItem) => void;
-  onViewFacades?: (design: HouseDesignItem) => void;
+  onViewFacades?: (design: HouseDesignItem, initialIndex?: number) => void;
 }
 
 export interface GetYourQuoteSidebarProps {

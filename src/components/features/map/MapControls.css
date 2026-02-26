@@ -1,3 +1,13 @@
+/* Keep Mapbox chrome behind application UI overlays */
+.mapboxgl-control-container,
+.mapboxgl-ctrl-top-left,
+.mapboxgl-ctrl-top-right,
+.mapboxgl-ctrl-bottom-left,
+.mapboxgl-ctrl-bottom-right,
+.mapboxgl-ctrl {
+  z-index: 1 !important;
+}
+
 /* Mapbox control positioning */
 .mapboxgl-ctrl-top-right {
   top: 51px !important;

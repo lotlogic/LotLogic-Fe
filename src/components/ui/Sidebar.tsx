@@ -5,6 +5,8 @@ import clsx from "clsx";
 import { ChevronLeft, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 
+const MOBILE_DRAWER_Z_INDEX = 1400;
+
 export const Sidebar = ({
   open,
   onClose,
@@ -25,10 +27,10 @@ export const Sidebar = ({
   className?: string;
 }) => {
   const isMobile = useMobile();
-  const [drawerHeight, setDrawerHeight] = useState<"50vh" | "100vh">("50vh");
+  const [drawerHeight, setDrawerHeight] = useState<"50vh" | "100vh">("100vh");
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
-  const [startHeight, setStartHeight] = useState<"50vh" | "100vh">("50vh");
+  const [startHeight, setStartHeight] = useState<"50vh" | "100vh">("100vh");
   const drawerRef = useRef<HTMLDivElement>(null);
 
   if (!open) return null;
@@ -66,7 +68,7 @@ export const Sidebar = ({
   // Reset height when opening
   useEffect(() => {
     if (open && isMobile) {
-      setDrawerHeight("50vh");
+      setDrawerHeight("100vh");
     }
   }, [open, isMobile]);
 
@@ -78,6 +80,7 @@ export const Sidebar = ({
         open={open}
         onClose={onClose}
         variant="persistent"
+        sx={{ zIndex: MOBILE_DRAWER_Z_INDEX }}
         PaperProps={{
           sx: {
             height: drawerHeight,
@@ -92,9 +95,8 @@ export const Sidebar = ({
             ...(drawerHeight === "100vh" && {
               height: "calc(100vh - 4rem)",
             }),
-            // Remove z-index behavior
             position: "fixed",
-            zIndex: "auto",
+            zIndex: MOBILE_DRAWER_Z_INDEX + 1,
           },
         }}
         ModalProps={{

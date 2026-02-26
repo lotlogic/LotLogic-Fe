@@ -10,6 +10,8 @@ import {
 } from "@mui/material";
 import { useMemo } from "react";
 
+const APP_MODAL_Z_INDEX = 1700;
+
 type TextModalProps = {
   open: boolean;
   onClose: () => void;
@@ -46,6 +48,7 @@ export const TextModal: React.FC<TextModalProps> = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      sx={{ zIndex: APP_MODAL_Z_INDEX }}
       slotProps={{
         paper: dialogPaperProps,
         backdrop: () => ({

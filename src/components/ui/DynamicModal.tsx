@@ -11,6 +11,8 @@ import {
 } from "@mui/material";
 import React, { useCallback, useMemo } from "react";
 
+const APP_MODAL_Z_INDEX = 1700;
+
 // Common Dialog Title Component
 const ModalTitle: React.FC<{ title: string; onClose: () => void }> = ({
   title,
@@ -183,6 +185,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
       onClose={onClose}
       maxWidth="lg"
       fullWidth
+      sx={{ zIndex: APP_MODAL_Z_INDEX }}
       PaperProps={dialogPaperProps}
     >
       <ModalTitle title={title} onClose={onClose} />
@@ -365,6 +368,7 @@ export const SingleImageModal: React.FC<SingleImageModalProps> = ({
       onClose={onClose}
       maxWidth="lg"
       fullWidth
+      sx={{ zIndex: APP_MODAL_Z_INDEX }}
       PaperProps={dialogPaperProps}
     >
       <ModalTitle title={title} onClose={onClose} />
@@ -465,6 +469,7 @@ export const TextModal: React.FC<TextModalProps> = ({
       onClose={onClose}
       maxWidth="md"
       fullWidth
+      sx={{ zIndex: APP_MODAL_Z_INDEX }}
       PaperProps={dialogPaperProps}
     >
       <ModalTitle title={title} onClose={onClose} />
