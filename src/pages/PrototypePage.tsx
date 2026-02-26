@@ -3,11 +3,16 @@ import Header from "@/components/layouts/Header";
 import MobileBottomNav from "@/components/layouts/MobileBottomNav";
 import MobileSearch from "@/components/ui/MobileSearch";
 import { useMobile } from "@/hooks/useMobile";
+import {
+  lotApi,
+  resolvePrototypeEstateId,
+} from "@/lib/api/lotApi";
 import { trackEvent } from "@/lib/analytics/mixpanel";
+import { getRuntimeConfig } from "@/lib/runtime/runtimeConfig";
 import { useMobileNavigationStore } from "@/stores/mobileNavigationStore";
 import { preloadCriticalComponents } from "@/utils/preload";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -16,9 +21,17 @@ const ZoneMap = lazy(() => import("@/components/features/map/MapLayer"));
 
 const queryClient = new QueryClient();
 
-export const PrototypePage = () => {
+type PrototypePageProps = {
+  estateId?: string;
+};
+
+export const PrototypePage = ({ estateId }: PrototypePageProps) => {
   const isMobile = useMobile();
   const { activeTab, toggleTab, closeAllPanels } = useMobileNavigationStore();
+  const [resolvedEstateId, setResolvedEstateId] = useState<
+    string | undefined
+  >(estateId);
+  const [isEstateResolved, setIsEstateResolved] = useState(Boolean(estateId));
 
   // Compute visibility states from activeTab
   const isSearchVisible = activeTab === "search";
@@ -64,6 +77,64 @@ export const PrototypePage = () => {
     closeAllPanels();
   };
 
+  useEffect(() => {
+    if (estateId) {
+      setResolvedEstateId(estateId);
+      setIsEstateResolved(true);
+      return;
+    }
+
+    let isActive = true;
+    const resolveEstate = async () => {
+      setIsEstateResolved(false);
+
+      const params = new URLSearchParams(window.location.search);
+      const estateFromQuery = params.get("estateId")?.trim();
+      if (estateFromQuery) {
+        if (!isActive) return;
+        setResolvedEstateId(estateFromQuery);
+        setIsEstateResolved(true);
+        return;
+      }
+
+      const runtimeEstateId = getRuntimeConfig().prototypeEstateId;
+      if (runtimeEstateId) {
+        if (!isActive) return;
+        setResolvedEstateId(runtimeEstateId);
+        setIsEstateResolved(true);
+        return;
+      }
+
+      const envPrototypeEstateId = import.meta.env.VITE_PROTOTYPE_ESTATE_ID;
+      if (envPrototypeEstateId?.trim()) {
+        if (!isActive) return;
+        setResolvedEstateId(envPrototypeEstateId.trim());
+        setIsEstateResolved(true);
+        return;
+      }
+
+      try {
+        const estates = await lotApi.getEstates();
+        const prototypeEstateId = resolvePrototypeEstateId(estates);
+        if (!isActive) return;
+        setResolvedEstateId(prototypeEstateId);
+      } catch {
+        if (!isActive) return;
+        setResolvedEstateId(undefined);
+      } finally {
+        if (isActive) {
+          setIsEstateResolved(true);
+        }
+      }
+    };
+
+    void resolveEstate();
+
+    return () => {
+      isActive = false;
+    };
+  }, [estateId]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <div className="h-screen w-screen flex flex-col overflow-hidden">
@@ -72,18 +143,27 @@ export const PrototypePage = () => {
 
         {/* Main Content */}
         <div className={`flex-1 relative ${isMobile ? "pb-16" : ""}`}>
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center h-full bg-brand-muted">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary mx-auto mb-4"></div>
-                  <p className="text-brand-muted">Loading map...</p>
-                </div>
+          {!isEstateResolved && !estateId ? (
+            <div className="flex items-center justify-center h-full bg-brand-muted">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary mx-auto mb-4"></div>
+                <p className="text-brand-muted">Loading estate...</p>
               </div>
-            }
-          >
-            <ZoneMap />
-          </Suspense>
+            </div>
+          ) : (
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center h-full bg-brand-muted">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary mx-auto mb-4"></div>
+                    <p className="text-brand-muted">Loading map...</p>
+                  </div>
+                </div>
+              }
+            >
+              <ZoneMap estateId={resolvedEstateId} />
+            </Suspense>
+          )}
         </div>
 
         {/* Mobile Bottom Navigation */}

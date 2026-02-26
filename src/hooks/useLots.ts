@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { lotApi, type DatabaseLot } from "../lib/api/lotApi";
 
-export const useLots = () => {
+export const useLots = (estateId?: string) => {
   return useQuery({
-    queryKey: ["lots"],
-    queryFn: lotApi.getAllLots,
+    queryKey: ["lots", estateId ?? "all"],
+    queryFn: () => lotApi.getAllLots(estateId),
     staleTime: 1 * 60 * 1000, // 1 minutes
     refetchOnWindowFocus: false,
   });

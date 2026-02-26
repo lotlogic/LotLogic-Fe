@@ -10,6 +10,7 @@ import { useEffect } from "react";
 import HomePage from "./pages/Home";
 import NotFoundPage from "./pages/NotFoundPage";
 import PrototypePage from "./pages/PrototypePage";
+import EmbedPage from "./pages/EmbedPage";
 import { RequireAdminAuth } from "./components/auth/RequireAdminAuth";
 import { RequireAdminRole } from "./components/auth/RequireAdminRole";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
@@ -67,6 +68,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/prototype" element={<PrototypePage />} />
+        <Route path="/embed" element={<EmbedPage />} />
+        <Route path="/embed/:estateId" element={<EmbedPage />} />
         <Route path="*" element={<NotFoundPage />} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route

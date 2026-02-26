@@ -27,6 +27,7 @@ type AdminEstate = {
   phone?: string | null;
   logoUrl?: string | null;
   themeColor?: string | null;
+  isPrototype?: boolean | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   [key: string]: unknown;
@@ -75,6 +76,7 @@ type EstateForm = {
   phone: string;
   logoUrl: string;
   themeColor: string;
+  isPrototype: boolean;
 };
 
 const emptyForm: EstateForm = {
@@ -85,6 +87,7 @@ const emptyForm: EstateForm = {
   phone: "",
   logoUrl: "",
   themeColor: "",
+  isPrototype: false,
 };
 
 const getEstateName = (estate: AdminEstate | null): string => {
@@ -117,6 +120,12 @@ const normalizeJurisdiction = (value: unknown): Jurisdiction =>
   JURISDICTIONS.includes(value as Jurisdiction)
     ? (value as Jurisdiction)
     : "NSW";
+
+const normalizeBoolean = (value: unknown): boolean =>
+  value === true ||
+  value === 1 ||
+  value === "1" ||
+  (typeof value === "string" && value.toLowerCase() === "true");
 
 const inviteRedirectUrl =
   import.meta.env.VITE_ENTRA_INVITE_REDIRECT_URL ||
@@ -182,6 +191,7 @@ const AdminEstatePage = () => {
       phone: data.phone ?? "",
       logoUrl: data.logoUrl ?? "",
       themeColor: data.themeColor ?? "",
+      isPrototype: normalizeBoolean(data.isPrototype),
     };
     setForm(nextForm);
     setInitialForm(nextForm);
@@ -333,6 +343,10 @@ const AdminEstatePage = () => {
     const initialThemeColor = normalizeOptional(initialForm.themeColor);
     if (currentThemeColor !== initialThemeColor) {
       payload.themeColor = currentThemeColor;
+    }
+
+    if (form.isPrototype !== initialForm.isPrototype) {
+      payload.isPrototype = form.isPrototype;
     }
 
     if (Object.keys(payload).length === 0) {
@@ -631,6 +645,27 @@ const AdminEstatePage = () => {
                   placeholder="#0F766E"
                   className="w-full"
                 />
+              </div>
+
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Prototype estate</span>
+                <label className="inline-flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.isPrototype}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        isPrototype: event.target.checked,
+                      }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                  />
+                  <span>Use this estate as the default for `/prototype`</span>
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Only one estate should be flagged as prototype.
+                </p>
               </div>
 
               {metaEntries.length > 0 && (

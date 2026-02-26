@@ -8,6 +8,7 @@ import {
   clearBrandThemeOverrides,
   loadBrandFonts,
 } from "@/lib/theme/brandTheme.ts";
+import { setRuntimeConfig } from "@/lib/runtime/runtimeConfig.ts";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
@@ -26,24 +27,53 @@ function setFavicon(url: string) {
   link.href = url;
 }
 
-const resolvePrototypeBrandQuery = (): BrandQueryParams | undefined => {
+const resolveBrandQuery = (): BrandQueryParams | undefined => {
   if (typeof window === "undefined") {
     return undefined;
   }
-  if (!window.location.pathname.startsWith("/prototype")) {
+
+  const { pathname, search } = window.location;
+  const isPrototypeRoute = pathname.startsWith("/prototype");
+  const isEmbedRoute = pathname.startsWith("/embed");
+
+  if (!isPrototypeRoute && !isEmbedRoute) {
     return undefined;
   }
-  const params = new URLSearchParams(window.location.search);
+
+  const params = new URLSearchParams(search);
   const brandGuid = params.get("brand") || undefined;
-  if (brandGuid) {
-    return { guid: brandGuid };
+  const estateIdFromQuery = params.get("estateId") || undefined;
+
+  let estateIdFromPath: string | undefined;
+  if (isEmbedRoute) {
+    const pathParts = pathname.split("/").filter(Boolean);
+    const encodedEstateId = pathParts[1];
+    if (encodedEstateId) {
+      try {
+        estateIdFromPath = decodeURIComponent(encodedEstateId);
+      } catch {
+        estateIdFromPath = encodedEstateId;
+      }
+    }
   }
+
+  const estateId = estateIdFromQuery ?? estateIdFromPath;
+
+  if (brandGuid || estateId) {
+    return { guid: brandGuid, estateId };
+  }
+
   return undefined;
 };
 
 async function bootstrap() {
   try {
-    const currentBrand = await getCurrentBrand(resolvePrototypeBrandQuery());
+    const currentBrand = await getCurrentBrand(resolveBrandQuery());
+    const prototypeEstateId =
+      typeof currentBrand?.estateId === "string"
+        ? currentBrand.estateId.trim() || undefined
+        : undefined;
+    setRuntimeConfig({ prototypeEstateId });
 
     if (currentBrand?.logoUrl) {
       setFavicon(currentBrand.logoUrl);

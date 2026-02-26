@@ -101,6 +101,18 @@ export interface Builder {
   updatedAt: string;
 }
 
+export interface PublicEstate {
+  id: string;
+  name?: string | null;
+  isPrototype?: boolean | null;
+  prototype?: boolean | null;
+  isPrototypeEstate?: boolean | null;
+  isPrototypeEnabled?: boolean | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  [key: string]: unknown;
+}
+
 // Get the API base URL based on environment
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, "");
 
@@ -233,6 +245,30 @@ export type BrandQueryParams = {
   estateId?: string;
 };
 
+const PROTOTYPE_ESTATE_KEYS = [
+  "isPrototype",
+  "prototype",
+  "isPrototypeEstate",
+  "isPrototypeEnabled",
+] as const;
+
+const isTruthyFlag = (value: unknown): boolean =>
+  value === true ||
+  value === 1 ||
+  value === "1" ||
+  (typeof value === "string" && value.toLowerCase() === "true");
+
+export const resolvePrototypeEstateId = (
+  estates: PublicEstate[]
+): string | undefined => {
+  const match = estates.find((estate) =>
+    PROTOTYPE_ESTATE_KEYS.some((key) => isTruthyFlag(estate[key]))
+  );
+  return typeof match?.id === "string" && match.id.trim()
+    ? match.id.trim()
+    : undefined;
+};
+
 export const getCurrentBrand = async (params?: BrandQueryParams) => {
   try {
     const response = await axios.get(`${getApiBaseUrl()}/brand`, {
@@ -246,10 +282,21 @@ export const getCurrentBrand = async (params?: BrandQueryParams) => {
 
 export const lotApi = {
   // Fetch all lots from database
-  async getAllLots(): Promise<DatabaseLot[]> {
+  async getAllLots(estateId?: string): Promise<DatabaseLot[]> {
     try {
-      const response = await axios.get(`${getApiBaseUrl()}/lot`);
+      const response = await axios.get(`${getApiBaseUrl()}/lot`, {
+        params: estateId ? { estateId } : undefined,
+      });
       return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async getEstates(): Promise<PublicEstate[]> {
+    try {
+      const response = await axios.get(`${getApiBaseUrl()}/estate`);
+      return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
       throw error;
     }

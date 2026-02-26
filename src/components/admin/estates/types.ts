@@ -9,6 +9,7 @@ export type EstateRecord = {
   phone?: string | null;
   logoUrl?: string | null;
   themeColor?: string | null;
+  isPrototype?: boolean | null;
   status?: string | null;
   [key: string]: unknown;
 };

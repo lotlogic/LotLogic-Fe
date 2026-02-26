@@ -43,7 +43,11 @@ import "../map/MapControls.css";
 import { MapControls } from "./MapControls";
 import { MapLayers, MapLoader } from "./MapLayers";
 
-export const ZoneMap = () => {
+type ZoneMapProps = {
+  estateId?: string;
+};
+
+export const ZoneMap = ({ estateId }: ZoneMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const selectedIdRef = useRef<string | null>(null);
   const sidebarOpenRef = useRef<boolean>(false);
@@ -78,7 +82,7 @@ export const ZoneMap = () => {
     data: lotsData,
     isLoading: isLoadingLots,
     error: lotsError,
-  } = useLots();
+  } = useLots(estateId);
 
   //convert lotsData to geojson format for mapbox
   const estateLots = lotsData
