@@ -69,9 +69,9 @@ const getEstateName = (estate: {
 };
 
 const inviteRedirectUrl =
-  import.meta.env.VITE_ENTRA_INVITE_REDIRECT_URL ||
-  import.meta.env.VITE_AAD_INVITE_REDIRECT_URL ||
-  (typeof window !== "undefined" ? window.location.origin : "");
+  typeof window !== "undefined"
+    ? `${window.location.origin}/admin`
+    : "/admin";
 
 const AdminUsersPage = () => {
   const {
