@@ -70,8 +70,8 @@ const getEstateName = (estate: {
 
 const inviteRedirectUrl =
   typeof window !== "undefined"
-    ? `${window.location.origin}/admin`
-    : "/admin";
+    ? `${window.location.origin}/dashboard`
+    : "/dashboard";
 
 const AdminUsersPage = () => {
   const {

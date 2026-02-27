@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 
 type LoginState = "loading" | "idle" | "error";
 
-const DEFAULT_ADMIN_REDIRECT_PATH = "/admin";
+const DEFAULT_ADMIN_REDIRECT_PATH = "/dashboard";
 const ADMIN_REDIRECT_STORAGE_KEY = "lotlogic.admin.redirectPath";
 
 const normalizeRedirectPath = (path?: string | null): string | null => {
