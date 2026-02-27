@@ -186,13 +186,13 @@ export const EstateRuleLayersCrud = ({
         effectiveFrom: approvalEffectiveFrom ? new Date(approvalEffectiveFrom).toISOString() : null,
         notes: approvalNotes.trim() || null,
       });
-      setApprovalSuccessMessage("Builder approval created.");
+      setApprovalSuccessMessage("Builder approved for this estate.");
       setLastRecompute(response.recompute ?? null);
       setApprovalBuilderId("");
       setApprovalNotes("");
       await loadData();
     } catch (error) {
-      setApprovalErrorMessage(getAdminApiErrorMessage(error, "Failed to create builder approval."));
+      setApprovalErrorMessage(getAdminApiErrorMessage(error, "Failed to approve builder."));
     } finally {
       setApprovalSaving(false);
     }
@@ -334,11 +334,19 @@ export const EstateRuleLayersCrud = ({
           </div>
           <div className="grid gap-2 md:col-span-2 xl:col-span-4">
             <span className="text-sm font-medium">Notes</span>
-            <Input value={approvalNotes} onChange={(event) => setApprovalNotes(event.target.value)} className="w-full" />
+            <Input
+              value={approvalNotes}
+              onChange={(event) => setApprovalNotes(event.target.value)}
+              className="w-full"
+              placeholder="Internal notes about this builder relationship (not visible to builders)."
+            />
+            <span className="text-xs text-slate-500">
+              Internal only. Builders cannot see these notes.
+            </span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={approvalSaving} loading={approvalSaving} label="Create builder approval" />
+          <Button type="submit" disabled={approvalSaving} loading={approvalSaving} label="Approve builder" />
           {approvalErrorMessage && <span className="text-sm text-destructive">{approvalErrorMessage}</span>}
           {approvalSuccessMessage && <span className="text-sm text-emerald-600">{approvalSuccessMessage}</span>}
         </div>
@@ -373,7 +381,7 @@ export const EstateRuleLayersCrud = ({
             ))}
             {builderApprovals.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-4 text-center text-sm text-muted-foreground">No builder approvals yet.</td>
+                <td colSpan={5} className="p-4 text-center text-sm text-muted-foreground">No approved builders yet.</td>
               </tr>
             )}
           </tbody>
