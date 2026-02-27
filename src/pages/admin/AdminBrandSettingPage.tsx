@@ -5,6 +5,10 @@ import { AdminNav } from "@/components/admin/AdminNav";
 import { AdminUploadField } from "@/components/admin/AdminUploadField";
 import { adminApi } from "@/lib/api/adminApi";
 import { adminAuth } from "@/lib/auth/adminAuth";
+import {
+  formatDateForCell,
+  formatDateTimeForTooltip,
+} from "@/lib/utils/dateTime";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -536,13 +540,17 @@ const AdminBrandSettingPage = () => {
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 Updated
               </div>
-              <div>{settings.updatedAt ?? "--"}</div>
+              <div title={formatDateTimeForTooltip(settings.updatedAt)}>
+                {formatDateForCell(settings.updatedAt)}
+              </div>
             </div>
             <div>
               <div className="text-xs uppercase tracking-wide text-slate-500">
                 Created
               </div>
-              <div>{settings.createdAt ?? "--"}</div>
+              <div title={formatDateTimeForTooltip(settings.createdAt)}>
+                {formatDateForCell(settings.createdAt)}
+              </div>
             </div>
             <div className="pt-2 border-t border-slate-200">
               <div className="text-xs uppercase tracking-wide text-slate-500 mb-1">
