@@ -5,6 +5,10 @@ import { AdminNav } from "@/components/admin/AdminNav";
 import { AdminUploadField } from "@/components/admin/AdminUploadField";
 import { adminApi } from "@/lib/api/adminApi";
 import { adminAuth } from "@/lib/auth/adminAuth";
+import {
+  formatDateForCell,
+  formatDateTimeForTooltip,
+} from "@/lib/utils/dateTime";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -520,7 +524,9 @@ const AdminBrandSettingsPage = () => {
                     {setting.guid}
                   </td>
                   <td className="p-3 border-b border-slate-100 text-sm">
-                    {setting.updatedAt ?? "--"}
+                    <span title={formatDateTimeForTooltip(setting.updatedAt)}>
+                      {formatDateForCell(setting.updatedAt)}
+                    </span>
                   </td>
                   <td className="p-3 border-b border-slate-100 text-sm">
                     <Button

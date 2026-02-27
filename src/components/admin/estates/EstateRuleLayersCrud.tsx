@@ -16,6 +16,10 @@ import {
   type RuleLayer,
   type RuleSetStatus,
 } from "@/lib/api/adminModels";
+import {
+  formatDateForCell,
+  formatDateTimeForTooltip,
+} from "@/lib/utils/dateTime";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -359,7 +363,11 @@ export const EstateRuleLayersCrud = ({
                 <td className="p-3 border-b border-slate-100 text-sm">{item.builder?.name ?? "--"}</td>
                 <td className="p-3 border-b border-slate-100 text-sm font-mono">{item.builderId ?? "--"}</td>
                 <td className="p-3 border-b border-slate-100 text-sm">{item.status ?? "--"}</td>
-                <td className="p-3 border-b border-slate-100 text-sm">{item.effectiveFrom ?? "--"}</td>
+                <td className="p-3 border-b border-slate-100 text-sm">
+                  <span title={formatDateTimeForTooltip(item.effectiveFrom)}>
+                    {formatDateForCell(item.effectiveFrom)}
+                  </span>
+                </td>
                 <td className="p-3 border-b border-slate-100 text-sm">{item.notes ?? "--"}</td>
               </tr>
             ))}
