@@ -128,9 +128,9 @@ const normalizeBoolean = (value: unknown): boolean =>
   (typeof value === "string" && value.toLowerCase() === "true");
 
 const inviteRedirectUrl =
-  import.meta.env.VITE_ENTRA_INVITE_REDIRECT_URL ||
-  import.meta.env.VITE_AAD_INVITE_REDIRECT_URL ||
-  (typeof window !== "undefined" ? window.location.origin : "");
+  typeof window !== "undefined"
+    ? `${window.location.origin}/dashboard`
+    : "/dashboard";
 
 const formatMetaValue = (value: unknown) => {
   if (value === null || value === undefined || value === "") {
