@@ -19,6 +19,10 @@ import {
 } from "@/lib/api/adminModels";
 import { useAdminSession } from "@/lib/admin/adminSession";
 import { resolveDashboardAccess } from "@/lib/dashboard/dashboardAccess";
+import {
+  formatDateForCell,
+  formatDateTimeForTooltip,
+} from "@/lib/utils/dateTime";
 import { normalizeIdList } from "@/lib/utils/ids";
 
 type EstateForm = {
@@ -81,6 +85,19 @@ const normalizeOptional = (value: string) => {
   return trimmed ? trimmed : null;
 };
 
+const HEX_COLOR_REGEX = /^#?[0-9a-fA-F]{6}$/;
+
+const normalizeHexColor = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+  if (!HEX_COLOR_REGEX.test(trimmed)) {
+    return null;
+  }
+  return `#${trimmed.replace(/^#/, "").toUpperCase()}`;
+};
+
 const normalizeJurisdiction = (value: unknown): Jurisdiction =>
   typeof value === "string" &&
   JURISDICTIONS.includes(value as Jurisdiction)
@@ -120,6 +137,13 @@ const formatMetaValue = (value: unknown) => {
     return String(value);
   }
   return JSON.stringify(value);
+};
+
+const getMetaDateValue = (label: string, value: unknown): string | null => {
+  if (label !== "Created" && label !== "Updated") {
+    return null;
+  }
+  return typeof value === "string" ? value : null;
 };
 
 const DashboardEstatePage = () => {
@@ -189,7 +213,9 @@ const DashboardEstatePage = () => {
       email: data.email ?? "",
       phone: data.phone ?? "",
       logoUrl: data.logoUrl ?? "",
-      themeColor: data.themeColor ?? "",
+      themeColor:
+        normalizeHexColor(String(data.themeColor ?? "")) ??
+        String(data.themeColor ?? ""),
     };
     setForm(nextForm);
     setInitialForm(nextForm);
@@ -340,8 +366,15 @@ const DashboardEstatePage = () => {
       payload.logoUrl = currentLogoUrl;
     }
 
-    const currentThemeColor = normalizeOptional(form.themeColor);
-    const initialThemeColor = normalizeOptional(initialForm.themeColor);
+    const currentThemeColor = normalizeHexColor(form.themeColor);
+    const initialThemeColor = normalizeHexColor(initialForm.themeColor);
+    if (form.themeColor.trim() && !currentThemeColor) {
+      setSaveErrorMessage(
+        "Theme color must be a valid hex code (for example #0F766E)."
+      );
+      setSaving(false);
+      return;
+    }
     if (currentThemeColor !== initialThemeColor) {
       payload.themeColor = currentThemeColor;
     }
@@ -476,6 +509,10 @@ const DashboardEstatePage = () => {
     ];
     return entries;
   }, [estate]);
+
+  const normalizedThemeColor = normalizeHexColor(form.themeColor);
+  const hasThemeColorValue = form.themeColor.trim().length > 0;
+  const themeColorPreview = normalizedThemeColor ?? "#0F766E";
 
   const handleAddMember = async (userId: string) => {
     if (!estateId) {
@@ -738,44 +775,84 @@ const DashboardEstatePage = () => {
 
               <div className="grid gap-2">
                 <AdminUploadField
-                  label="Logo URL"
+                  label="Logo"
                   value={form.logoUrl}
                   onChange={(value) =>
                     setForm((prev) => ({ ...prev, logoUrl: value }))
                   }
                   placeholder="https://cdn.example.com/logo.png"
                   folder="logos"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  helperText="Use PNG, JPG, WEBP, or SVG. Recommended: landscape logo with transparent background."
                 />
               </div>
 
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Theme color</span>
-                <Input
-                  value={form.themeColor}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      themeColor: event.target.value,
-                    }))
-                  }
-                  placeholder="#0F766E"
-                  className="w-full"
-                />
+                <div className="flex flex-wrap items-center gap-3">
+                  <input
+                    type="color"
+                    value={themeColorPreview}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        themeColor: event.target.value.toUpperCase(),
+                      }))
+                    }
+                    className="h-10 w-14 rounded-md border border-input bg-white px-1 py-1"
+                    aria-label="Theme color picker"
+                  />
+                  <Input
+                    value={form.themeColor}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        themeColor: event.target.value,
+                      }))
+                    }
+                    placeholder="#0F766E"
+                    className="w-full md:max-w-[220px]"
+                  />
+                </div>
+                <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white p-2">
+                  <span
+                    className="inline-block h-4 w-4 rounded-sm border border-slate-300"
+                    style={{ backgroundColor: themeColorPreview }}
+                  />
+                  <span className="text-xs text-slate-600">
+                    Preview swatch {themeColorPreview}
+                  </span>
+                </div>
+                {hasThemeColorValue && !normalizedThemeColor && (
+                  <span className="text-xs text-destructive">
+                    Enter a full hex color, for example #0F766E.
+                  </span>
+                )}
               </div>
 
               {metaEntries.length > 0 && (
                 <div className="grid gap-2 rounded-md border border-slate-100 bg-slate-50 p-3 text-sm">
-                  {metaEntries.map((entry) => (
-                    <div key={entry.label} className="flex gap-2">
-                      <span className="text-slate-500 min-w-[90px]">
-                        {entry.label}
-                      </span>
-                      <span className="font-mono text-slate-700">
-                        {formatMetaValue(entry.value)}
-                      </span>
-                    </div>
-                  ))}
+                  {metaEntries.map((entry) => {
+                    const metaDateValue = getMetaDateValue(
+                      entry.label,
+                      entry.value
+                    );
+                    return (
+                      <div key={entry.label} className="flex gap-2">
+                        <span className="text-slate-500 min-w-[90px]">
+                          {entry.label}
+                        </span>
+                        <span
+                          className="font-mono text-slate-700"
+                          title={formatDateTimeForTooltip(metaDateValue)}
+                        >
+                          {metaDateValue
+                            ? formatDateForCell(metaDateValue)
+                            : formatMetaValue(entry.value)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

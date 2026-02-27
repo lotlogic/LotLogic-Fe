@@ -4,7 +4,16 @@
 P2
 
 ## Status
-Ready - rule semantics confirmed in backend.
+Implemented (FE) - hierarchy guidance and JSON-format feedback are now visible in rule editors.
+
+## Implementation Notes (2026-02-27)
+- Updated `src/components/admin/rules/RuleLayerEditor.tsx`:
+  - Added explicit hierarchy guidance and `requiresArchitecturalReview` behavior text.
+  - Added user-visible success/error feedback for `Format JSON`.
+- Updated `src/components/admin/rules/ruleSetFormConfig.ts`:
+  - Added help text clarifying that `requiresArchitecturalReview` routes outcomes to `MANUAL_REVIEW`.
+- Updated `src/components/admin/state-rules/StateRuleSetsCrud.tsx` and `src/components/admin/estates/EstateRuleLayersCrud.tsx`:
+  - Added contextual helper copy describing baseline (state) vs overlay (estate) rule responsibilities.
 
 ## Source Feedback
 - Clarify how Estate Rule Sets relate to State Rule Sets (override vs supplement).

@@ -4,7 +4,7 @@
 P3
 
 ## Status
-Ready - default field standards decided; client canonical style list pending.
+Implemented (FE) - labels and controlled style input shipped with temporary default style list.
 
 ## Source Feedback
 - `Design Depth` label is ambiguous.

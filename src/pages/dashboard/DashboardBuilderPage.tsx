@@ -21,8 +21,13 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { adminApi } from "@/lib/api/adminApi";
 import { getAdminApiErrorMessage } from "@/lib/api/adminApiErrors";
+import type { BuilderEstateApprovalRecord } from "@/lib/api/adminModels";
 import { useAdminSession } from "@/lib/admin/adminSession";
 import { resolveDashboardAccess } from "@/lib/dashboard/dashboardAccess";
+import {
+  formatDateForCell,
+  formatDateTimeForTooltip,
+} from "@/lib/utils/dateTime";
 
 type BuilderForm = {
   name: string;
@@ -38,6 +43,16 @@ type AdminInvitationResponse = {
   };
   user?: AdminUser;
   [key: string]: unknown;
+};
+
+type EstateSummary = {
+  id: string;
+  name?: string | null;
+  [key: string]: unknown;
+};
+
+type BuilderEstateApprovalView = BuilderEstateApprovalRecord & {
+  estateName: string;
 };
 
 type FacadePanelProps = {
@@ -199,6 +214,13 @@ const DashboardBuilderPage = () => {
   );
 
   const [floorPlans, setFloorPlans] = useState<FloorPlanRecord[]>([]);
+  const [estateApprovals, setEstateApprovals] = useState<
+    BuilderEstateApprovalView[]
+  >([]);
+  const [estateApprovalsLoading, setEstateApprovalsLoading] = useState(false);
+  const [estateApprovalsError, setEstateApprovalsError] = useState<string | null>(
+    null
+  );
 
   const applyBuilder = useCallback((data: BuilderRecord) => {
     setBuilder(data);
@@ -283,6 +305,53 @@ const DashboardBuilderPage = () => {
       throw new Error(
         getAdminApiErrorMessage(error, "Failed to load floor plans.")
       );
+    }
+  }, [builderId]);
+
+  const loadEstateApprovals = useCallback(async () => {
+    if (!builderId) {
+      setEstateApprovals([]);
+      setEstateApprovalsLoading(false);
+      return;
+    }
+
+    setEstateApprovalsLoading(true);
+    setEstateApprovalsError(null);
+    try {
+      const estates = await adminApi.getEstates<EstateSummary>();
+      const approvalsByEstate = await Promise.all(
+        estates.map(async (estate) => {
+          try {
+            const approvals =
+              await adminApi.getEstateBuilderApprovals<BuilderEstateApprovalRecord>(
+                estate.id
+              );
+            return { estate, approvals };
+          } catch {
+            return { estate, approvals: [] as BuilderEstateApprovalRecord[] };
+          }
+        })
+      );
+
+      const scoped = approvalsByEstate
+        .flatMap(({ estate, approvals }) =>
+          approvals
+            .filter((approval) => String(approval.builderId ?? "") === builderId)
+            .map((approval) => ({
+              ...approval,
+              estateName: estate.name?.trim() ? estate.name : estate.id,
+            }))
+        )
+        .sort((left, right) => left.estateName.localeCompare(right.estateName));
+
+      setEstateApprovals(scoped);
+    } catch (error) {
+      setEstateApprovals([]);
+      setEstateApprovalsError(
+        getAdminApiErrorMessage(error, "Failed to load approved estates.")
+      );
+    } finally {
+      setEstateApprovalsLoading(false);
     }
   }, [builderId]);
 
@@ -404,6 +473,15 @@ const DashboardBuilderPage = () => {
     }
     loadFloorPlans();
   }, [hasAccess, loadFloorPlans]);
+
+  useEffect(() => {
+    if (!hasAccess) {
+      setEstateApprovals([]);
+      setEstateApprovalsLoading(false);
+      return;
+    }
+    loadEstateApprovals();
+  }, [hasAccess, loadEstateApprovals]);
 
   const floorPlanOptions = useMemo(
     () =>
@@ -583,9 +661,21 @@ const DashboardBuilderPage = () => {
     }
   };
 
+  const handleRefresh = useCallback(async () => {
+    if (!hasAccess) {
+      return;
+    }
+    await Promise.all([
+      loadBuilder(),
+      loadTeamMembers(),
+      loadFloorPlans(),
+      loadEstateApprovals(),
+    ]);
+  }, [hasAccess, loadBuilder, loadEstateApprovals, loadFloorPlans, loadTeamMembers]);
+
   const actions = (
     <Button
-      onClick={loadBuilder}
+      onClick={handleRefresh}
       disabled={loading || sessionLoading || !hasAccess}
       loading={loading && !sessionLoading}
       label="Refresh"
@@ -972,6 +1062,82 @@ const DashboardBuilderPage = () => {
             </div>
           )}
         </div>
+      </section>
+
+      <section className="mb-10 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div>
+            <h2 className="text-xl font-semibold m-0">Approved Estates</h2>
+            <p className="text-sm text-muted-foreground m-0">
+              View where your builder company is approved. Floor plans stay
+              globally available for matching and are filtered by approvals at
+              runtime.
+            </p>
+          </div>
+          <Button
+            onClick={loadEstateApprovals}
+            variant="outline"
+            className="h-8 text-xs"
+            label={estateApprovalsLoading ? "Refreshing..." : "Refresh approvals"}
+            loading={estateApprovalsLoading}
+            disabled={estateApprovalsLoading}
+          />
+        </div>
+
+        {estateApprovalsError && (
+          <div className="mb-3 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
+            {estateApprovalsError}
+          </div>
+        )}
+
+        {estateApprovalsLoading ? (
+          <p className="text-sm text-muted-foreground">Loading approved estates...</p>
+        ) : estateApprovals.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No estate approvals found for this builder.
+          </p>
+        ) : (
+          <div className="overflow-auto border rounded-lg">
+            <table className="w-full border-collapse min-w-[680px]">
+              <thead>
+                <tr className="bg-slate-100 text-left">
+                  <th className="p-3 border-b font-medium text-sm text-slate-700">
+                    Estate
+                  </th>
+                  <th className="p-3 border-b font-medium text-sm text-slate-700">
+                    Status
+                  </th>
+                  <th className="p-3 border-b font-medium text-sm text-slate-700">
+                    Effective From
+                  </th>
+                  <th className="p-3 border-b font-medium text-sm text-slate-700">
+                    Available Floor Plans
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {estateApprovals.map((approval) => (
+                  <tr key={approval.id}>
+                    <td className="p-3 border-b border-slate-100 text-sm">
+                      {approval.estateName}
+                    </td>
+                    <td className="p-3 border-b border-slate-100 text-sm">
+                      {approval.status ?? "--"}
+                    </td>
+                    <td className="p-3 border-b border-slate-100 text-sm">
+                      <span title={formatDateTimeForTooltip(approval.effectiveFrom)}>
+                        {formatDateForCell(approval.effectiveFrom)}
+                      </span>
+                    </td>
+                    <td className="p-3 border-b border-slate-100 text-sm">
+                      {floorPlans.length}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className="mb-10">

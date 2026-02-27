@@ -4,7 +4,16 @@
 P1
 
 ## Status
-Ready - MVP import design decisions made.
+Implemented (FE, client-side orchestration) - CSV bulk import now creates/updates floor plans with row-level reporting.
+
+## Implementation Notes (2026-02-27)
+- Updated `src/components/admin/floorplans/FloorPlanCrud.tsx` with a CSV import workflow:
+  - Template download.
+  - CSV upload panel.
+  - Upload-level defaults (storeys, roof pitch, architectural style, front-service visibility).
+  - Row-by-row create/update using existing single-record endpoints.
+  - Partial success reporting with per-row error details.
+- No dedicated backend bulk endpoint is required for this MVP implementation; FE orchestrates bulk operations via existing CRUD APIs.
 
 ## Source Feedback
 - Manual one-by-one floor plan entry does not scale for builders with 20-50 plans.

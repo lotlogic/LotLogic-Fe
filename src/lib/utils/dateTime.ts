@@ -2,6 +2,8 @@ const dateCellFormatter = new Intl.DateTimeFormat(undefined, {
   day: "numeric",
   month: "short",
   year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
 });
 
 const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {

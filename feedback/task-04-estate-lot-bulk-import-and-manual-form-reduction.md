@@ -4,7 +4,13 @@
 P1
 
 ## Status
-Ready - client field grouping confirmed for MVP.
+Implemented (FE) - DXF-first flow is default, manual entry is simplified with advanced fields gated.
+
+## Implementation Notes (2026-02-27)
+- Updated `src/components/admin/estates/EstateLotsCrud.tsx` to position DXF import as the primary path.
+- Manual lot entry now surfaces the agreed core fields first: zoning, lot type, overlays, lifecycle stage, and road facing.
+- Technical/manual-heavy fields (geometry, S1-S4, frontage GeoJSON, lot metadata overrides) are hidden behind an `advanced fields` toggle.
+- DXF import options now show a simplified default form, with importer internals under `advanced import options`.
 
 ## Source Feedback
 - Manual lot-by-lot entry is not viable.

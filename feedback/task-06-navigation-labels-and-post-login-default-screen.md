@@ -4,7 +4,7 @@
 P2
 
 ## Status
-Ready - naming and default-flow decisions made.
+Implemented (FE) - navigation labels and deterministic login destinations are live.
 
 ## Source Feedback
 - `Design On Lots` tab label is unclear to non-technical users.

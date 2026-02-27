@@ -4,17 +4,38 @@
 P3
 
 ## Status
-Ready - display-format decision made.
+Implemented (FE) - readable date formatting is applied across admin/dashboard timestamp surfaces.
+
+## Implementation Notes (2026-02-27)
+- Updated `src/pages/dashboard/DashboardEstatePage.tsx`:
+  - `Created` and `Updated` estate metadata now render as readable local dates.
+  - Full local datetime is available via tooltip.
+- Updated `src/pages/admin/AdminEstatePage.tsx`:
+  - `Created` and `Updated` estate metadata now render as readable local dates.
+  - Full local datetime is available via tooltip.
+- Confirmed existing formatted timestamp surfaces remain in place:
+  - `src/components/admin/state-rules/StateRuleSetsCrud.tsx`
+  - `src/components/admin/estates/EstateRuleLayersCrud.tsx`
+  - `src/pages/dashboard/DashboardBuilderPage.tsx`
+  - `src/pages/admin/AdminBrandSettingsPage.tsx`
+  - `src/pages/admin/AdminBrandSettingPage.tsx`
 
 ## Source Feedback
 - Table views currently show raw UTC timestamps (ISO strings), reducing readability for business users.
 
 ## Current Code Anchors
-- FE state rules table: `src/components/admin/state-rules/StateRuleSetsCrud.tsx`
-  - `item.effectiveFrom ?? "--"` currently rendered raw.
-- FE builder approvals table: `src/components/admin/estates/EstateRuleLayersCrud.tsx`
-  - `item.effectiveFrom ?? "--"` currently rendered raw.
-- Additional tables likely have the same pattern and should be audited.
+- Shared FE formatting helpers: `src/lib/utils/dateTime.ts`
+  - `formatDateForCell(...)` for readable local date rendering in cells.
+  - `formatDateTimeForTooltip(...)` for full local datetime hover text.
+- Estate metadata views:
+  - `src/pages/dashboard/DashboardEstatePage.tsx`
+  - `src/pages/admin/AdminEstatePage.tsx`
+- Rule/approval and brand views:
+  - `src/components/admin/state-rules/StateRuleSetsCrud.tsx`
+  - `src/components/admin/estates/EstateRuleLayersCrud.tsx`
+  - `src/pages/dashboard/DashboardBuilderPage.tsx`
+  - `src/pages/admin/AdminBrandSettingsPage.tsx`
+  - `src/pages/admin/AdminBrandSettingPage.tsx`
 
 ## Scope
 - Replace raw ISO timestamps with readable date/time formats in admin/dashboard tables.

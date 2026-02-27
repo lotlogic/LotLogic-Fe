@@ -118,6 +118,113 @@ const parseOptionalNumberField = (
   return { ok: true, value: parsed };
 };
 
+type CsvImportDefaults = {
+  storeys: string;
+  roofPitch_deg: string;
+  architecturalStyle: string;
+  hasFrontFacingServiceAreas: "" | "true" | "false";
+};
+
+type CsvImportError = {
+  rowNumber: number;
+  rowLabel: string;
+  message: string;
+};
+
+type CsvImportResult = {
+  created: number;
+  updated: number;
+  failed: number;
+  errors: CsvImportError[];
+};
+
+const CSV_IMPORT_TEMPLATE = `id,name,floorplanUrl,bedrooms,bathrooms,garages,areaSqm,width,depth,rumpus,alfresco,pergola,storeys,buildingHeight_m,roofPitch_deg,architecturalStyle,hasFrontFacingServiceAreas
+,Acacia 21,https://cdn.example.com/floorplans/acacia-21.pdf,4,2,2,210,12.5,18.2,true,true,false,1,8.9,22.5,Contemporary,false`;
+
+const parseCsvRecords = (text: string): Record<string, string>[] => {
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentValue = "";
+  let inQuotes = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const next = text[index + 1];
+
+    if (char === '"') {
+      if (inQuotes && next === '"') {
+        currentValue += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if (char === "," && !inQuotes) {
+      currentRow.push(currentValue);
+      currentValue = "";
+      continue;
+    }
+
+    if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && next === "\n") {
+        index += 1;
+      }
+      currentRow.push(currentValue);
+      rows.push(currentRow);
+      currentRow = [];
+      currentValue = "";
+      continue;
+    }
+
+    currentValue += char;
+  }
+
+  if (currentValue.length > 0 || currentRow.length > 0) {
+    currentRow.push(currentValue);
+    rows.push(currentRow);
+  }
+
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const headers = rows[0].map((header) =>
+    header.replace(/^\uFEFF/, "").trim().toLowerCase()
+  );
+
+  return rows
+    .slice(1)
+    .filter((row) => row.some((value) => value.trim().length > 0))
+    .map((row) => {
+      const record: Record<string, string> = {};
+      headers.forEach((header, columnIndex) => {
+        if (!header) {
+          return;
+        }
+        record[header] = (row[columnIndex] ?? "").trim();
+      });
+      return record;
+    });
+};
+
+const parseBooleanField = (
+  rawValue: string
+): { ok: true; value?: boolean } | { ok: false } => {
+  const normalized = rawValue.trim().toLowerCase();
+  if (!normalized) {
+    return { ok: true, value: undefined };
+  }
+  if (["true", "1", "yes", "y"].includes(normalized)) {
+    return { ok: true, value: true };
+  }
+  if (["false", "0", "no", "n"].includes(normalized)) {
+    return { ok: true, value: false };
+  }
+  return { ok: false };
+};
+
 type FloorPlanCrudProps = {
   loadFloorPlans: () => Promise<FloorPlanRecord[]>;
   createFloorPlan: (payload: FloorPlanPayload) => Promise<unknown>;
@@ -154,6 +261,19 @@ export const FloorPlanCrud = ({
     null
   );
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showCsvImport, setShowCsvImport] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [csvImporting, setCsvImporting] = useState(false);
+  const [csvImportError, setCsvImportError] = useState<string | null>(null);
+  const [csvImportResult, setCsvImportResult] = useState<CsvImportResult | null>(
+    null
+  );
+  const [csvDefaults, setCsvDefaults] = useState<CsvImportDefaults>({
+    storeys: "",
+    roofPitch_deg: "",
+    architecturalStyle: "",
+    hasFrontFacingServiceAreas: "",
+  });
 
   const handleLoad = useCallback(async () => {
     setLoading(true);
@@ -213,6 +333,356 @@ export const FloorPlanCrud = ({
   const closeForm = () => {
     resetForm();
     setShowForm(false);
+  };
+
+  const handleDownloadCsvTemplate = () => {
+    const blob = new Blob([CSV_IMPORT_TEMPLATE], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "floor-plan-import-template.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCsvImport = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!csvFile) {
+      setCsvImportError("Select a CSV file to import.");
+      return;
+    }
+
+    const defaultStoreys = parseOptionalNumberField(csvDefaults.storeys);
+    if (!defaultStoreys.ok) {
+      setCsvImportError("Default storeys must be numeric.");
+      return;
+    }
+    const defaultRoofPitch = parseOptionalNumberField(csvDefaults.roofPitch_deg);
+    if (!defaultRoofPitch.ok) {
+      setCsvImportError("Default roof pitch must be numeric.");
+      return;
+    }
+    const defaultFrontService = parseBooleanField(
+      csvDefaults.hasFrontFacingServiceAreas
+    );
+    if (!defaultFrontService.ok) {
+      setCsvImportError(
+        "Default front service visibility must be true/false, yes/no, or 1/0."
+      );
+      return;
+    }
+
+    setCsvImporting(true);
+    setCsvImportError(null);
+    setCsvImportResult(null);
+
+    try {
+      const csvText = await csvFile.text();
+      const rows = parseCsvRecords(csvText);
+      if (rows.length === 0) {
+        setCsvImportError("No data rows found in CSV.");
+        setCsvImporting(false);
+        return;
+      }
+
+      const plansById = new Map(floorPlans.map((plan) => [plan.id, plan]));
+      const errors: CsvImportError[] = [];
+      let created = 0;
+      let updated = 0;
+
+      for (let index = 0; index < rows.length; index += 1) {
+        const row = rows[index];
+        const rowNumber = index + 2;
+        const rowId = (row["id"] ?? "").trim();
+        const existingPlan = rowId ? plansById.get(rowId) ?? null : null;
+        const rowLabel = rowId || (row["name"] ?? "").trim() || `Row ${rowNumber}`;
+
+        if (rowId && !existingPlan) {
+          errors.push({
+            rowNumber,
+            rowLabel,
+            message: `Floor plan id "${rowId}" was not found.`,
+          });
+          continue;
+        }
+
+        const pickString = (...values: Array<string | null | undefined>) => {
+          for (const value of values) {
+            const trimmed = String(value ?? "").trim();
+            if (trimmed) {
+              return trimmed;
+            }
+          }
+          return "";
+        };
+
+        const pickRequiredNumber = (
+          label: string,
+          ...values: Array<string | number | null | undefined>
+        ): { ok: true; value: number } | { ok: false; message: string } => {
+          for (const value of values) {
+            if (value === null || value === undefined || value === "") {
+              continue;
+            }
+            const numeric =
+              typeof value === "number" ? value : Number(String(value).trim());
+            if (!Number.isFinite(numeric)) {
+              return { ok: false, message: `${label} must be numeric.` };
+            }
+            return { ok: true, value: numeric };
+          }
+          return { ok: false, message: `${label} is required.` };
+        };
+
+        const pickOptionalNumber = (
+          ...values: Array<string | number | null | undefined>
+        ): { ok: true; value?: number } | { ok: false } => {
+          for (const value of values) {
+            if (value === null || value === undefined || value === "") {
+              continue;
+            }
+            const numeric =
+              typeof value === "number" ? value : Number(String(value).trim());
+            if (!Number.isFinite(numeric)) {
+              return { ok: false };
+            }
+            return { ok: true, value: numeric };
+          }
+          return { ok: true, value: undefined };
+        };
+
+        const pickOptionalBoolean = (
+          ...values: Array<string | boolean | null | undefined>
+        ): { ok: true; value?: boolean } | { ok: false } => {
+          for (const value of values) {
+            if (value === null || value === undefined || value === "") {
+              continue;
+            }
+            if (typeof value === "boolean") {
+              return { ok: true, value };
+            }
+            const parsed = parseBooleanField(String(value));
+            if (!parsed.ok) {
+              return { ok: false };
+            }
+            return { ok: true, value: parsed.value };
+          }
+          return { ok: true, value: undefined };
+        };
+
+        const payloadName = pickString(row["name"], existingPlan?.name);
+        const payloadUrl = pickString(
+          row["floorplanurl"],
+          row["floorplan_url"],
+          existingPlan?.floorplanUrl
+        );
+
+        const bedrooms = pickRequiredNumber(
+          "Bedrooms",
+          row["bedrooms"],
+          existingPlan?.bedrooms
+        );
+        const bathrooms = pickRequiredNumber(
+          "Bathrooms",
+          row["bathrooms"],
+          existingPlan?.bathrooms
+        );
+        const garages = pickRequiredNumber(
+          "Garages",
+          row["garages"],
+          existingPlan?.garages
+        );
+        const areaSqm = pickRequiredNumber(
+          "Area (sqm)",
+          row["areasqm"],
+          existingPlan?.areaSqm
+        );
+        const width = pickRequiredNumber(
+          "Design width",
+          row["width"],
+          existingPlan?.width
+        );
+        const depth = pickRequiredNumber(
+          "Building depth",
+          row["depth"],
+          existingPlan?.depth
+        );
+
+        if (!payloadName || !payloadUrl) {
+          errors.push({
+            rowNumber,
+            rowLabel,
+            message: "Name and floorplanUrl are required.",
+          });
+          continue;
+        }
+        const failedRequired =
+          !bedrooms.ok
+            ? bedrooms
+            : !bathrooms.ok
+              ? bathrooms
+              : !garages.ok
+                ? garages
+                : !areaSqm.ok
+                  ? areaSqm
+                  : !width.ok
+                    ? width
+                    : !depth.ok
+                      ? depth
+                      : null;
+        if (failedRequired && "message" in failedRequired) {
+          errors.push({
+            rowNumber,
+            rowLabel,
+            message: failedRequired.message,
+          });
+          continue;
+        }
+
+        if (
+          !bedrooms.ok ||
+          !bathrooms.ok ||
+          !garages.ok ||
+          !areaSqm.ok ||
+          !width.ok ||
+          !depth.ok
+        ) {
+          errors.push({
+            rowNumber,
+            rowLabel,
+            message: "Missing required numeric values.",
+          });
+          continue;
+        }
+
+        const rumpusResult = pickOptionalBoolean(row["rumpus"], existingPlan?.rumpus);
+        const alfrescoResult = pickOptionalBoolean(
+          row["alfresco"],
+          existingPlan?.alfresco
+        );
+        const pergolaResult = pickOptionalBoolean(
+          row["pergola"],
+          existingPlan?.pergola
+        );
+        if (!rumpusResult.ok || !alfrescoResult.ok || !pergolaResult.ok) {
+          errors.push({
+            rowNumber,
+            rowLabel,
+            message: "Feature fields (rumpus/alfresco/pergola) must be boolean.",
+          });
+          continue;
+        }
+
+        const storeysResult = pickOptionalNumber(
+          row["storeys"],
+          defaultStoreys.value,
+          existingPlan?.storeys
+        );
+        const buildingHeightResult = pickOptionalNumber(
+          row["buildingheight_m"],
+          row["buildingheightm"],
+          existingPlan?.buildingHeight_m
+        );
+        const roofPitchResult = pickOptionalNumber(
+          row["roofpitch_deg"],
+          row["roofpitchdeg"],
+          defaultRoofPitch.value,
+          existingPlan?.roofPitch_deg
+        );
+        if (!storeysResult.ok || !buildingHeightResult.ok || !roofPitchResult.ok) {
+          errors.push({
+            rowNumber,
+            rowLabel,
+            message:
+              "Storeys, buildingHeight_m, and roofPitch_deg must be numeric when provided.",
+          });
+          continue;
+        }
+
+        const frontServiceResult = pickOptionalBoolean(
+          row["hasfrontfacingserviceareas"],
+          row["frontserviceareasvisiblefromstreet"],
+          defaultFrontService.value,
+          existingPlan?.hasFrontFacingServiceAreas
+        );
+        if (!frontServiceResult.ok) {
+          errors.push({
+            rowNumber,
+            rowLabel,
+            message: "hasFrontFacingServiceAreas must be boolean.",
+          });
+          continue;
+        }
+
+        const architecturalStyle = pickString(
+          row["architecturalstyle"],
+          csvDefaults.architecturalStyle,
+          existingPlan?.architecturalStyle
+        );
+
+        const payload: FloorPlanPayload = {
+          name: payloadName,
+          floorplanUrl: payloadUrl,
+          bedrooms: bedrooms.value,
+          bathrooms: bathrooms.value,
+          garages: garages.value,
+          areaSqm: areaSqm.value,
+          width: width.value,
+          depth: depth.value,
+          rumpus: rumpusResult.value ?? false,
+          alfresco: alfrescoResult.value ?? false,
+          pergola: pergolaResult.value ?? false,
+        };
+
+        if (storeysResult.value !== undefined) {
+          payload.storeys = storeysResult.value;
+        }
+        if (buildingHeightResult.value !== undefined) {
+          payload.buildingHeight_m = buildingHeightResult.value;
+        }
+        if (roofPitchResult.value !== undefined) {
+          payload.roofPitch_deg = roofPitchResult.value;
+        }
+        if (architecturalStyle) {
+          payload.architecturalStyle = architecturalStyle;
+        }
+        if (frontServiceResult.value !== undefined) {
+          payload.hasFrontFacingServiceAreas = frontServiceResult.value;
+        }
+        if (!rowId && builderId) {
+          payload.builderId = builderId;
+        }
+
+        try {
+          if (rowId && existingPlan) {
+            await updateFloorPlan(existingPlan.id, payload);
+            updated += 1;
+          } else {
+            await createFloorPlan(payload);
+            created += 1;
+          }
+        } catch (error) {
+          errors.push({
+            rowNumber,
+            rowLabel,
+            message:
+              error instanceof Error ? error.message : "Failed to import row.",
+          });
+        }
+      }
+
+      const failed = errors.length;
+      setCsvImportResult({ created, updated, failed, errors });
+      if (created > 0 || updated > 0) {
+        await handleLoad();
+      }
+    } catch (error) {
+      setCsvImportError(
+        error instanceof Error ? error.message : "Failed to import CSV."
+      );
+    } finally {
+      setCsvImporting(false);
+    }
   };
 
   const startEdit = (plan: FloorPlanRecord) => {
@@ -399,7 +869,174 @@ export const FloorPlanCrud = ({
           variant={showForm ? "outline" : "primary"}
           className="ml-auto"
         />
+        <Button
+          onClick={() => {
+            setShowCsvImport((previous) => !previous);
+            setCsvImportError(null);
+            setCsvImportResult(null);
+          }}
+          label={showCsvImport ? "Close CSV import" : "Import CSV"}
+          variant="outline"
+        />
       </div>
+
+      {showCsvImport && (
+        <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 mb-6">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
+            <div>
+              <h2 className="text-lg font-semibold m-0">Bulk CSV import</h2>
+              <p className="text-sm text-muted-foreground m-0">
+                Create and update many floor plans in one upload. Include
+                <code className="mx-1 rounded bg-slate-100 px-1 py-0.5">id</code>
+                to update an existing plan.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-8 px-2 text-xs"
+              label="Download template"
+              onClick={handleDownloadCsvTemplate}
+            />
+          </div>
+
+          <form onSubmit={handleCsvImport} className="grid gap-4">
+            <div className="grid gap-2">
+              <span className="text-sm font-medium">CSV file</span>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(event) => {
+                  setCsvFile(event.target.files?.[0] ?? null);
+                  setCsvImportError(null);
+                  setCsvImportResult(null);
+                }}
+                className="text-sm"
+              />
+            </div>
+
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-medium text-slate-700 mt-0 mb-3">
+                Optional defaults for blank columns
+              </p>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-2">
+                  <span className="text-xs text-slate-600">Storeys</span>
+                  <Input
+                    value={csvDefaults.storeys}
+                    onChange={(event) =>
+                      setCsvDefaults((previous) => ({
+                        ...previous,
+                        storeys: event.target.value,
+                      }))
+                    }
+                    type="number"
+                    min="1"
+                    className="w-full"
+                    placeholder="1"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-xs text-slate-600">Roof Pitch (deg)</span>
+                  <Input
+                    value={csvDefaults.roofPitch_deg}
+                    onChange={(event) =>
+                      setCsvDefaults((previous) => ({
+                        ...previous,
+                        roofPitch_deg: event.target.value,
+                      }))
+                    }
+                    type="number"
+                    step="0.1"
+                    className="w-full"
+                    placeholder="22.5"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-xs text-slate-600">
+                    Architectural Style
+                  </span>
+                  <select
+                    value={csvDefaults.architecturalStyle}
+                    onChange={(event) =>
+                      setCsvDefaults((previous) => ({
+                        ...previous,
+                        architecturalStyle: event.target.value,
+                      }))
+                    }
+                    className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="">No default</option>
+                    {ARCHITECTURAL_STYLE_OPTIONS.map((style) => (
+                      <option key={style} value={style}>
+                        {style}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid gap-2">
+                  <span className="text-xs text-slate-600">
+                    Front service areas visible from street
+                  </span>
+                  <select
+                    value={csvDefaults.hasFrontFacingServiceAreas}
+                    onChange={(event) =>
+                      setCsvDefaults((previous) => ({
+                        ...previous,
+                        hasFrontFacingServiceAreas: event.target
+                          .value as CsvImportDefaults["hasFrontFacingServiceAreas"],
+                      }))
+                    }
+                    className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="">No default</option>
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="submit"
+                label="Run CSV import"
+                loading={csvImporting}
+                disabled={csvImporting}
+              />
+              {csvImportError && (
+                <span className="text-sm text-destructive">{csvImportError}</span>
+              )}
+              {csvImportResult && (
+                <span className="text-sm text-emerald-600">
+                  Imported: {csvImportResult.created} created,{" "}
+                  {csvImportResult.updated} updated, {csvImportResult.failed} failed.
+                </span>
+              )}
+            </div>
+          </form>
+
+          {csvImportResult && csvImportResult.errors.length > 0 && (
+            <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3">
+              <p className="m-0 text-sm font-medium text-amber-900">
+                Rows with errors
+              </p>
+              <ul className="mt-2 mb-0 list-disc pl-5 text-xs text-amber-900">
+                {csvImportResult.errors.slice(0, 20).map((item) => (
+                  <li key={`${item.rowNumber}-${item.rowLabel}`}>
+                    Row {item.rowNumber} ({item.rowLabel}): {item.message}
+                  </li>
+                ))}
+              </ul>
+              {csvImportResult.errors.length > 20 && (
+                <p className="mt-2 mb-0 text-xs text-amber-900">
+                  Showing first 20 errors.
+                </p>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {showForm && (
         <section className="bg-white rounded-lg border border-slate-200 shadow-sm p-6 mb-6">

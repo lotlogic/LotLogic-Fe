@@ -4,7 +4,7 @@
 P2
 
 ## Status
-Ready - wording and notes behavior decided.
+Implemented (FE) - builder approval wording and notes guidance are updated.
 
 ## Source Feedback
 - `Create builder approval` button text is technical/awkward.

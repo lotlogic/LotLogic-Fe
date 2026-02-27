@@ -517,6 +517,10 @@ export const StateRuleSetsCrud = () => {
           </div>
           <div className="grid gap-2">
             <span className="text-sm font-medium">Rules JSON *</span>
+            <p className="m-0 text-xs text-slate-500">
+              These are the jurisdiction baseline rules. Estate rule sets can
+              add stricter constraints on top of this baseline.
+            </p>
             <RuleLayerEditor
               value={rulesJson}
               onChange={setRulesJson}

@@ -14,6 +14,9 @@ type RuleLayerEditorProps = {
 };
 
 type EditorMode = "structured" | "json";
+type FormatFeedback =
+  | { tone: "success" | "error"; message: string }
+  | null;
 
 const parseRuleLayer = (value: string): {
   rules: RuleLayer | null;
@@ -89,6 +92,7 @@ export const RuleLayerEditor = ({
   const [mode, setMode] = useState<EditorMode>("structured");
   const [sectionDrafts, setSectionDrafts] = useState<Record<string, string>>({});
   const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
+  const [formatFeedback, setFormatFeedback] = useState<FormatFeedback>(null);
 
   const parsed = useMemo(() => parseRuleLayer(value), [value]);
   const canEditStructured = Boolean(parsed.rules) && !parsed.error;
@@ -194,13 +198,29 @@ export const RuleLayerEditor = ({
   const handleFormatJson = () => {
     const nextParsed = parseRuleLayer(value);
     if (!nextParsed.rules || nextParsed.error) {
+      setFormatFeedback({
+        tone: "error",
+        message: nextParsed.error ?? "Rules JSON is invalid.",
+      });
       return;
     }
     onChange(safeStringify(nextParsed.rules));
+    setFormatFeedback({
+      tone: "success",
+      message: "JSON formatted.",
+    });
   };
 
   return (
     <div className="grid gap-4">
+      <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+        State rules provide the baseline. Estate and lot rules overlay that
+        baseline, with stricter outcomes taking precedence. Setting
+        <code className="mx-1 rounded bg-slate-100 px-1 py-0.5">
+          requiresArchitecturalReview
+        </code>
+        routes matches to <strong>MANUAL_REVIEW</strong>.
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
@@ -216,14 +236,27 @@ export const RuleLayerEditor = ({
           label="Raw JSON"
           onClick={() => setMode("json")}
         />
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-8 px-2 text-xs"
-          label="Format JSON"
-          onClick={handleFormatJson}
-        />
+        {mode === "json" && (
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-8 px-2 text-xs"
+            label="Format JSON"
+            onClick={handleFormatJson}
+          />
+        )}
       </div>
+      {formatFeedback && (
+        <p
+          className={`m-0 text-xs ${
+            formatFeedback.tone === "error"
+              ? "text-destructive"
+              : "text-emerald-600"
+          }`}
+        >
+          {formatFeedback.message}
+        </p>
+      )}
 
       {mode === "structured" && (
         <div className="grid gap-4 rounded-md border border-slate-100 bg-slate-50 p-4">
@@ -327,6 +360,32 @@ export const RuleLayerEditor = ({
                   />
                 </div>
                 <p className="text-xs text-slate-500 mt-0 mb-2">{section.helpText}</p>
+                {(section.schemaSummary ||
+                  section.schemaExample ||
+                  section.schemaOptions?.length) && (
+                  <details className="mb-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+                    <summary className="cursor-pointer text-xs font-medium text-slate-700">
+                      Schema reference
+                    </summary>
+                    {section.schemaSummary && (
+                      <p className="m-0 mt-2 text-xs text-slate-600">
+                        {section.schemaSummary}
+                      </p>
+                    )}
+                    {section.schemaOptions && section.schemaOptions.length > 0 && (
+                      <ul className="m-0 mt-2 list-disc pl-5 text-xs text-slate-600">
+                        {section.schemaOptions.map((line) => (
+                          <li key={line}>{line}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {section.schemaExample && (
+                      <pre className="mt-2 mb-0 overflow-auto rounded-md border border-slate-200 bg-white p-2 text-xs text-slate-700">
+{section.schemaExample}
+                      </pre>
+                    )}
+                  </details>
+                )}
                 <textarea
                   value={sectionDrafts[section.key] ?? "[]"}
                   onChange={(event) =>

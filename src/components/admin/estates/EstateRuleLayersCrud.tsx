@@ -205,7 +205,8 @@ export const EstateRuleLayersCrud = ({
           <div>
             <h2 className="text-lg font-semibold m-0">Estate Rule Set</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              One estate rule set is supported currently.
+              Overlay rules for this estate. Stricter estate constraints
+              override state baselines.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -265,6 +266,13 @@ export const EstateRuleLayersCrud = ({
             </div>
             <div className="grid gap-2">
               <span className="text-sm font-medium">Rules JSON *</span>
+              <p className="m-0 text-xs text-slate-500">
+                Use this layer for estate-specific overrides only. If
+                <code className="mx-1 rounded bg-slate-100 px-1 py-0.5">
+                  requiresArchitecturalReview
+                </code>
+                is true, matching results are marked as manual review.
+              </p>
               <RuleLayerEditor value={ruleSetRulesJson} onChange={setRuleSetRulesJson} idPrefix="estate-rule-set-rules" />
             </div>
             <div className="flex flex-wrap items-center gap-3">

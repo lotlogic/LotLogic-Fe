@@ -4,7 +4,14 @@
 P3
 
 ## Status
-Ready - MVP scope split decided and client clarification captured.
+Implemented (FE) - builder dashboard now shows approved estate context; analytics remain deferred.
+
+## Implementation Notes (2026-02-27)
+- Updated `src/pages/dashboard/DashboardBuilderPage.tsx`:
+  - Added an `Approved Estates` panel listing estate, approval status, effective date, and available floor-plan count context.
+  - Added refresh handling for approvals.
+  - Implemented FE aggregation over existing estate approval endpoints (no new backend endpoint required for MVP).
+- Lead/performance analytics are still intentionally out of scope per agreed decision.
 
 ## Source Feedback
 - Builders currently lack visibility of which estates they are approved for.

@@ -14,6 +14,10 @@ import {
   type Jurisdiction,
 } from "@/lib/api/adminModels";
 import { adminAuth } from "@/lib/auth/adminAuth";
+import {
+  formatDateForCell,
+  formatDateTimeForTooltip,
+} from "@/lib/utils/dateTime";
 import { normalizeIdList } from "@/lib/utils/ids";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -140,6 +144,13 @@ const formatMetaValue = (value: unknown) => {
     return String(value);
   }
   return JSON.stringify(value);
+};
+
+const getMetaDateValue = (label: string, value: unknown): string | null => {
+  if (label !== "Created" && label !== "Updated") {
+    return null;
+  }
+  return typeof value === "string" ? value : null;
 };
 
 const AdminEstatePage = () => {
@@ -670,16 +681,27 @@ const AdminEstatePage = () => {
 
               {metaEntries.length > 0 && (
                 <div className="grid gap-2 rounded-md border border-slate-100 bg-slate-50 p-3 text-sm">
-                  {metaEntries.map((entry) => (
-                    <div key={entry.label} className="flex gap-2">
-                      <span className="text-slate-500 min-w-[90px]">
-                        {entry.label}
-                      </span>
-                      <span className="font-mono text-slate-700">
-                        {formatMetaValue(entry.value)}
-                      </span>
-                    </div>
-                  ))}
+                  {metaEntries.map((entry) => {
+                    const metaDateValue = getMetaDateValue(
+                      entry.label,
+                      entry.value
+                    );
+                    return (
+                      <div key={entry.label} className="flex gap-2">
+                        <span className="text-slate-500 min-w-[90px]">
+                          {entry.label}
+                        </span>
+                        <span
+                          className="font-mono text-slate-700"
+                          title={formatDateTimeForTooltip(metaDateValue)}
+                        >
+                          {metaDateValue
+                            ? formatDateForCell(metaDateValue)
+                            : formatMetaValue(entry.value)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

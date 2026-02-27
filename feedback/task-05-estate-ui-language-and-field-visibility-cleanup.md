@@ -4,7 +4,16 @@
 P2
 
 ## Status
-Ready - client UX preferences confirmed.
+Implemented (FE) - estate-facing branding and lot-form language/visibility cleaned up.
+
+## Implementation Notes (2026-02-27)
+- Updated `src/pages/dashboard/DashboardEstatePage.tsx`:
+  - Theme color now uses a color picker + hex input + preview swatch.
+  - Theme color is validated as hex before save.
+  - Logo field guidance now specifies supported file types and recommended usage.
+- Updated `src/components/admin/estates/EstateLotsCrud.tsx`:
+  - Technical lot fields are hidden by default and gated behind advanced mode.
+  - Estate-facing labels and button copy were simplified for non-technical users.
 
 ## Source Feedback
 - Theme color input is unclear for estate users (raw hex, no picker/preview).
