@@ -37,6 +37,7 @@ export interface HouseDesignListProps {
   lot: {
     estateId?: string | number;
     lotId: string | number;
+    lotDisplayId?: string | number;
     suburb: string;
     address: string;
     size: string | number;
@@ -57,6 +58,7 @@ export interface GetYourQuoteSidebarProps {
   selectedHouseDesign: HouseDesignItem | null;
   lotDetails: {
     id: string | number;
+    displayId?: string | number;
     suburb: string;
     address: string;
     size?: number;

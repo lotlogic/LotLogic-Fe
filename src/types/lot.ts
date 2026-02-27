@@ -57,6 +57,7 @@ export type LotProperties = {
 export type LotData = {
   estateId?: string | number;
   id?: string | number;
+  displayLotId?: string | number;
   suburb?: string;
   address?: string;
   zoning?: string;

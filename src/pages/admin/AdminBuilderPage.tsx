@@ -14,6 +14,7 @@ import {
 } from "@/components/admin/facades/FacadeCrud";
 import { adminApi } from "@/lib/api/adminApi";
 import { adminAuth } from "@/lib/auth/adminAuth";
+import { useAdminSession } from "@/lib/admin/adminSession";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -148,6 +149,8 @@ const inviteRedirectUrl =
 const AdminBuilderPage = () => {
   const { builderId } = useParams();
   const navigate = useNavigate();
+  const { role } = useAdminSession();
+  const isAdmin = role === "ADMIN";
 
   const [builder, setBuilder] = useState<AdminBuilder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -640,9 +643,11 @@ const AdminBuilderPage = () => {
                     <th className="p-3 border-b font-medium text-sm text-slate-700">
                       Email
                     </th>
-                    <th className="p-3 border-b font-medium text-sm text-slate-700">
-                      Role
-                    </th>
+                    {isAdmin && (
+                      <th className="p-3 border-b font-medium text-sm text-slate-700">
+                        Role
+                      </th>
+                    )}
                     <th className="p-3 border-b font-medium text-sm text-slate-700">
                       Status
                     </th>
@@ -666,9 +671,11 @@ const AdminBuilderPage = () => {
                         <td className="p-3 border-b border-slate-100 text-sm">
                           {contact}
                         </td>
-                        <td className="p-3 border-b border-slate-100 text-sm">
-                          {user?.role ?? "--"}
-                        </td>
+                        {isAdmin && (
+                          <td className="p-3 border-b border-slate-100 text-sm">
+                            {user?.role ?? "--"}
+                          </td>
+                        )}
                         <td className="p-3 border-b border-slate-100 text-sm">
                           {user?.status ?? "--"}
                         </td>
@@ -729,9 +736,11 @@ const AdminBuilderPage = () => {
                         <th className="p-2 border-b font-medium text-xs text-slate-500">
                           Email
                         </th>
-                        <th className="p-2 border-b font-medium text-xs text-slate-500">
-                          Role
-                        </th>
+                        {isAdmin && (
+                          <th className="p-2 border-b font-medium text-xs text-slate-500">
+                            Role
+                          </th>
+                        )}
                         <th className="p-2 border-b font-medium text-xs text-slate-500">
                           Actions
                         </th>
@@ -741,7 +750,7 @@ const AdminBuilderPage = () => {
                       {usersLoading && (
                         <tr>
                           <td
-                            colSpan={4}
+                            colSpan={isAdmin ? 4 : 3}
                             className="p-3 text-center text-sm text-muted-foreground"
                           >
                             Loading users...
@@ -757,9 +766,11 @@ const AdminBuilderPage = () => {
                             <td className="p-2 border-b border-slate-50 text-sm">
                               {getUserContact(user)}
                             </td>
-                            <td className="p-2 border-b border-slate-50 text-sm">
-                              {user.role ?? "--"}
-                            </td>
+                            {isAdmin && (
+                              <td className="p-2 border-b border-slate-50 text-sm">
+                                {user.role ?? "--"}
+                              </td>
+                            )}
                             <td className="p-2 border-b border-slate-50 text-sm">
                               <Button
                                 onClick={() => handleAddMember(user.id)}
@@ -778,7 +789,7 @@ const AdminBuilderPage = () => {
                       {!usersLoading && filteredAvailableUsers.length === 0 && (
                         <tr>
                           <td
-                            colSpan={4}
+                            colSpan={isAdmin ? 4 : 3}
                             className="p-3 text-center text-sm text-muted-foreground"
                           >
                             No available users match the filter.

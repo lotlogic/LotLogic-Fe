@@ -4,6 +4,7 @@ interface SavedHouseData {
   id: string;
   estateId?: string | number;
   lotId: string | number;
+  lotDisplayId?: string | number;
   suburb?: string;
   address?: string;
   size?: string | number;
@@ -61,6 +62,7 @@ type SavedCookieDesign = {
 type SavedCookieLotEntry = {
   estateId: string;
   lotId: string;
+  lotDisplayId?: string;
   suburb?: string;
   address?: string;
   size?: string | number;
@@ -144,6 +146,10 @@ const sanitizeSavedProperty = (property: SavedHouseData): SavedHouseData => ({
   id: String(property.id || property.lotId),
   estateId: parseEstateId(property.estateId),
   lotId: String(property.lotId),
+  lotDisplayId:
+    property.lotDisplayId === undefined || property.lotDisplayId === null
+      ? undefined
+      : String(property.lotDisplayId),
   suburb: property.suburb,
   address: property.address,
   size: property.size,
@@ -177,6 +183,11 @@ const toCookiePayload = (savedProperties: SavedHouseData[]): SavedCookiePayload 
       lots[key] = {
         estateId: parseEstateId(normalized.estateId) || "",
         lotId: String(normalized.lotId),
+        lotDisplayId:
+          normalized.lotDisplayId === undefined ||
+          normalized.lotDisplayId === null
+            ? undefined
+            : String(normalized.lotDisplayId),
         suburb: normalized.suburb,
         address: normalized.address,
         size: normalized.size,
@@ -241,6 +252,7 @@ const fromCookiePayload = (payload: SavedCookiePayload): SavedHouseData[] => {
         id: String(lotEntry.lotId),
         estateId: parseEstateId(lotEntry.estateId),
         lotId: lotEntry.lotId,
+        lotDisplayId: lotEntry.lotDisplayId,
         suburb: lotEntry.suburb,
         address: lotEntry.address,
         size: lotEntry.size,

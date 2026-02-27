@@ -14,6 +14,7 @@ import {
   type Jurisdiction,
 } from "@/lib/api/adminModels";
 import { adminAuth } from "@/lib/auth/adminAuth";
+import { useAdminSession } from "@/lib/admin/adminSession";
 import {
   formatDateForCell,
   formatDateTimeForTooltip,
@@ -30,7 +31,6 @@ type AdminEstate = {
   email?: string | null;
   phone?: string | null;
   logoUrl?: string | null;
-  themeColor?: string | null;
   isPrototype?: boolean | null;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -79,7 +79,6 @@ type EstateForm = {
   email: string;
   phone: string;
   logoUrl: string;
-  themeColor: string;
   isPrototype: boolean;
 };
 
@@ -90,7 +89,6 @@ const emptyForm: EstateForm = {
   email: "",
   phone: "",
   logoUrl: "",
-  themeColor: "",
   isPrototype: false,
 };
 
@@ -155,6 +153,8 @@ const getMetaDateValue = (label: string, value: unknown): string | null => {
 
 const AdminEstatePage = () => {
   const { estateId } = useParams();
+  const { role } = useAdminSession();
+  const isAdmin = role === "ADMIN";
   const [estate, setEstate] = useState<AdminEstate | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -201,7 +201,6 @@ const AdminEstatePage = () => {
       email: data.email ?? "",
       phone: data.phone ?? "",
       logoUrl: data.logoUrl ?? "",
-      themeColor: data.themeColor ?? "",
       isPrototype: normalizeBoolean(data.isPrototype),
     };
     setForm(nextForm);
@@ -350,13 +349,7 @@ const AdminEstatePage = () => {
       payload.logoUrl = currentLogoUrl;
     }
 
-    const currentThemeColor = normalizeOptional(form.themeColor);
-    const initialThemeColor = normalizeOptional(initialForm.themeColor);
-    if (currentThemeColor !== initialThemeColor) {
-      payload.themeColor = currentThemeColor;
-    }
-
-    if (form.isPrototype !== initialForm.isPrototype) {
+    if (isAdmin && form.isPrototype !== initialForm.isPrototype) {
       payload.isPrototype = form.isPrototype;
     }
 
@@ -639,45 +632,33 @@ const AdminEstatePage = () => {
                   }
                   placeholder="https://cdn.example.com/logo.png"
                   folder="logos"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  helperText="Accepted formats: PNG, SVG, JPG, or WEBP. Minimum 200px wide. Square or horizontal format preferred."
                 />
               </div>
 
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Theme color</span>
-                <Input
-                  value={form.themeColor}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      themeColor: event.target.value,
-                    }))
-                  }
-                  placeholder="#0F766E"
-                  className="w-full"
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Prototype estate</span>
-                <label className="inline-flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={form.isPrototype}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        isPrototype: event.target.checked,
-                      }))
-                    }
-                    className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
-                  />
-                  <span>Use this estate as the default for `/prototype`</span>
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  Only one estate should be flagged as prototype.
-                </p>
-              </div>
+              {isAdmin && (
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">Prototype estate</span>
+                  <label className="inline-flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={form.isPrototype}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          isPrototype: event.target.checked,
+                        }))
+                      }
+                      className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
+                    />
+                    <span>Use this estate as the default for `/prototype`</span>
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Only one estate should be flagged as prototype.
+                  </p>
+                </div>
+              )}
 
               {metaEntries.length > 0 && (
                 <div className="grid gap-2 rounded-md border border-slate-100 bg-slate-50 p-3 text-sm">
@@ -769,9 +750,11 @@ const AdminEstatePage = () => {
                         <th className="p-3 border-b font-medium text-sm text-slate-700">
                           Email
                         </th>
-                        <th className="p-3 border-b font-medium text-sm text-slate-700">
-                          Role
-                        </th>
+                        {isAdmin && (
+                          <th className="p-3 border-b font-medium text-sm text-slate-700">
+                            Role
+                          </th>
+                        )}
                         <th className="p-3 border-b font-medium text-sm text-slate-700">
                           Status
                         </th>
@@ -795,9 +778,11 @@ const AdminEstatePage = () => {
                             <td className="p-3 border-b border-slate-100 text-sm">
                               {contact}
                             </td>
-                            <td className="p-3 border-b border-slate-100 text-sm">
-                              {user?.role ?? "--"}
-                            </td>
+                            {isAdmin && (
+                              <td className="p-3 border-b border-slate-100 text-sm">
+                                {user?.role ?? "--"}
+                              </td>
+                            )}
                             <td className="p-3 border-b border-slate-100 text-sm">
                               {user?.status ?? "--"}
                             </td>
@@ -860,22 +845,24 @@ const AdminEstatePage = () => {
                             <th className="p-2 border-b font-medium text-xs text-slate-500">
                               Name
                             </th>
-                            <th className="p-2 border-b font-medium text-xs text-slate-500">
-                              Email
-                            </th>
+                          <th className="p-2 border-b font-medium text-xs text-slate-500">
+                            Email
+                          </th>
+                          {isAdmin && (
                             <th className="p-2 border-b font-medium text-xs text-slate-500">
                               Role
                             </th>
-                            <th className="p-2 border-b font-medium text-xs text-slate-500">
-                              Actions
-                            </th>
+                          )}
+                          <th className="p-2 border-b font-medium text-xs text-slate-500">
+                            Actions
+                          </th>
                           </tr>
                         </thead>
                         <tbody>
                           {usersLoading && (
                             <tr>
                               <td
-                                colSpan={4}
+                                colSpan={isAdmin ? 4 : 3}
                                 className="p-3 text-center text-sm text-muted-foreground"
                               >
                                 Loading users...
@@ -891,9 +878,11 @@ const AdminEstatePage = () => {
                                 <td className="p-2 border-b border-slate-50 text-sm">
                                   {getUserContact(user)}
                                 </td>
-                                <td className="p-2 border-b border-slate-50 text-sm">
-                                  {user.role ?? "--"}
-                                </td>
+                                {isAdmin && (
+                                  <td className="p-2 border-b border-slate-50 text-sm">
+                                    {user.role ?? "--"}
+                                  </td>
+                                )}
                                 <td className="p-2 border-b border-slate-50 text-sm">
                                   <Button
                                     onClick={() => handleAddMember(user.id)}
@@ -912,7 +901,7 @@ const AdminEstatePage = () => {
                           {!usersLoading && filteredAvailableUsers.length === 0 && (
                             <tr>
                               <td
-                                colSpan={4}
+                                colSpan={isAdmin ? 4 : 3}
                                 className="p-3 text-center text-sm text-muted-foreground"
                               >
                                 No available users match the filter.
@@ -977,10 +966,15 @@ const AdminEstatePage = () => {
 
         <EstateLotsCrud
           estateId={estateId}
+          estateName={form.name}
+          estateAddress={form.address}
           loadLots={(id) => adminApi.getLots<EstateLotRecord>({ estateId: id })}
           createLot={(payload) => adminApi.createLot(payload)}
           updateLot={(id, payload) => adminApi.updateLot(id, payload)}
           deleteLot={(id) => adminApi.deleteLot(id)}
+          deleteAllLots={
+            isAdmin ? (id) => adminApi.deleteEstateLots(id) : undefined
+          }
           importLotsDxf={(id, payload) =>
             adminApi.importEstateLotsDxf(id, payload)
           }

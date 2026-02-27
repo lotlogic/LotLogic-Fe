@@ -196,7 +196,10 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
       properties: {
         BLOCK_KEY: lotId,
         ID: lotId,
-        LOT_NUMBER: lotId,
+        LOT_NUMBER:
+          lotData.blockNumber !== null && lotData.blockNumber !== undefined
+            ? String(lotData.blockNumber)
+            : lotId,
         databaseId: lotId,
         areaSqm: property.size,
         lifecycleStage: "available",
@@ -205,7 +208,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
         LAND_USE_POLICY_ZONES: property.zoning,
         BLOCK_DERIVED_AREA: property.size?.toString() || "0",
         STAGE: "available",
-        BLOCK_NUMBER: null,
+        BLOCK_NUMBER: lotData.blockNumber ?? null,
         SECTION_NUMBER: null,
         DISTRICT_CODE: 1,
         OBJECTID: lotId,
@@ -502,6 +505,11 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
             estateId: selectedLot.properties.estateId || estateId || "",
             id:
               selectedLot.properties.ID?.toString() ||
+              selectedLot.properties.databaseId,
+            displayLotId:
+              selectedLot.properties.BLOCK_NUMBER ??
+              selectedLot.properties.LOT_NUMBER ??
+              selectedLot.properties.ID?.toString() ??
               selectedLot.properties.databaseId,
             suburb: selectedLot.properties.DISTRICT_NAME || "",
             address: selectedLot.properties.ADDRESSES || "",

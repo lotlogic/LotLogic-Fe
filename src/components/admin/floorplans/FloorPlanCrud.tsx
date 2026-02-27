@@ -4,6 +4,7 @@ import { AdminUploadField } from "@/components/admin/AdminUploadField";
 import { Button } from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
+import { adminApi } from "@/lib/api/adminApi";
 
 export type FloorPlanRecord = {
   id: string;
@@ -134,12 +135,13 @@ type CsvImportError = {
 type CsvImportResult = {
   created: number;
   updated: number;
+  facadesCreated: number;
   failed: number;
   errors: CsvImportError[];
 };
 
-const CSV_IMPORT_TEMPLATE = `id,name,floorplanUrl,bedrooms,bathrooms,garages,areaSqm,width,depth,rumpus,alfresco,pergola,storeys,buildingHeight_m,roofPitch_deg,architecturalStyle,hasFrontFacingServiceAreas
-,Acacia 21,https://cdn.example.com/floorplans/acacia-21.pdf,4,2,2,210,12.5,18.2,true,true,false,1,8.9,22.5,Contemporary,false`;
+const CSV_IMPORT_TEMPLATE = `id,name,floorplanUrl,bedrooms,bathrooms,garages,areaSqm,width,depth,rumpus,alfresco,pergola,storeys,buildingHeight_m,roofPitch_deg,architecturalStyle,hasFrontFacingServiceAreas,facades
+,Acacia 21,https://cdn.example.com/floorplans/acacia-21.pdf,4,2,2,210,12.5,18.2,true,true,false,1,8.9,22.5,Contemporary,false,"https://cdn.example.com/facades/acacia-modern.jpg,https://cdn.example.com/facades/acacia-classic.jpg"`;
 
 const parseCsvRecords = (text: string): Record<string, string>[] => {
   const rows: string[][] = [];
@@ -223,6 +225,77 @@ const parseBooleanField = (
     return { ok: true, value: false };
   }
   return { ok: false };
+};
+
+const resolveArchitecturalStyle = (
+  rawValue: string
+): { ok: true; value: string } | { ok: false } => {
+  const trimmed = rawValue.trim();
+  if (!trimmed) {
+    return { ok: true, value: "" };
+  }
+  const matched = ARCHITECTURAL_STYLE_OPTIONS.find(
+    (option) => option.toLowerCase() === trimmed.toLowerCase()
+  );
+  if (!matched) {
+    return { ok: false };
+  }
+  return { ok: true, value: matched };
+};
+
+const splitFacadeUrls = (rawValue: string): string[] => {
+  if (!rawValue.trim()) {
+    return [];
+  }
+  const unique = new Set<string>();
+  rawValue
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .forEach((url) => unique.add(url));
+  return Array.from(unique);
+};
+
+const resolveFacadeLabelFromUrl = (url: string): string => {
+  const fallback = "Facade";
+  const trimmed = url.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+
+  let fileName = "";
+  try {
+    const parsed = new URL(trimmed);
+    fileName = parsed.pathname.split("/").filter(Boolean).pop() ?? "";
+  } catch {
+    const withoutQuery = trimmed.split(/[?#]/)[0] ?? "";
+    fileName = withoutQuery.split("/").filter(Boolean).pop() ?? "";
+  }
+
+  const decoded = decodeURIComponent(fileName).trim();
+  const withoutExtension = decoded.replace(/\.[^.]+$/, "").trim();
+  const normalized = withoutExtension.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+  return normalized || withoutExtension || decoded || fallback;
+};
+
+const resolveFloorPlanIdFromResponse = (
+  value: unknown
+): string | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record.id === "string" && record.id.trim()) {
+    return record.id.trim();
+  }
+  const nestedFloorPlan = record.floorPlan;
+  if (nestedFloorPlan && typeof nestedFloorPlan === "object") {
+    const nestedId = (nestedFloorPlan as Record<string, unknown>).id;
+    if (typeof nestedId === "string" && nestedId.trim()) {
+      return nestedId.trim();
+    }
+  }
+  return null;
 };
 
 type FloorPlanCrudProps = {
@@ -386,9 +459,29 @@ export const FloorPlanCrud = ({
       }
 
       const plansById = new Map(floorPlans.map((plan) => [plan.id, plan]));
+      const existingPlansByName = new Map<string, FloorPlanRecord>();
+      const existingPlansByUrl = new Map<string, FloorPlanRecord>();
+      const createdNameKeys = new Set<string>();
+      const createdUrlKeys = new Set<string>();
+      const facadeImageUrlsByFloorPlan = new Map<string, Set<string>>();
       const errors: CsvImportError[] = [];
       let created = 0;
       let updated = 0;
+      let facadesCreated = 0;
+
+      const toIdentityKey = (value: string | null | undefined) =>
+        String(value ?? "").trim().toLowerCase();
+
+      floorPlans.forEach((plan) => {
+        const nameKey = toIdentityKey(plan.name);
+        const urlKey = toIdentityKey(plan.floorplanUrl);
+        if (nameKey && !existingPlansByName.has(nameKey)) {
+          existingPlansByName.set(nameKey, plan);
+        }
+        if (urlKey && !existingPlansByUrl.has(urlKey)) {
+          existingPlansByUrl.set(urlKey, plan);
+        }
+      });
 
       for (let index = 0; index < rows.length; index += 1) {
         const row = rows[index];
@@ -614,10 +707,26 @@ export const FloorPlanCrud = ({
           continue;
         }
 
-        const architecturalStyle = pickString(
+        const rowArchitecturalStyle = pickString(
           row["architecturalstyle"],
-          csvDefaults.architecturalStyle,
-          existingPlan?.architecturalStyle
+          csvDefaults.architecturalStyle
+        );
+        const architecturalStyleResult = resolveArchitecturalStyle(
+          rowArchitecturalStyle
+        );
+        if (!architecturalStyleResult.ok) {
+          errors.push({
+            rowNumber,
+            rowLabel,
+            message: `architecturalStyle must be one of: ${ARCHITECTURAL_STYLE_OPTIONS.join(", ")}.`,
+          });
+          continue;
+        }
+        const architecturalStyle =
+          architecturalStyleResult.value ||
+          pickString(existingPlan?.architecturalStyle);
+        const facadeUrls = splitFacadeUrls(
+          pickString(row["facades"], row["facadeurls"], row["facade_urls"])
         );
 
         const payload: FloorPlanPayload = {
@@ -653,13 +762,125 @@ export const FloorPlanCrud = ({
           payload.builderId = builderId;
         }
 
+        const payloadNameKey = toIdentityKey(payload.name);
+        const payloadUrlKey = toIdentityKey(payload.floorplanUrl);
+        if (!rowId) {
+          const conflictingByName = payloadNameKey
+            ? existingPlansByName.get(payloadNameKey) ?? null
+            : null;
+          const conflictingByUrl = payloadUrlKey
+            ? existingPlansByUrl.get(payloadUrlKey) ?? null
+            : null;
+          if (conflictingByName || conflictingByUrl) {
+            const conflictTarget = conflictingByName ?? conflictingByUrl;
+            errors.push({
+              rowNumber,
+              rowLabel,
+              message: `Row omitted id and matches existing floor plan "${conflictTarget?.id}". Provide id to update, or change name/floorplanUrl to create a new plan.`,
+            });
+            continue;
+          }
+          if (
+            (payloadNameKey && createdNameKeys.has(payloadNameKey)) ||
+            (payloadUrlKey && createdUrlKeys.has(payloadUrlKey))
+          ) {
+            errors.push({
+              rowNumber,
+              rowLabel,
+              message:
+                "Row omitted id and duplicates another new row in this import by name or floorplanUrl.",
+            });
+            continue;
+          }
+        }
+
         try {
+          let importedFloorPlanId: string | null = existingPlan?.id ?? null;
           if (rowId && existingPlan) {
             await updateFloorPlan(existingPlan.id, payload);
             updated += 1;
+            const updatedPlanRecord: FloorPlanRecord = {
+              ...existingPlan,
+              name: payload.name,
+              floorplanUrl: payload.floorplanUrl,
+            };
+            if (payloadNameKey) {
+              existingPlansByName.set(payloadNameKey, updatedPlanRecord);
+            }
+            if (payloadUrlKey) {
+              existingPlansByUrl.set(payloadUrlKey, updatedPlanRecord);
+            }
           } else {
-            await createFloorPlan(payload);
+            const createdFloorPlan = await createFloorPlan(payload);
+            importedFloorPlanId = resolveFloorPlanIdFromResponse(createdFloorPlan);
+            if (!importedFloorPlanId) {
+              const matchedPlan = floorPlans.find(
+                (plan) =>
+                  String(plan.name ?? "").trim() === payload.name &&
+                  String(plan.floorplanUrl ?? "").trim() === payload.floorplanUrl
+              );
+              importedFloorPlanId = matchedPlan?.id ?? null;
+            }
             created += 1;
+            if (payloadNameKey) {
+              createdNameKeys.add(payloadNameKey);
+              existingPlansByName.set(payloadNameKey, {
+                id: importedFloorPlanId ?? `created-row-${rowNumber}`,
+                name: payload.name,
+                floorplanUrl: payload.floorplanUrl,
+              });
+            }
+            if (payloadUrlKey) {
+              createdUrlKeys.add(payloadUrlKey);
+              existingPlansByUrl.set(payloadUrlKey, {
+                id: importedFloorPlanId ?? `created-row-${rowNumber}`,
+                name: payload.name,
+                floorplanUrl: payload.floorplanUrl,
+              });
+            }
+          }
+
+          if (facadeUrls.length > 0) {
+            if (!importedFloorPlanId) {
+              errors.push({
+                rowNumber,
+                rowLabel,
+                message:
+                  "Floor plan imported but facade URLs were skipped because the floor plan id could not be resolved.",
+              });
+              continue;
+            }
+
+            let existingFacadeUrls = facadeImageUrlsByFloorPlan.get(
+              importedFloorPlanId
+            );
+            if (!existingFacadeUrls) {
+              const existingFacades = await adminApi.getFacades<{
+                imageUrl?: string | null;
+              }>(importedFloorPlanId);
+              existingFacadeUrls = new Set(
+                existingFacades
+                  .map((facade) => String(facade.imageUrl ?? "").trim())
+                  .filter(Boolean)
+              );
+              facadeImageUrlsByFloorPlan.set(
+                importedFloorPlanId,
+                existingFacadeUrls
+              );
+            }
+
+            for (const facadeUrl of facadeUrls) {
+              if (existingFacadeUrls.has(facadeUrl)) {
+                continue;
+              }
+              await adminApi.createFacade(importedFloorPlanId, {
+                label: resolveFacadeLabelFromUrl(facadeUrl),
+                imageUrl: facadeUrl,
+                floorPlanId: importedFloorPlanId,
+              });
+              existingFacadeUrls.add(facadeUrl);
+              facadesCreated += 1;
+            }
           }
         } catch (error) {
           errors.push({
@@ -672,7 +893,7 @@ export const FloorPlanCrud = ({
       }
 
       const failed = errors.length;
-      setCsvImportResult({ created, updated, failed, errors });
+      setCsvImportResult({ created, updated, facadesCreated, failed, errors });
       if (created > 0 || updated > 0) {
         await handleLoad();
       }
@@ -890,6 +1111,20 @@ export const FloorPlanCrud = ({
                 <code className="mx-1 rounded bg-slate-100 px-1 py-0.5">id</code>
                 to update an existing plan.
               </p>
+              <p className="text-xs text-slate-500 mt-2 mb-0">
+                Rows without <code className="mx-1 rounded bg-slate-100 px-1 py-0.5">id</code>{" "}
+                are treated as create-only and will be rejected if name or
+                floorplanUrl matches an existing plan.
+              </p>
+              <p className="text-xs text-slate-500 mt-1 mb-0">
+                Optional <code className="mx-1 rounded bg-slate-100 px-1 py-0.5">facades</code>{" "}
+                column accepts comma-separated image URLs. Wrap the value in
+                quotes when multiple URLs are provided in one cell.
+              </p>
+              <p className="text-xs text-slate-500 mt-1 mb-0">
+                <code className="mx-1 rounded bg-slate-100 px-1 py-0.5">architecturalStyle</code>{" "}
+                must be one of: {ARCHITECTURAL_STYLE_OPTIONS.join(", ")}.
+              </p>
             </div>
             <Button
               type="button"
@@ -911,7 +1146,7 @@ export const FloorPlanCrud = ({
                   setCsvImportError(null);
                   setCsvImportResult(null);
                 }}
-                className="text-sm"
+                className="w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm file:mr-3 file:rounded-sm file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-slate-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
             </div>
 
@@ -1010,7 +1245,9 @@ export const FloorPlanCrud = ({
               {csvImportResult && (
                 <span className="text-sm text-emerald-600">
                   Imported: {csvImportResult.created} created,{" "}
-                  {csvImportResult.updated} updated, {csvImportResult.failed} failed.
+                  {csvImportResult.updated} updated,{" "}
+                  {csvImportResult.facadesCreated} facades added,{" "}
+                  {csvImportResult.failed} failed.
                 </span>
               )}
             </div>
@@ -1144,7 +1381,7 @@ export const FloorPlanCrud = ({
                 />
               </div>
               <div className="grid gap-2">
-                <span className="text-sm font-medium">Design Width</span>
+                <span className="text-sm font-medium">Design Width (m)</span>
                 <Input
                   type="number"
                   step="0.1"

@@ -325,7 +325,8 @@ const AdminBrandSettingsPage = () => {
                 placeholder="https://example.com/logo.png"
                 required
                 folder="logos"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                helperText="Accepted formats: PNG, SVG, JPG, or WEBP. Minimum 200px wide. Square or horizontal format preferred."
               />
             </div>
             <div className="grid gap-2">

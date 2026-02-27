@@ -8,22 +8,21 @@ Implemented (FE) - estate-facing branding and lot-form language/visibility clean
 
 ## Implementation Notes (2026-02-27)
 - Updated `src/pages/dashboard/DashboardEstatePage.tsx`:
-  - Theme color now uses a color picker + hex input + preview swatch.
-  - Theme color is validated as hex before save.
   - Logo field guidance now specifies supported file types and recommended usage.
+  - Removed unused `Theme color` field from estate-facing edit UI.
 - Updated `src/components/admin/estates/EstateLotsCrud.tsx`:
   - Technical lot fields are hidden by default and gated behind advanced mode.
   - Estate-facing labels and button copy were simplified for non-technical users.
 
 ## Source Feedback
-- Theme color input is unclear for estate users (raw hex, no picker/preview).
+- Theme color input does not drive any runtime branding behavior and should be removed to avoid confusion.
 - Logo upload needs guidance on file type/dimensions.
 - Estate-facing forms expose technical/internal fields that should be hidden or simplified.
 - S1-S4 naming is unclear for non-technical users.
 
 ## Current Code Anchors
 - FE estate profile: `src/pages/dashboard/DashboardEstatePage.tsx`
-  - `Theme color` free text input.
+  - `Theme color` controls removed.
   - `Logo URL` upload field without explicit guidance text.
 - FE lot form: `src/components/admin/estates/EstateLotsCrud.tsx`
   - S1-S4 fields, raw GeoJSON fields, frontage coordinate GeoJSON input.
@@ -34,7 +33,7 @@ Implemented (FE) - estate-facing branding and lot-form language/visibility clean
 - Add onboarding-level helper text for brand fields and uploads.
 
 ## Decisions Made To Unblock
-1. Keep theme color editable by estate users, but change to color-picker + hex input + live preview.
+1. Remove `Theme color` from estate forms because it is not consumed anywhere in runtime branding.
 2. Prioritize file-type enforcement for logo uploads if low effort; otherwise ship guidance + soft validation first.
 3. Hide technical geometry fields for standard estate users (raw GeoJSON, frontage GeoJSON, S1-S4 raw inputs).
 4. Use the Task 04 fallback field set as the approved estate-facing manual lot scope.
@@ -47,6 +46,6 @@ Implemented (FE) - estate-facing branding and lot-form language/visibility clean
 
 ## Proposed Acceptance Criteria
 - Estate-facing forms expose only approved business-facing fields.
-- Theme color and logo fields include clear guidance (and validation as implemented).
+- Logo fields include clear guidance (and validation as implemented).
 - S1-S4 and raw GeoJSON fields are either renamed with plain language or removed from standard estate UX.
 - Logo upload enforces allowed file types when implemented without high effort.

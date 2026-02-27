@@ -34,6 +34,22 @@ export type LotZoningRuleKey = {
 };
 
 export type CreateLotInput = Record<string, unknown> & { estateId: string };
+export type ActLandUseZoneLookupResponse = {
+  lotCheckRules?: {
+    zoneCode?: string | null;
+    [key: string]: unknown;
+  } | null;
+  zone?: {
+    zoneCode?: string | null;
+    [key: string]: unknown;
+  } | null;
+  [key: string]: unknown;
+};
+
+export type DeleteEstateLotsResponse = {
+  estateId: string;
+  deleted: number;
+};
 
 const adminApiClient = axios.create({
   baseURL: getAdminApiBaseUrl(),
@@ -349,6 +365,20 @@ export const adminApi = {
         `${idPath("estates", estateId)}/lots/import-dxf`,
         payload
       )
+    );
+  },
+  async deleteEstateLots<T = DeleteEstateLotsResponse>(
+    estateId: AdminId
+  ): Promise<T> {
+    return data(adminApiClient.delete<T>(`${idPath("estates", estateId)}/lots`));
+  },
+  async lookupActLandUseZoneByAddress<T = ActLandUseZoneLookupResponse>(
+    address: string
+  ): Promise<T> {
+    return data(
+      adminApiClient.get<T>("/geo/act-zone", {
+        params: { address },
+      })
     );
   },
 

@@ -34,7 +34,7 @@ Primary source: `feedback/LotCheck - Backend portals feedback.md`
 
 ## Latest Implementation Notes (2026-02-27)
 1. Estate lot management now runs DXF-first with simplified manual entry and advanced-field gating.
-2. Estate branding now includes guided logo upload requirements and validated theme color picker + hex preview.
+2. Estate branding now includes guided logo upload requirements; unused estate theme color controls were removed.
 3. Rule editors now show precedence guidance, architectural review semantics, and explicit Format JSON success/error feedback.
 4. Builder floor plans now support CSV bulk import in FE using existing create/update APIs with row-level partial success reporting.
 5. Builder dashboard now includes approved-estate visibility with status/effective-date context; analytics remain deferred.

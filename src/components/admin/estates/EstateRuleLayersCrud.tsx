@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { RecomputeSummaryCard } from "@/components/admin/rules/RecomputeSummaryCard";
 import { RuleLayerEditor } from "@/components/admin/rules/RuleLayerEditor";
 import { adminApi } from "@/lib/api/adminApi";
@@ -17,8 +18,6 @@ import {
   type RuleSetStatus,
 } from "@/lib/api/adminModels";
 import {
-  formatDateForCell,
-  formatDateTimeForTooltip,
 } from "@/lib/utils/dateTime";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -39,6 +38,17 @@ type BuilderOption = {
 const toDateTimeLocalValue = (date: Date) => {
   const offsetMs = date.getTimezoneOffset() * 60 * 1000;
   return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+};
+
+const toDateTimeLocalFromIso = (value?: string | null) => {
+  if (!value) {
+    return "";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+  return toDateTimeLocalValue(parsed);
 };
 
 const parseRulesJson = (value: string): RuleLayer => {
@@ -80,15 +90,106 @@ export const EstateRuleLayersCrud = ({
 
   const [builderApprovals, setBuilderApprovals] = useState<BuilderEstateApprovalRecord[]>([]);
   const [builders, setBuilders] = useState<BuilderOption[]>([]);
+  const [approvalFormMode, setApprovalFormMode] = useState<"add" | "manage" | null>(null);
   const [approvalBuilderId, setApprovalBuilderId] = useState("");
   const [approvalStatus, setApprovalStatus] = useState<BuilderEstateApprovalStatus>("APPROVED");
   const [approvalEffectiveFrom, setApprovalEffectiveFrom] = useState(toDateTimeLocalValue(new Date()));
   const [approvalNotes, setApprovalNotes] = useState("");
   const [approvalSaving, setApprovalSaving] = useState(false);
+  const [approvalAction, setApprovalAction] = useState<{
+    builderId: string;
+    type: "toggle" | "delete";
+  } | null>(null);
   const [approvalErrorMessage, setApprovalErrorMessage] = useState<string | null>(null);
   const [approvalSuccessMessage, setApprovalSuccessMessage] = useState<string | null>(null);
 
+  const isAddingBuilderApproval = approvalFormMode === "add";
+  const isManagingBuilderApproval = approvalFormMode === "manage";
+
+  const resetBuilderApprovalForm = useCallback(() => {
+    setApprovalBuilderId("");
+    setApprovalStatus("APPROVED");
+    setApprovalEffectiveFrom(toDateTimeLocalValue(new Date()));
+    setApprovalNotes("");
+  }, []);
+
+  const setBuilderApprovalFormFromRecord = useCallback(
+    (approval: BuilderEstateApprovalRecord) => {
+      setApprovalBuilderId(String(approval.builderId ?? ""));
+      setApprovalStatus(approval.status ?? "APPROVED");
+      setApprovalEffectiveFrom(toDateTimeLocalFromIso(approval.effectiveFrom));
+      setApprovalNotes(approval.notes ?? "");
+    },
+    []
+  );
+
+  const openAddBuilderApproval = useCallback(() => {
+    setApprovalFormMode((previous) => {
+      if (previous === "add") {
+        return null;
+      }
+      return "add";
+    });
+    setApprovalErrorMessage(null);
+    setApprovalSuccessMessage(null);
+    resetBuilderApprovalForm();
+  }, [resetBuilderApprovalForm]);
+
+  const openManageBuilderApproval = useCallback(
+    (builderId?: string | null) => {
+      if (builderApprovals.length === 0) {
+        return;
+      }
+      const trimmedRequestedBuilderId = String(builderId ?? "").trim();
+      const trimmedCurrentBuilderId = approvalBuilderId.trim();
+      if (
+        approvalFormMode === "manage" &&
+        trimmedRequestedBuilderId &&
+        trimmedRequestedBuilderId === trimmedCurrentBuilderId
+      ) {
+        setApprovalFormMode(null);
+        return;
+      }
+      const targetBuilderId = String(
+        trimmedRequestedBuilderId || approvalBuilderId || ""
+      ).trim();
+      const targetApproval =
+        builderApprovals.find(
+          (item) => String(item.builderId ?? "").trim() === targetBuilderId
+        ) ?? builderApprovals[0];
+      if (!targetApproval) {
+        return;
+      }
+      setApprovalFormMode("manage");
+      setApprovalErrorMessage(null);
+      setApprovalSuccessMessage(null);
+      setBuilderApprovalFormFromRecord(targetApproval);
+    },
+    [
+      approvalBuilderId,
+      approvalFormMode,
+      builderApprovals,
+      setBuilderApprovalFormFromRecord,
+    ]
+  );
+
   const primaryRuleSet = estateRuleSets[0] ?? null;
+  const builderOptionsForAdd = builders
+    .map((builder) => ({
+      id: String(builder.id ?? "").trim(),
+      name: String(builder.name ?? "").trim(),
+    }))
+    .filter((builder) => builder.id.length > 0);
+  const builderOptionsForManage = builderApprovals
+    .map((approval) => ({
+      id: String(approval.builderId ?? "").trim(),
+      name: String(approval.builder?.name ?? "").trim(),
+    }))
+    .filter((builder) => builder.id.length > 0);
+  const selectedManagedBuilder =
+    builderOptionsForManage.find(
+      (builder) => builder.id === approvalBuilderId.trim()
+    ) ?? null;
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -135,6 +236,30 @@ export const EstateRuleLayersCrud = ({
     }
   }, [isRuleSetMode, primaryRuleSet, showRuleSetManager]);
 
+  useEffect(() => {
+    if (isRuleSetMode || approvalFormMode !== "manage") {
+      return;
+    }
+    if (builderApprovals.length === 0) {
+      setApprovalFormMode(null);
+      resetBuilderApprovalForm();
+      return;
+    }
+    const selectedBuilderApproval = builderApprovals.find(
+      (item) => String(item.builderId ?? "").trim() === approvalBuilderId.trim()
+    );
+    if (!selectedBuilderApproval) {
+      setBuilderApprovalFormFromRecord(builderApprovals[0]);
+    }
+  }, [
+    approvalBuilderId,
+    approvalFormMode,
+    builderApprovals,
+    isRuleSetMode,
+    resetBuilderApprovalForm,
+    setBuilderApprovalFormFromRecord,
+  ]);
+
   const handleRecompute = async () => {
     setRecomputeLoading(true);
     try {
@@ -178,23 +303,141 @@ export const EstateRuleLayersCrud = ({
     event.preventDefault();
     setApprovalErrorMessage(null);
     setApprovalSuccessMessage(null);
+    const trimmedBuilderId = approvalBuilderId.trim();
+    if (!trimmedBuilderId) {
+      setApprovalErrorMessage("Builder is required.");
+      return;
+    }
+    const effectiveFromIso = approvalEffectiveFrom
+      ? new Date(approvalEffectiveFrom).toISOString()
+      : null;
+    const effectiveToIso =
+      approvalStatus === "REVOKED" ? new Date().toISOString() : null;
     setApprovalSaving(true);
     try {
-      const response = await adminApi.createEstateBuilderApproval<CreateBuilderEstateApprovalResponse>(estateId, {
-        builderId: approvalBuilderId.trim(),
-        status: approvalStatus,
-        effectiveFrom: approvalEffectiveFrom ? new Date(approvalEffectiveFrom).toISOString() : null,
-        notes: approvalNotes.trim() || null,
-      });
-      setApprovalSuccessMessage("Builder approved for this estate.");
+      const response = isManagingBuilderApproval
+        ? await adminApi.updateEstateBuilderApproval<CreateBuilderEstateApprovalResponse>(
+            estateId,
+            trimmedBuilderId,
+            {
+              status: approvalStatus,
+              effectiveFrom: effectiveFromIso,
+              effectiveTo: effectiveToIso,
+              notes: approvalNotes.trim() || null,
+            }
+          )
+        : await adminApi.createEstateBuilderApproval<CreateBuilderEstateApprovalResponse>(
+            estateId,
+            {
+              builderId: trimmedBuilderId,
+              status: approvalStatus,
+              effectiveFrom: effectiveFromIso,
+              effectiveTo: effectiveToIso,
+              notes: approvalNotes.trim() || null,
+            }
+          );
+      setApprovalSuccessMessage(
+        isManagingBuilderApproval
+          ? "Builder approval updated."
+          : "Builder added to this estate."
+      );
       setLastRecompute(response.recompute ?? null);
-      setApprovalBuilderId("");
-      setApprovalNotes("");
+      if (!isManagingBuilderApproval) {
+        resetBuilderApprovalForm();
+      }
       await loadData();
     } catch (error) {
-      setApprovalErrorMessage(getAdminApiErrorMessage(error, "Failed to approve builder."));
+      setApprovalErrorMessage(
+        getAdminApiErrorMessage(error, "Failed to save builder approval.")
+      );
     } finally {
       setApprovalSaving(false);
+    }
+  };
+
+  const handleToggleBuilderApproval = async (
+    approval: BuilderEstateApprovalRecord
+  ) => {
+    const trimmedBuilderId = String(approval.builderId ?? "").trim();
+    if (!trimmedBuilderId) {
+      return;
+    }
+    const nextStatus: BuilderEstateApprovalStatus =
+      approval.status === "REVOKED" ? "APPROVED" : "REVOKED";
+    const confirmed = window.confirm(
+      nextStatus === "REVOKED"
+        ? "Revoke this builder's approval for the estate?"
+        : "Mark this builder as approved for the estate?"
+    );
+    if (!confirmed) {
+      return;
+    }
+    setApprovalErrorMessage(null);
+    setApprovalSuccessMessage(null);
+    setApprovalAction({ builderId: trimmedBuilderId, type: "toggle" });
+    try {
+      const payload: {
+        status: BuilderEstateApprovalStatus;
+        effectiveFrom?: string | null;
+        effectiveTo?: string | null;
+      } = {
+        status: nextStatus,
+      };
+      if (nextStatus === "REVOKED") {
+        payload.effectiveTo = new Date().toISOString();
+      } else {
+        payload.effectiveFrom = new Date().toISOString();
+        payload.effectiveTo = null;
+      }
+      const response =
+        await adminApi.updateEstateBuilderApproval<CreateBuilderEstateApprovalResponse>(
+          estateId,
+          trimmedBuilderId,
+          payload
+        );
+      setApprovalSuccessMessage(
+        nextStatus === "REVOKED"
+          ? "Builder approval revoked."
+          : "Builder approval marked as approved."
+      );
+      setLastRecompute(response.recompute ?? null);
+      await loadData();
+    } catch (error) {
+      setApprovalErrorMessage(
+        getAdminApiErrorMessage(error, "Failed to update builder approval.")
+      );
+    } finally {
+      setApprovalAction(null);
+    }
+  };
+
+  const handleDeleteBuilderApproval = async (builderId: string) => {
+    const trimmedBuilderId = builderId.trim();
+    if (!trimmedBuilderId) {
+      return;
+    }
+    const confirmed = window.confirm(
+      "Delete this builder approval from the estate?"
+    );
+    if (!confirmed) {
+      return;
+    }
+    setApprovalErrorMessage(null);
+    setApprovalSuccessMessage(null);
+    setApprovalAction({ builderId: trimmedBuilderId, type: "delete" });
+    try {
+      const response = await adminApi.deleteEstateBuilderApproval<{
+        recompute?: RecomputeEstateSummary | null;
+      }>(estateId, trimmedBuilderId);
+      setApprovalSuccessMessage("Builder approval deleted.");
+      setLastRecompute(response?.recompute ?? null);
+      await loadData();
+    } catch (error) {
+      setApprovalErrorMessage(
+        getAdminApiErrorMessage(error, "Failed to delete builder approval.")
+      );
+    } finally {
+      setApprovalAction(null);
     }
   };
 
@@ -299,97 +542,215 @@ export const EstateRuleLayersCrud = ({
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div>
           <h2 className="text-lg font-semibold m-0">Builder Approvals</h2>
-          <p className="text-sm text-muted-foreground mt-1">Approve or revoke builders for this estate.</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage approved builders for this estate and keep internal notes for
+            estate staff.
+          </p>
         </div>
-        <Button onClick={loadData} disabled={loading} loading={loading} variant="outline" label="Refresh" />
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={loadData}
+            disabled={loading}
+            loading={loading}
+            variant="outline"
+            label="Refresh"
+          />
+          <Button
+            onClick={openAddBuilderApproval}
+            variant={isAddingBuilderApproval ? "outline" : "primary"}
+            label={isAddingBuilderApproval ? "Close add builder" : "Add builder"}
+          />
+        </div>
       </div>
 
       {errorMessage && (
         <div className="mb-4 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">{errorMessage}</div>
       )}
 
-      <form onSubmit={handleSaveBuilderApproval} className="grid gap-4 mb-4">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="grid gap-2 xl:col-span-2">
-            <span className="text-sm font-medium">Builder *</span>
-            <select
-              value={approvalBuilderId}
-              onChange={(event) => setApprovalBuilderId(event.target.value)}
-              className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              required
-            >
-              <option value="">Select builder</option>
-              {builders.map((builder) => (
-                <option key={builder.id} value={builder.id}>{builder.name?.trim() ? `${builder.name} (${builder.id})` : builder.id}</option>
-              ))}
-            </select>
+      {approvalFormMode && (
+        <form onSubmit={handleSaveBuilderApproval} className="grid gap-4 mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div>
+            <h3 className="text-base font-semibold m-0">
+              {isManagingBuilderApproval ? "Manage builder approval" : "Add builder approval"}
+            </h3>
+            <p className="text-xs text-slate-600 mt-1 mb-0">
+              Internal notes are estate-only and are never shown to builders.
+            </p>
           </div>
-          <div className="grid gap-2">
-            <span className="text-sm font-medium">Status *</span>
-            <select
-              value={approvalStatus}
-              onChange={(event) => setApprovalStatus(event.target.value as BuilderEstateApprovalStatus)}
-              className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            >
-              {BUILDER_ESTATE_APPROVAL_STATUSES.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-2 xl:col-span-2">
+              <span className="text-sm font-medium">
+                {isManagingBuilderApproval ? "Builder" : "Builder *"}
+              </span>
+              {isManagingBuilderApproval ? (
+                <>
+                  <div className="h-10 rounded-md border border-input bg-white px-3 text-sm shadow-sm flex items-center">
+                    {selectedManagedBuilder
+                      ? selectedManagedBuilder.name
+                        ? `${selectedManagedBuilder.name} (${selectedManagedBuilder.id})`
+                        : selectedManagedBuilder.id
+                      : approvalBuilderId || "--"}
+                  </div>
+                </>
+              ) : (
+                <select
+                  value={approvalBuilderId}
+                  onChange={(event) => setApprovalBuilderId(event.target.value)}
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  required
+                >
+                  <option value="">Select builder</option>
+                  {builderOptionsForAdd.map((builderOption) => (
+                    <option key={builderOption.id} value={builderOption.id}>
+                      {builderOption.name
+                        ? `${builderOption.name} (${builderOption.id})`
+                        : builderOption.id}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <span className="text-sm font-medium">Status *</span>
+              <select
+                value={approvalStatus}
+                onChange={(event) =>
+                  setApprovalStatus(
+                    event.target.value as BuilderEstateApprovalStatus
+                  )
+                }
+                className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                {BUILDER_ESTATE_APPROVAL_STATUSES.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid gap-2">
+              <span className="text-sm font-medium">Effective From</span>
+              <Input
+                value={approvalEffectiveFrom}
+                onChange={(event) => setApprovalEffectiveFrom(event.target.value)}
+                type="datetime-local"
+                className="w-full"
+              />
+            </div>
+            <div className="grid gap-2 md:col-span-2 xl:col-span-4">
+              <span className="text-sm font-medium">Internal Notes</span>
+              <Input
+                value={approvalNotes}
+                onChange={(event) => setApprovalNotes(event.target.value)}
+                className="w-full"
+                placeholder="Notes about this builder relationship for estate team members."
+              />
+            </div>
           </div>
-          <div className="grid gap-2">
-            <span className="text-sm font-medium">Effective From</span>
-            <Input value={approvalEffectiveFrom} onChange={(event) => setApprovalEffectiveFrom(event.target.value)} type="datetime-local" className="w-full" />
-          </div>
-          <div className="grid gap-2 md:col-span-2 xl:col-span-4">
-            <span className="text-sm font-medium">Notes</span>
-            <Input
-              value={approvalNotes}
-              onChange={(event) => setApprovalNotes(event.target.value)}
-              className="w-full"
-              placeholder="Internal notes about this builder relationship (not visible to builders)."
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="submit"
+              disabled={approvalSaving}
+              loading={approvalSaving}
+              label={isManagingBuilderApproval ? "Save builder" : "Add builder"}
             />
-            <span className="text-xs text-slate-500">
-              Internal only. Builders cannot see these notes.
-            </span>
+            <Button
+              type="button"
+              variant="outline"
+              label="Cancel"
+              onClick={() => setApprovalFormMode(null)}
+              disabled={approvalSaving}
+            />
+            {approvalErrorMessage && <span className="text-sm text-destructive">{approvalErrorMessage}</span>}
+            {approvalSuccessMessage && <span className="text-sm text-emerald-600">{approvalSuccessMessage}</span>}
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={approvalSaving} loading={approvalSaving} label="Approve builder" />
-          {approvalErrorMessage && <span className="text-sm text-destructive">{approvalErrorMessage}</span>}
-          {approvalSuccessMessage && <span className="text-sm text-emerald-600">{approvalSuccessMessage}</span>}
-        </div>
-      </form>
+        </form>
+      )}
 
       {lastRecompute && <RecomputeSummaryCard summary={lastRecompute} title="Last recompute summary" />}
 
       <div className="overflow-auto border rounded-lg mt-4">
-        <table className="w-full border-collapse min-w-[720px]">
+        <table className="w-full border-collapse min-w-[520px]">
           <thead>
             <tr className="bg-slate-100 text-left">
               <th className="p-3 border-b font-medium text-sm text-slate-700">Builder</th>
-              <th className="p-3 border-b font-medium text-sm text-slate-700">Builder ID</th>
               <th className="p-3 border-b font-medium text-sm text-slate-700">Status</th>
-              <th className="p-3 border-b font-medium text-sm text-slate-700">Effective From</th>
-              <th className="p-3 border-b font-medium text-sm text-slate-700">Notes</th>
+              <th className="p-3 border-b font-medium text-sm text-slate-700">Actions</th>
             </tr>
           </thead>
           <tbody>
             {builderApprovals.map((item) => (
               <tr key={item.id}>
                 <td className="p-3 border-b border-slate-100 text-sm">{item.builder?.name ?? "--"}</td>
-                <td className="p-3 border-b border-slate-100 text-sm font-mono">{item.builderId ?? "--"}</td>
                 <td className="p-3 border-b border-slate-100 text-sm">{item.status ?? "--"}</td>
                 <td className="p-3 border-b border-slate-100 text-sm">
-                  <span title={formatDateTimeForTooltip(item.effectiveFrom)}>
-                    {formatDateForCell(item.effectiveFrom)}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-7 px-2 text-xs"
+                      label={
+                        isManagingBuilderApproval &&
+                        approvalBuilderId.trim() ===
+                          String(item.builderId ?? "").trim()
+                          ? "Close"
+                          : "Manage"
+                      }
+                      onClick={() =>
+                        openManageBuilderApproval(String(item.builderId ?? ""))
+                      }
+                      disabled={
+                        approvalSaving ||
+                        (approvalAction?.type === "toggle" &&
+                          approvalAction.builderId === String(item.builderId ?? "")) ||
+                        (approvalAction?.type === "delete" &&
+                          approvalAction.builderId === String(item.builderId ?? ""))
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant={item.status === "REVOKED" ? "outline" : "ghost"}
+                      className="h-7 px-2 text-xs"
+                      label={item.status === "REVOKED" ? "Mark approved" : "Mark revoked"}
+                      onClick={() => handleToggleBuilderApproval(item)}
+                      disabled={
+                        approvalSaving ||
+                        (approvalAction?.type === "toggle" &&
+                          approvalAction.builderId === String(item.builderId ?? "")) ||
+                        (approvalAction?.type === "delete" &&
+                          approvalAction.builderId === String(item.builderId ?? ""))
+                      }
+                      loading={
+                        approvalAction?.type === "toggle" &&
+                        approvalAction.builderId === String(item.builderId ?? "")
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs text-destructive hover:bg-red-50 hover:text-destructive"
+                      label="Delete"
+                      leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                      onClick={() =>
+                        handleDeleteBuilderApproval(String(item.builderId ?? ""))
+                      }
+                      disabled={
+                        approvalSaving ||
+                        (approvalAction?.type === "toggle" &&
+                          approvalAction.builderId === String(item.builderId ?? "")) ||
+                        (approvalAction?.type === "delete" &&
+                          approvalAction.builderId === String(item.builderId ?? ""))
+                      }
+                      loading={
+                        approvalAction?.type === "delete" &&
+                        approvalAction.builderId === String(item.builderId ?? "")
+                      }
+                    />
+                  </div>
                 </td>
-                <td className="p-3 border-b border-slate-100 text-sm">{item.notes ?? "--"}</td>
               </tr>
             ))}
             {builderApprovals.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-4 text-center text-sm text-muted-foreground">No approved builders yet.</td>
+                <td colSpan={3} className="p-4 text-center text-sm text-muted-foreground">No approved builders yet.</td>
               </tr>
             )}
           </tbody>

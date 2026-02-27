@@ -78,6 +78,10 @@ export const GetYourQuoteSidebar = ({
   const builderDescription =
     inferredBuilder.builderLabel ||
     "Quote requests are sent to the builder linked to this house design.";
+  const lotDisplayId =
+    lotDetails.displayId !== undefined && lotDetails.displayId !== null
+      ? String(lotDetails.displayId)
+      : String(lotDetails.id);
 
   // Form state
   const [formData, setFormData] = useState<QuoteFormData>({
@@ -259,7 +263,7 @@ export const GetYourQuoteSidebar = ({
                     {selectedHouseDesign.title}
                   </div>
                   <div className="text-brand-muted text-sm">
-                    Lot {lotDetails.id}, {lotDetails.suburb} ({lotDetails.size}
+                    Lot {lotDisplayId}, {lotDetails.suburb} ({lotDetails.size}
                     m²)
                   </div>
                   <div className="text-brand-muted text-sm">
@@ -360,7 +364,7 @@ export const GetYourQuoteSidebar = ({
               </div>
               <p className="text-brand-muted text-sm">
                 {formatContent(quote.secureLotDescription, {
-                  lotId: lotDetails.id,
+                  lotId: lotDisplayId,
                 })}
               </p>
               <div className="text-3xl font-bold text-brand-primary">
@@ -548,7 +552,7 @@ export const GetYourQuoteSidebar = ({
                       />
                       <div className="flex-1">
                         <div className="text-brand text-sm">
-                          Lot {lotDetails.id}, {lotDetails.suburb}
+                          Lot {lotDisplayId}, {lotDetails.suburb}
                         </div>
                         <div className="text-brand text-sm">
                           Floor Plan: {selectedHouseDesign.title} (

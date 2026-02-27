@@ -219,7 +219,8 @@ const SavedPropertyCard = ({
             {property.houseDesign.title}
           </div>
           <div className="mt-1 text-sm text-brand-muted">
-            Lot ID: {property.lotId}, {property.suburb}, {property.address}
+            Lot ID: {property.lotDisplayId ?? property.lotId}, {property.suburb},{" "}
+            {property.address}
           </div>
         </div>
         <button
@@ -518,6 +519,7 @@ export const SavedPropertiesSidebar = ({
             selectedHouseDesign={toHouseDesignItem(quoteProperty.houseDesign)}
             lotDetails={{
               id: quoteProperty.lotId,
+              displayId: quoteProperty.lotDisplayId ?? quoteProperty.lotId,
               suburb: quoteProperty.suburb || "",
               address: quoteProperty.address || "",
               size: toLotSizeNumber(quoteProperty.size),
@@ -598,6 +600,7 @@ export const SavedPropertiesSidebar = ({
           selectedHouseDesign={toHouseDesignItem(quoteProperty.houseDesign)}
           lotDetails={{
             id: quoteProperty.lotId,
+            displayId: quoteProperty.lotDisplayId ?? quoteProperty.lotId,
             suburb: quoteProperty.suburb || "",
             address: quoteProperty.address || "",
             size: toLotSizeNumber(quoteProperty.size),

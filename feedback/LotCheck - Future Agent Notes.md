@@ -9,7 +9,7 @@
 ## Current Delivery State (2026-02-27)
 1. FE invitation redirects are deterministic and path-based (`/admin` and `/dashboard`), with return-to-requested-path behavior for protected routes.
 2. Estate lots workflow is DXF-first; manual lot entry is simplified and technical/geometry fields are hidden behind advanced mode.
-3. Estate branding UI now includes logo file guidance plus validated theme color picker + hex preview.
+3. Estate branding UI now includes logo file guidance; unused estate theme color controls were removed.
 4. Rule editors now include precedence guidance, architectural review semantics, and clear `Format JSON` success/error feedback.
 5. Builder floor plans now support CSV bulk import in FE using existing single-record create/update endpoints (row-level partial success).
 6. Builder dashboard now displays approved-estate context (estate/status/effective date/floor plan count context).

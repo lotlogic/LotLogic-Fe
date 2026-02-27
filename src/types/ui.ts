@@ -45,6 +45,7 @@ export interface SavedProperty {
   id: string;
   estateId?: string | number;
   lotId: string | number;
+  lotDisplayId?: string | number;
   suburb?: string;
   address?: string;
   size?: string | number;

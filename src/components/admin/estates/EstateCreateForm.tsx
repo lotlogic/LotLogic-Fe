@@ -30,7 +30,6 @@ export const EstateCreateForm = ({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
-  const [themeColor, setThemeColor] = useState("");
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -49,7 +48,6 @@ export const EstateCreateForm = ({
     const trimmedEmail = email.trim();
     const trimmedPhone = phone.trim();
     const trimmedLogoUrl = logoUrl.trim();
-    const trimmedThemeColor = themeColor.trim();
 
     resetMessages();
 
@@ -74,9 +72,6 @@ export const EstateCreateForm = ({
     if (trimmedLogoUrl) {
       payload.logoUrl = trimmedLogoUrl;
     }
-    if (trimmedThemeColor) {
-      payload.themeColor = trimmedThemeColor;
-    }
 
     setSaving(true);
     try {
@@ -87,7 +82,6 @@ export const EstateCreateForm = ({
       setEmail("");
       setPhone("");
       setLogoUrl("");
-      setThemeColor("");
       setSuccessMessage("Estate created.");
       if (created && typeof created === "object" && "id" in created) {
         const createdId = created?.id;
@@ -172,16 +166,8 @@ export const EstateCreateForm = ({
           onChange={setLogoUrl}
           placeholder="https://cdn.example.com/logo.png"
           folder="logos"
-          accept="image/*"
-        />
-      </div>
-      <div className="grid gap-2">
-        <span className="text-sm font-medium">Theme color</span>
-        <Input
-          className="w-full"
-          value={themeColor}
-          onChange={(event) => setThemeColor(event.target.value)}
-          placeholder="#0F766E"
+          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+          helperText="Accepted formats: PNG, SVG, JPG, or WEBP. Minimum 200px wide. Square or horizontal format preferred."
         />
       </div>
       <div className="flex flex-wrap gap-2 items-center mt-2">

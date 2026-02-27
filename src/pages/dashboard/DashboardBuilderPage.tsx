@@ -866,9 +866,11 @@ const DashboardBuilderPage = () => {
                     <th className="p-3 border-b font-medium text-sm text-slate-700">
                       Email
                     </th>
-                    <th className="p-3 border-b font-medium text-sm text-slate-700">
-                      Role
-                    </th>
+                    {isAdmin && (
+                      <th className="p-3 border-b font-medium text-sm text-slate-700">
+                        Role
+                      </th>
+                    )}
                     <th className="p-3 border-b font-medium text-sm text-slate-700">
                       Status
                     </th>
@@ -892,9 +894,11 @@ const DashboardBuilderPage = () => {
                         <td className="p-3 border-b border-slate-100 text-sm">
                           {contact}
                         </td>
-                        <td className="p-3 border-b border-slate-100 text-sm">
-                          {user?.role ?? "--"}
-                        </td>
+                        {isAdmin && (
+                          <td className="p-3 border-b border-slate-100 text-sm">
+                            {user?.role ?? "--"}
+                          </td>
+                        )}
                         <td className="p-3 border-b border-slate-100 text-sm">
                           {user?.status ?? "--"}
                         </td>

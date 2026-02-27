@@ -7,6 +7,7 @@ import {
   type DxfImportResult,
   type EstateLotRecord,
 } from "@/components/admin/estates/EstateLotsCrud";
+import { EstateRuleLayersCrud } from "@/components/admin/estates/EstateRuleLayersCrud";
 import type { EstateRecord } from "@/components/admin/estates/types";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/Button";
@@ -32,7 +33,6 @@ type EstateForm = {
   email: string;
   phone: string;
   logoUrl: string;
-  themeColor: string;
 };
 
 type AdminEstateSummary = {
@@ -77,25 +77,11 @@ const emptyForm: EstateForm = {
   email: "",
   phone: "",
   logoUrl: "",
-  themeColor: "",
 };
 
 const normalizeOptional = (value: string) => {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
-};
-
-const HEX_COLOR_REGEX = /^#?[0-9a-fA-F]{6}$/;
-
-const normalizeHexColor = (value: string): string | null => {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-  if (!HEX_COLOR_REGEX.test(trimmed)) {
-    return null;
-  }
-  return `#${trimmed.replace(/^#/, "").toUpperCase()}`;
 };
 
 const normalizeJurisdiction = (value: unknown): Jurisdiction =>
@@ -213,9 +199,6 @@ const DashboardEstatePage = () => {
       email: data.email ?? "",
       phone: data.phone ?? "",
       logoUrl: data.logoUrl ?? "",
-      themeColor:
-        normalizeHexColor(String(data.themeColor ?? "")) ??
-        String(data.themeColor ?? ""),
     };
     setForm(nextForm);
     setInitialForm(nextForm);
@@ -366,19 +349,6 @@ const DashboardEstatePage = () => {
       payload.logoUrl = currentLogoUrl;
     }
 
-    const currentThemeColor = normalizeHexColor(form.themeColor);
-    const initialThemeColor = normalizeHexColor(initialForm.themeColor);
-    if (form.themeColor.trim() && !currentThemeColor) {
-      setSaveErrorMessage(
-        "Theme color must be a valid hex code (for example #0F766E)."
-      );
-      setSaving(false);
-      return;
-    }
-    if (currentThemeColor !== initialThemeColor) {
-      payload.themeColor = currentThemeColor;
-    }
-
     if (Object.keys(payload).length === 0) {
       setSaveSuccessMessage("No changes to save.");
       setSaving(false);
@@ -509,10 +479,6 @@ const DashboardEstatePage = () => {
     ];
     return entries;
   }, [estate]);
-
-  const normalizedThemeColor = normalizeHexColor(form.themeColor);
-  const hasThemeColorValue = form.themeColor.trim().length > 0;
-  const themeColorPreview = normalizedThemeColor ?? "#0F766E";
 
   const handleAddMember = async (userId: string) => {
     if (!estateId) {
@@ -783,51 +749,8 @@ const DashboardEstatePage = () => {
                   placeholder="https://cdn.example.com/logo.png"
                   folder="logos"
                   accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                  helperText="Use PNG, JPG, WEBP, or SVG. Recommended: landscape logo with transparent background."
+                  helperText="Accepted formats: PNG, SVG, JPG, or WEBP. Minimum 200px wide. Square or horizontal format preferred."
                 />
-              </div>
-
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Theme color</span>
-                <div className="flex flex-wrap items-center gap-3">
-                  <input
-                    type="color"
-                    value={themeColorPreview}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        themeColor: event.target.value.toUpperCase(),
-                      }))
-                    }
-                    className="h-10 w-14 rounded-md border border-input bg-white px-1 py-1"
-                    aria-label="Theme color picker"
-                  />
-                  <Input
-                    value={form.themeColor}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        themeColor: event.target.value,
-                      }))
-                    }
-                    placeholder="#0F766E"
-                    className="w-full md:max-w-[220px]"
-                  />
-                </div>
-                <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white p-2">
-                  <span
-                    className="inline-block h-4 w-4 rounded-sm border border-slate-300"
-                    style={{ backgroundColor: themeColorPreview }}
-                  />
-                  <span className="text-xs text-slate-600">
-                    Preview swatch {themeColorPreview}
-                  </span>
-                </div>
-                {hasThemeColorValue && !normalizedThemeColor && (
-                  <span className="text-xs text-destructive">
-                    Enter a full hex color, for example #0F766E.
-                  </span>
-                )}
               </div>
 
               {metaEntries.length > 0 && (
@@ -886,256 +809,269 @@ const DashboardEstatePage = () => {
           )}
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm h-fit">
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <h2 className="text-xl font-bold mt-0 mb-0">Team Members</h2>
-            <Button
-              onClick={() => setShowAddPanel((prev) => !prev)}
-              variant="outline"
-              className="h-8 text-xs"
-              label={showAddPanel ? "Close add members" : "Add members"}
-            />
-          </div>
-          {teamErrorMessage && (
-            <p className="text-destructive mb-3 text-sm">
-              {teamErrorMessage}
-            </p>
-          )}
-          {teamMembersLoading && (
-            <p className="text-sm text-muted-foreground">
-              Loading team members...
-            </p>
-          )}
-          {teamMembersErrorMessage && (
-            <p className="text-destructive mb-3 text-sm">
-              {teamMembersErrorMessage}
-            </p>
-          )}
-          {!teamMembersLoading && teamMembers.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No team members assigned.
-            </p>
-          )}
-          {!teamMembersLoading && teamMembers.length > 0 && (
-            <div className="overflow-auto border rounded-lg">
-              <table className="w-full border-collapse min-w-[520px]">
-                <thead>
-                  <tr className="bg-slate-100 text-left">
-                    <th className="p-3 border-b font-medium text-sm text-slate-700">
-                      Name
-                    </th>
-                    <th className="p-3 border-b font-medium text-sm text-slate-700">
-                      Email
-                    </th>
-                    <th className="p-3 border-b font-medium text-sm text-slate-700">
-                      Role
-                    </th>
-                    <th className="p-3 border-b font-medium text-sm text-slate-700">
-                      Status
-                    </th>
-                    <th className="p-3 border-b font-medium text-sm text-slate-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {teamMembers.map((member) => {
-                    const user = member.user;
-                    const name = user ? getUserName(user) : "(unknown)";
-                    const contact = user
-                      ? getUserContact(user)
-                      : member.userId;
-                    return (
-                      <tr key={member.userId}>
-                        <td className="p-3 border-b border-slate-100 text-sm">
-                          {name}
-                        </td>
-                        <td className="p-3 border-b border-slate-100 text-sm">
-                          {contact}
-                        </td>
-                        <td className="p-3 border-b border-slate-100 text-sm">
-                          {user?.role ?? "--"}
-                        </td>
-                        <td className="p-3 border-b border-slate-100 text-sm">
-                          {user?.status ?? "--"}
-                        </td>
-                        <td className="p-3 border-b border-slate-100 text-sm">
-                          <Button
-                            onClick={() => handleRemoveMember(member.userId)}
-                            disabled={teamAction !== null}
-                            loading={
-                              teamAction === "remove" &&
-                              teamActionUserId === member.userId
-                            }
-                            variant="ghost"
-                            className="h-7 px-2 text-xs text-destructive hover:bg-red-50 hover:text-destructive"
-                            label="Remove"
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        <div className="grid gap-6 h-fit">
+          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm h-fit">
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <h2 className="text-xl font-bold mt-0 mb-0">Team Members</h2>
+              <Button
+                onClick={() => setShowAddPanel((prev) => !prev)}
+                variant="outline"
+                className="h-8 text-xs"
+                label={showAddPanel ? "Close add members" : "Add members"}
+              />
             </div>
-          )}
-          {usersErrorMessage && (
-            <p className="text-destructive mt-3 text-sm">
-              {usersErrorMessage}
-            </p>
-          )}
-          {showAddPanel && (
-            <div
-              className={`mt-4 pt-4 border-t border-slate-100 grid gap-6${isAdmin ? " lg:grid-cols-[1.1fr_1fr]" : ""}`}
-            >
-              {isAdmin && (
-                <div className="border rounded-lg p-6 bg-white shadow-sm">
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <h3 className="font-semibold text-lg m-0">
-                      Add Existing User
-                    </h3>
-                    <Button
-                      onClick={loadUsers}
-                      disabled={usersLoading}
-                      loading={usersLoading}
-                      variant="outline"
-                      className="h-7 text-xs"
-                      label={usersLoading ? "Loading..." : "Reload users"}
-                    />
-                  </div>
-                  <Input
-                    value={userFilter}
-                    onChange={(event) => setUserFilter(event.target.value)}
-                    placeholder="Search by name or email"
-                    className="w-full mb-3"
-                  />
-                  {usersErrorMessage && (
-                    <p className="text-destructive text-sm mb-2">
-                      {usersErrorMessage}
-                    </p>
-                  )}
-                  <div className="max-h-[280px] overflow-auto border rounded-lg bg-white">
-                    <table className="w-full border-collapse min-w-[420px]">
-                      <thead>
-                        <tr className="bg-slate-50 text-left">
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Name
-                          </th>
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Email
-                          </th>
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Role
-                          </th>
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {usersLoading && (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="p-3 text-center text-sm text-muted-foreground"
-                            >
-                              Loading users...
+            {teamErrorMessage && (
+              <p className="text-destructive mb-3 text-sm">
+                {teamErrorMessage}
+              </p>
+            )}
+            {teamMembersLoading && (
+              <p className="text-sm text-muted-foreground">
+                Loading team members...
+              </p>
+            )}
+            {teamMembersErrorMessage && (
+              <p className="text-destructive mb-3 text-sm">
+                {teamMembersErrorMessage}
+              </p>
+            )}
+            {!teamMembersLoading && teamMembers.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No team members assigned.
+              </p>
+            )}
+            {!teamMembersLoading && teamMembers.length > 0 && (
+              <div className="overflow-auto border rounded-lg">
+                <table className="w-full border-collapse min-w-[520px]">
+                  <thead>
+                    <tr className="bg-slate-100 text-left">
+                      <th className="p-3 border-b font-medium text-sm text-slate-700">
+                        Name
+                      </th>
+                      <th className="p-3 border-b font-medium text-sm text-slate-700">
+                        Email
+                      </th>
+                      {isAdmin && (
+                        <th className="p-3 border-b font-medium text-sm text-slate-700">
+                          Role
+                        </th>
+                      )}
+                      <th className="p-3 border-b font-medium text-sm text-slate-700">
+                        Status
+                      </th>
+                      <th className="p-3 border-b font-medium text-sm text-slate-700">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teamMembers.map((member) => {
+                      const user = member.user;
+                      const name = user ? getUserName(user) : "(unknown)";
+                      const contact = user
+                        ? getUserContact(user)
+                        : member.userId;
+                      return (
+                        <tr key={member.userId}>
+                          <td className="p-3 border-b border-slate-100 text-sm">
+                            {name}
+                          </td>
+                          <td className="p-3 border-b border-slate-100 text-sm">
+                            {contact}
+                          </td>
+                          {isAdmin && (
+                            <td className="p-3 border-b border-slate-100 text-sm">
+                              {user?.role ?? "--"}
                             </td>
+                          )}
+                          <td className="p-3 border-b border-slate-100 text-sm">
+                            {user?.status ?? "--"}
+                          </td>
+                          <td className="p-3 border-b border-slate-100 text-sm">
+                            <Button
+                              onClick={() => handleRemoveMember(member.userId)}
+                              disabled={teamAction !== null}
+                              loading={
+                                teamAction === "remove" &&
+                                teamActionUserId === member.userId
+                              }
+                              variant="ghost"
+                              className="h-7 px-2 text-xs text-destructive hover:bg-red-50 hover:text-destructive"
+                              label="Remove"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {usersErrorMessage && (
+              <p className="text-destructive mt-3 text-sm">
+                {usersErrorMessage}
+              </p>
+            )}
+            {showAddPanel && (
+              <div
+                className={`mt-4 pt-4 border-t border-slate-100 grid gap-6${isAdmin ? " lg:grid-cols-[1.1fr_1fr]" : ""}`}
+              >
+                {isAdmin && (
+                  <div className="border rounded-lg p-6 bg-white shadow-sm">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <h3 className="font-semibold text-lg m-0">
+                        Add Existing User
+                      </h3>
+                      <Button
+                        onClick={loadUsers}
+                        disabled={usersLoading}
+                        loading={usersLoading}
+                        variant="outline"
+                        className="h-7 text-xs"
+                        label={usersLoading ? "Loading..." : "Reload users"}
+                      />
+                    </div>
+                    <Input
+                      value={userFilter}
+                      onChange={(event) => setUserFilter(event.target.value)}
+                      placeholder="Search by name or email"
+                      className="w-full mb-3"
+                    />
+                    {usersErrorMessage && (
+                      <p className="text-destructive text-sm mb-2">
+                        {usersErrorMessage}
+                      </p>
+                    )}
+                    <div className="max-h-[280px] overflow-auto border rounded-lg bg-white">
+                      <table className="w-full border-collapse min-w-[420px]">
+                        <thead>
+                          <tr className="bg-slate-50 text-left">
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Name
+                            </th>
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Email
+                            </th>
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Role
+                            </th>
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Actions
+                            </th>
                           </tr>
-                        )}
-                        {!usersLoading &&
-                          filteredAvailableUsers.map((user) => (
-                            <tr key={user.id}>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                {getUserName(user)}
-                              </td>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                {getUserContact(user)}
-                              </td>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                {user.role ?? "--"}
-                              </td>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                <Button
-                                  onClick={() => handleAddMember(user.id)}
-                                  disabled={teamAction !== null}
-                                  loading={
-                                    teamAction === "add" &&
-                                    teamActionUserId === user.id
-                                  }
-                                  variant="ghost"
-                                  className="h-7 px-2 text-xs"
-                                  label="Add"
-                                />
+                        </thead>
+                        <tbody>
+                          {usersLoading && (
+                            <tr>
+                              <td
+                                colSpan={4}
+                                className="p-3 text-center text-sm text-muted-foreground"
+                              >
+                                Loading users...
                               </td>
                             </tr>
-                          ))}
-                        {!usersLoading && filteredAvailableUsers.length === 0 && (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="p-3 text-center text-sm text-muted-foreground"
-                            >
-                              No available users match the filter.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                          )}
+                          {!usersLoading &&
+                            filteredAvailableUsers.map((user) => (
+                              <tr key={user.id}>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  {getUserName(user)}
+                                </td>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  {getUserContact(user)}
+                                </td>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  {user.role ?? "--"}
+                                </td>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  <Button
+                                    onClick={() => handleAddMember(user.id)}
+                                    disabled={teamAction !== null}
+                                    loading={
+                                      teamAction === "add" &&
+                                      teamActionUserId === user.id
+                                    }
+                                    variant="ghost"
+                                    className="h-7 px-2 text-xs"
+                                    label="Add"
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                          {!usersLoading && filteredAvailableUsers.length === 0 && (
+                            <tr>
+                              <td
+                                colSpan={4}
+                                className="p-3 text-center text-sm text-muted-foreground"
+                              >
+                                No available users match the filter.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="border rounded-lg p-6 bg-white shadow-sm">
-                <h3 className="font-semibold text-lg m-0 mb-3">
-                  Invite & Add User
-                </h3>
-                <form onSubmit={handleInviteMember} className="grid gap-4">
-                  <div className="grid gap-2">
-                    <span className="text-sm font-medium">Email</span>
-                    <Input
-                      value={inviteEmail}
-                      onChange={(event) => setInviteEmail(event.target.value)}
-                      type="email"
-                      className="w-full"
-                      required
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <span className="text-sm font-medium">Name</span>
-                    <Input
-                      value={inviteName}
-                      onChange={(event) => setInviteName(event.target.value)}
-                      className="w-full"
-                      required
-                    />
-                  </div>
-                  <div className="flex gap-2 items-center mt-2">
-                    <Button
-                      type="submit"
-                      disabled={teamAction !== null}
-                      loading={teamAction === "invite"}
-                      label="Send invite & add"
-                    />
-                    {inviteErrorMessage && (
-                      <span className="text-destructive text-sm">
-                        {inviteErrorMessage}
-                      </span>
-                    )}
-                  </div>
-                </form>
+                <div className="border rounded-lg p-6 bg-white shadow-sm">
+                  <h3 className="font-semibold text-lg m-0 mb-3">
+                    Invite & Add User
+                  </h3>
+                  <form onSubmit={handleInviteMember} className="grid gap-4">
+                    <div className="grid gap-2">
+                      <span className="text-sm font-medium">Email</span>
+                      <Input
+                        value={inviteEmail}
+                        onChange={(event) => setInviteEmail(event.target.value)}
+                        type="email"
+                        className="w-full"
+                        required
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <span className="text-sm font-medium">Name</span>
+                      <Input
+                        value={inviteName}
+                        onChange={(event) => setInviteName(event.target.value)}
+                        className="w-full"
+                        required
+                      />
+                    </div>
+                    <div className="flex gap-2 items-center mt-2">
+                      <Button
+                        type="submit"
+                        disabled={teamAction !== null}
+                        loading={teamAction === "invite"}
+                        label="Send invite & add"
+                      />
+                      {inviteErrorMessage && (
+                        <span className="text-destructive text-sm">
+                          {inviteErrorMessage}
+                        </span>
+                      )}
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
+            )}
+          </div>
+
+          {estateId && (
+            <EstateRuleLayersCrud estateId={estateId} mode="builderApprovals" />
           )}
         </div>
       </section>
 
       <EstateLotsCrud
         estateId={estateId}
+        estateName={form.name}
+        estateAddress={form.address}
         loadLots={loadLots}
         createLot={createLot}
         updateLot={updateLot}
         deleteLot={deleteLot}
+        deleteAllLots={isAdmin ? (id) => adminApi.deleteEstateLots(id) : undefined}
         importLotsDxf={importLotsDxf}
         recomputeEstateDesignOnLot={(id) => adminApi.recomputeEstateDesignOnLot(id)}
       />

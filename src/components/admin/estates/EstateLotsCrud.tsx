@@ -4,7 +4,11 @@ import { RecomputeSummaryCard } from "@/components/admin/rules/RecomputeSummaryC
 import { RuleLayerEditor } from "@/components/admin/rules/RuleLayerEditor";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { adminApi, type CreateLotInput } from "@/lib/api/adminApi";
+import {
+  adminApi,
+  type ActLandUseZoneLookupResponse,
+  type CreateLotInput,
+} from "@/lib/api/adminApi";
 import { getAdminApiErrorMessage } from "@/lib/api/adminApiErrors";
 import type {
   CreateLotConstraintResponse,
@@ -80,6 +84,7 @@ type LotForm = {
 
 type DxfImportForm = {
   zoning: string;
+  lotType: string;
   blockKeyPrefix: string;
   blockNumber: string;
   sectionNumber: string;
@@ -115,10 +120,13 @@ export type DxfImportResult = {
 
 type EstateLotsCrudProps = {
   estateId?: string | null;
+  estateName?: string | null;
+  estateAddress?: string | null;
   loadLots: (estateId: string) => Promise<EstateLotRecord[]>;
   createLot: (payload: CreateLotInput) => Promise<unknown>;
   updateLot: (id: string, payload: Record<string, unknown>) => Promise<unknown>;
   deleteLot: (id: string) => Promise<unknown>;
+  deleteAllLots?: (estateId: string) => Promise<unknown>;
   importLotsDxf?: (estateId: string, payload: FormData) => Promise<DxfImportResult>;
   recomputeEstateDesignOnLot?: (estateId: string) => Promise<unknown>;
   enableDxfImport?: boolean;
@@ -133,7 +141,7 @@ const createEmptyLotForm = (estateIdValue: string): LotForm => ({
   address: "",
   district: "",
   division: "",
-  lifecycleStage: "",
+  lifecycleStage: "available",
   overlays: "",
   geojson: "",
   estateId: estateIdValue,
@@ -165,15 +173,40 @@ const createEmptyLotForm = (estateIdValue: string): LotForm => ({
   highFall: false,
 });
 
-const createDxfImportForm = (estateIdValue: string): DxfImportForm => ({
+function createDefaultBlockKeyPrefix({
+  estateIdValue,
+  estateNameValue,
+}: {
+  estateIdValue: string | null | undefined;
+  estateNameValue?: string | null;
+}) {
+  const initials = createEstateNameInitials(estateNameValue);
+  const estateToken = sanitizeBlockKeyToken(estateIdValue ?? "");
+  if (!estateToken) {
+    return `${initials}-LOT-`;
+  }
+  return `${initials}-${estateToken}-LOT-`;
+}
+
+const createDxfImportForm = ({
+  estateIdValue,
+  estateNameValue,
+}: {
+  estateIdValue: string;
+  estateNameValue?: string | null;
+}): DxfImportForm => ({
   zoning: "",
-  blockKeyPrefix: estateIdValue ? `EST-${estateIdValue}-LOT-` : "EST-LOT-",
+  lotType: "standard",
+  blockKeyPrefix: createDefaultBlockKeyPrefix({
+    estateIdValue,
+    estateNameValue,
+  }),
   blockNumber: "",
   sectionNumber: "",
   address: "",
   district: "",
   division: "",
-  lifecycleStage: "",
+  lifecycleStage: "available",
   layer: "",
   minArea: "1",
   dropLargest: true,
@@ -189,12 +222,73 @@ const LOT_TYPE_OPTIONS = [
   { value: "other", label: "Other" },
 ] as const;
 
-const createGeneratedBlockKey = (estateIdValue: string | null) => {
-  const prefix = estateIdValue?.trim()
-    ? `EST-${estateIdValue.trim()}-MANUAL-`
-    : "MANUAL-";
+const LIFECYCLE_STAGE_OPTIONS = [
+  { value: "available", label: "Available" },
+  { value: "unavailable", label: "Unavailable" },
+] as const;
+
+const sanitizeBlockKeyToken = (value: string) =>
+  value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+const createEstateNameInitials = (estateNameValue: string | null | undefined) => {
+  const words =
+    typeof estateNameValue === "string"
+      ? estateNameValue
+          .trim()
+          .split(/[^a-zA-Z0-9]+/)
+          .filter(Boolean)
+      : [];
+  const initials = words
+    .map((word) => word.charAt(0).toUpperCase())
+    .join("");
+  return sanitizeBlockKeyToken(initials) || "EST";
+};
+
+const createGeneratedBlockKey = ({
+  estateIdValue,
+  estateNameValue,
+  blockNumberValue,
+}: {
+  estateIdValue: string | null | undefined;
+  estateNameValue?: string | null;
+  blockNumberValue?: string | number | null;
+}) => {
+  const initials = createEstateNameInitials(estateNameValue);
+  const estateToken = sanitizeBlockKeyToken(estateIdValue ?? "");
+  const blockNumberToken = sanitizeBlockKeyToken(String(blockNumberValue ?? ""));
+  if (estateToken && blockNumberToken) {
+    return `${initials}-${estateToken}-${blockNumberToken}`;
+  }
+  if (estateToken) {
+    return `${initials}-${estateToken}`;
+  }
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-  return `${prefix}${Date.now()}-${randomSuffix}`;
+  return `${initials}-MANUAL-${Date.now()}-${randomSuffix}`;
+};
+
+const createDefaultManualLotForm = ({
+  estateIdValue,
+  estateNameValue,
+  existingLotsCount,
+}: {
+  estateIdValue: string;
+  estateNameValue?: string | null;
+  existingLotsCount: number;
+}): LotForm => {
+  const nextBlockNumber = String(existingLotsCount + 1);
+  return {
+    ...createEmptyLotForm(estateIdValue),
+    blockNumber: nextBlockNumber,
+    blockKey: createGeneratedBlockKey({
+      estateIdValue,
+      estateNameValue,
+      blockNumberValue: nextBlockNumber,
+    }),
+  };
 };
 
 const normalizeOptional = (value: string) => {
@@ -221,6 +315,24 @@ const resolveIdValue = (value: string) => {
   }
   const parsed = Number(trimmed);
   return Number.isNaN(parsed) ? trimmed : parsed;
+};
+
+const extractZoneCodeFromLookup = (
+  lookup: ActLandUseZoneLookupResponse | null | undefined
+) => {
+  const fromRules =
+    typeof lookup?.lotCheckRules?.zoneCode === "string"
+      ? lookup.lotCheckRules.zoneCode.trim()
+      : "";
+  if (fromRules) {
+    return fromRules;
+  }
+
+  const fromZone =
+    typeof lookup?.zone?.zoneCode === "string"
+      ? lookup.zone.zoneCode.trim()
+      : "";
+  return fromZone || null;
 };
 
 const parseOverlays = (value: string) =>
@@ -568,15 +680,28 @@ const getLotBlockKey = (lot: EstateLotRecord) =>
 
 export const EstateLotsCrud = ({
   estateId,
+  estateName,
+  estateAddress,
   loadLots,
   createLot,
   updateLot,
   deleteLot,
+  deleteAllLots,
   importLotsDxf,
   recomputeEstateDesignOnLot,
   enableDxfImport,
 }: EstateLotsCrudProps) => {
   const canImportDxf = enableDxfImport ?? Boolean(importLotsDxf);
+  // Keep manual lot entry code-path available behind a local toggle.
+  const enableManualLotEntry = false;
+  const normalizedEstateName = useMemo(
+    () => (typeof estateName === "string" ? estateName.trim() : ""),
+    [estateName]
+  );
+  const normalizedEstateAddress = useMemo(
+    () => (typeof estateAddress === "string" ? estateAddress.trim() : ""),
+    [estateAddress]
+  );
 
   const [lots, setLots] = useState<EstateLotRecord[]>([]);
   const [lotsLoading, setLotsLoading] = useState(false);
@@ -586,13 +711,18 @@ export const EstateLotsCrud = ({
   const [showAdvancedLotFields, setShowAdvancedLotFields] = useState(false);
   const [editingLotId, setEditingLotId] = useState<string | null>(null);
   const [lotForm, setLotForm] = useState<LotForm>(() =>
-    createEmptyLotForm(estateId ?? "")
+    createDefaultManualLotForm({
+      estateIdValue: estateId ?? "",
+      estateNameValue: normalizedEstateName,
+      existingLotsCount: 0,
+    })
   );
   const [lotGeometry, setLotGeometry] = useState<Record<string, unknown> | null>(
     null
   );
   const [lotSaving, setLotSaving] = useState(false);
   const [lotDeleteId, setLotDeleteId] = useState<string | null>(null);
+  const [lotBulkDeleteLoading, setLotBulkDeleteLoading] = useState(false);
   const [lotFormError, setLotFormError] = useState<string | null>(null);
   const [lotFormSuccess, setLotFormSuccess] = useState<string | null>(null);
   const [lotSaveRecompute, setLotSaveRecompute] = useState<
@@ -635,7 +765,10 @@ export const EstateLotsCrud = ({
   const [showAdvancedDxfOptions, setShowAdvancedDxfOptions] = useState(false);
   const [dxfFile, setDxfFile] = useState<File | null>(null);
   const [dxfForm, setDxfForm] = useState<DxfImportForm>(() =>
-    createDxfImportForm(estateId ?? "")
+    createDxfImportForm({
+      estateIdValue: estateId ?? "",
+      estateNameValue: normalizedEstateName,
+    })
   );
   const [dxfImporting, setDxfImporting] = useState(false);
   const [dxfError, setDxfError] = useState<string | null>(null);
@@ -650,6 +783,8 @@ export const EstateLotsCrud = ({
     () => parseLineString(lotForm.frontageCoordinate),
     [lotForm.frontageCoordinate]
   );
+  const isManualLotEntry = !editingLotId;
+  const showAllLotFields = isManualLotEntry || showAdvancedLotFields;
 
   const frontagePreview = useMemo(() => {
     if (!lotGeometry) {
@@ -738,6 +873,54 @@ export const EstateLotsCrud = ({
       setLotsLoading(false);
     }
   }, [estateId, loadLots]);
+
+  const lookupEstateZoneCode = useCallback(async () => {
+    if (!normalizedEstateAddress) {
+      return null;
+    }
+    try {
+      const response =
+        await adminApi.lookupActLandUseZoneByAddress<ActLandUseZoneLookupResponse>(
+          normalizedEstateAddress
+        );
+      return extractZoneCodeFromLookup(response);
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.debug("Estate zoning lookup failed", error);
+      }
+      return null;
+    }
+  }, [normalizedEstateAddress]);
+
+  const prefillLotZoningFromEstateAddress = useCallback(async () => {
+    const zoneCode = await lookupEstateZoneCode();
+    if (!zoneCode) {
+      return;
+    }
+    setLotForm((prev) =>
+      prev.zoning.trim()
+        ? prev
+        : {
+            ...prev,
+            zoning: zoneCode,
+          }
+    );
+  }, [lookupEstateZoneCode]);
+
+  const prefillDxfZoningFromEstateAddress = useCallback(async () => {
+    const zoneCode = await lookupEstateZoneCode();
+    if (!zoneCode) {
+      return;
+    }
+    setDxfForm((prev) =>
+      prev.zoning.trim()
+        ? prev
+        : {
+            ...prev,
+            zoning: zoneCode,
+          }
+    );
+  }, [lookupEstateZoneCode]);
 
   useEffect(() => {
     handleLoadLots();
@@ -921,7 +1104,13 @@ export const EstateLotsCrud = ({
 
   const closeLotForm = useCallback(() => {
     setEditingLotId(null);
-    setLotForm(createEmptyLotForm(estateId ?? ""));
+    setLotForm(
+      createDefaultManualLotForm({
+        estateIdValue: estateId ?? "",
+        estateNameValue: normalizedEstateName,
+        existingLotsCount: 0,
+      })
+    );
     setShowAdvancedLotFields(false);
     setLotGeometry(null);
     setLotFormError(null);
@@ -933,14 +1122,19 @@ export const EstateLotsCrud = ({
     setLotConstraintsError(null);
     resetConstraintForm();
     setShowLotForm(false);
-  }, [estateId, resetConstraintForm]);
+  }, [estateId, normalizedEstateName, resetConstraintForm]);
 
   useEffect(() => {
     if (!estateId) {
       return;
     }
     closeLotForm();
-    setDxfForm(createDxfImportForm(estateId));
+    setDxfForm(
+      createDxfImportForm({
+        estateIdValue: estateId,
+        estateNameValue: normalizedEstateName,
+      })
+    );
     setDxfFile(null);
     setDxfError(null);
     setDxfResult(null);
@@ -948,11 +1142,25 @@ export const EstateLotsCrud = ({
     setShowAdvancedDxfOptions(false);
     setRecomputeError(null);
     setRecomputeResult(null);
-  }, [closeLotForm, estateId]);
+    void prefillLotZoningFromEstateAddress();
+    void prefillDxfZoningFromEstateAddress();
+  }, [
+    closeLotForm,
+    estateId,
+    normalizedEstateName,
+    prefillDxfZoningFromEstateAddress,
+    prefillLotZoningFromEstateAddress,
+  ]);
 
   const openNewLotForm = useCallback(() => {
     setEditingLotId(null);
-    setLotForm(createEmptyLotForm(estateId ?? ""));
+    setLotForm(
+      createDefaultManualLotForm({
+        estateIdValue: estateId ?? "",
+        estateNameValue: normalizedEstateName,
+        existingLotsCount: lots.length,
+      })
+    );
     setShowAdvancedLotFields(false);
     setLotGeometry(null);
     setLotFormError(null);
@@ -964,7 +1172,14 @@ export const EstateLotsCrud = ({
     setLotConstraintsError(null);
     resetConstraintForm();
     setShowLotForm(true);
-  }, [estateId, resetConstraintForm]);
+    void prefillLotZoningFromEstateAddress();
+  }, [
+    estateId,
+    lots.length,
+    normalizedEstateName,
+    prefillLotZoningFromEstateAddress,
+    resetConstraintForm,
+  ]);
 
   const handleDxfFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -981,6 +1196,7 @@ export const EstateLotsCrud = ({
     setShowAdvancedDxfOptions(false);
     setDxfError(null);
     setDxfResult(null);
+    void prefillDxfZoningFromEstateAddress();
   };
 
   const closeDxfImport = () => {
@@ -1065,6 +1281,7 @@ export const EstateLotsCrud = ({
     addField("address", dxfForm.address);
     addField("district", dxfForm.district);
     addField("division", dxfForm.division);
+    addField("lotType", dxfForm.lotType);
     addField("lifecycleStage", dxfForm.lifecycleStage);
     addField("layer", dxfForm.layer);
     addField("minArea", minAreaValue);
@@ -1134,13 +1351,6 @@ export const EstateLotsCrud = ({
       return;
     }
 
-    const trimmedRoadFacing = lotForm.roadFacing.trim();
-    if (!trimmedRoadFacing) {
-      setLotFormError("Road facing is required.");
-      setLotSaving(false);
-      return;
-    }
-
     const areaValueRaw = normalizeOptionalNumber(lotForm.areaSqm);
     if (areaValueRaw === undefined) {
       setLotFormError("Area (sqm) must be a number.");
@@ -1148,22 +1358,32 @@ export const EstateLotsCrud = ({
       return;
     }
 
-    const estateIdValue = resolveIdValue((estateId ?? lotForm.estateId).trim());
+    const estateIdValue = resolveIdValue((estateId ?? "").trim());
     if (estateIdValue === null) {
-      setLotFormError("Estate ID is required.");
+      setLotFormError("Missing estate id.");
       setLotSaving(false);
       return;
     }
-    const areaValue = areaValueRaw ?? 1;
-    const trimmedBlockKey =
-      lotForm.blockKey.trim() || createGeneratedBlockKey(String(estateIdValue));
-
+    if (!editingLotId && !enableManualLotEntry) {
+      setLotFormError("Manual lot entry is temporarily disabled.");
+      setLotSaving(false);
+      return;
+    }
     const blockNumberValue = normalizeOptionalNumber(lotForm.blockNumber);
     if (blockNumberValue === undefined) {
       setLotFormError("Block number must be a number.");
       setLotSaving(false);
       return;
     }
+    const areaValue = areaValueRaw ?? 1;
+    const fallbackBlockNumber = blockNumberValue ?? lots.length + 1;
+    const trimmedBlockKey =
+      lotForm.blockKey.trim() ||
+      createGeneratedBlockKey({
+        estateIdValue: String(estateIdValue),
+        estateNameValue: normalizedEstateName,
+        blockNumberValue: fallbackBlockNumber,
+      });
 
     const sectionNumberValue = normalizeOptionalNumber(lotForm.sectionNumber);
     if (sectionNumberValue === undefined) {
@@ -1274,7 +1494,7 @@ export const EstateLotsCrud = ({
       overlays: parseOverlays(lotForm.overlays),
       frontageM: frontageMResult.value,
       lotType: trimmedLotType,
-      roadFacing: trimmedRoadFacing,
+      roadFacing: normalizeOptional(lotForm.roadFacing),
       precinct: normalizeOptional(lotForm.precinct),
     };
 
@@ -1391,6 +1611,42 @@ export const EstateLotsCrud = ({
     }
   };
 
+  const handleDeleteAllLots = async () => {
+    if (!estateId || !deleteAllLots) {
+      return;
+    }
+    const confirmed = window.confirm(
+      "This is not undoable and will remove all of your lots, are you sure?"
+    );
+    if (!confirmed) {
+      return;
+    }
+    setLotBulkDeleteLoading(true);
+    setLotFormError(null);
+    setLotFormSuccess(null);
+    try {
+      const response = await deleteAllLots(estateId);
+      await handleLoadLots();
+      closeLotForm();
+      const deletedCount =
+        response &&
+        typeof response === "object" &&
+        "deleted" in response &&
+        typeof (response as { deleted?: unknown }).deleted === "number"
+          ? (response as { deleted: number }).deleted
+          : lots.length;
+      setLotFormSuccess(
+        deletedCount === 1 ? "1 lot deleted." : `${deletedCount} lots deleted.`
+      );
+    } catch (error) {
+      setLotFormError(
+        error instanceof Error ? error.message : "Failed to delete all lots."
+      );
+    } finally {
+      setLotBulkDeleteLoading(false);
+    }
+  };
+
   const filteredLots = useMemo(() => {
     const needle = lotFilter.trim().toLowerCase();
     if (!needle) {
@@ -1427,8 +1683,7 @@ export const EstateLotsCrud = ({
               : `${lots.length} lot${lots.length === 1 ? "" : "s"} linked`}
           </p>
           <p className="text-xs text-slate-500 mt-1 mb-0">
-            Use DXF import as the primary workflow. Manual entry is for
-            exceptions.
+            Use DXF import as the primary workflow.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -1447,13 +1702,15 @@ export const EstateLotsCrud = ({
             disabled={lotsLoading}
             loading={lotsLoading}
           />
-          <Button
-            type="button"
-            onClick={showLotForm ? closeLotForm : openNewLotForm}
-            variant={showLotForm ? "outline" : "ghost"}
-            className="h-8 px-2 text-xs"
-            label={showLotForm ? "Close manual entry" : "Manual entry"}
-          />
+          {enableManualLotEntry && (
+            <Button
+              type="button"
+              onClick={showLotForm ? closeLotForm : openNewLotForm}
+              variant={showLotForm ? "outline" : "ghost"}
+              className="h-8 px-2 text-xs"
+              label={showLotForm ? "Close manual entry" : "Manual entry"}
+            />
+          )}
           {canImportDxf && (
             <Button
               type="button"
@@ -1472,6 +1729,17 @@ export const EstateLotsCrud = ({
               onClick={handleManualRecompute}
               disabled={recomputeLoading}
               loading={recomputeLoading}
+            />
+          )}
+          {deleteAllLots && estateId && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-8 px-2 text-xs border-red-200 text-red-700 hover:bg-red-600 hover:text-white focus-visible:bg-red-600 focus-visible:text-white"
+              label="Delete all lots"
+              onClick={handleDeleteAllLots}
+              disabled={lotBulkDeleteLoading || lots.length === 0}
+              loading={lotBulkDeleteLoading}
             />
           )}
         </div>
@@ -1515,7 +1783,7 @@ export const EstateLotsCrud = ({
             />
           </div>
           <p className="text-xs text-slate-500 mb-4">
-            Use this as the default onboarding path for estate lots.
+            Please ensure the DXF only has valid lot boundaries.
           </p>
           <form onSubmit={handleDxfImport} className="grid gap-4">
             <div className="grid gap-2">
@@ -1524,10 +1792,14 @@ export const EstateLotsCrud = ({
                 type="file"
                 accept=".dxf"
                 onChange={handleDxfFileChange}
-                className="text-sm"
+                className="w-full cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm file:mr-3 file:rounded-sm file:border-0 file:bg-slate-900 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-slate-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            <p className="text-xs text-muted-foreground">
+              Options set below will be defaults that will be applied
+              to all imported lots.
+            </p>
+            <div className="grid gap-4 md:grid-cols-3">
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Zoning</span>
                 <Input
@@ -1543,8 +1815,27 @@ export const EstateLotsCrud = ({
                 />
               </div>
               <div className="grid gap-2">
+                <span className="text-sm font-medium">Lot type</span>
+                <select
+                  value={dxfForm.lotType}
+                  onChange={(event) =>
+                    setDxfForm((prev) => ({
+                      ...prev,
+                      lotType: event.target.value,
+                    }))
+                  }
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  {LOT_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-2">
                 <span className="text-sm font-medium">Lifecycle stage</span>
-                <Input
+                <select
                   value={dxfForm.lifecycleStage}
                   onChange={(event) =>
                     setDxfForm((prev) => ({
@@ -1552,9 +1843,15 @@ export const EstateLotsCrud = ({
                       lifecycleStage: event.target.value,
                     }))
                   }
-                  placeholder="Released"
-                  className="w-full"
-                />
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">No default</option>
+                  {LIFECYCLE_STAGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="flex">
@@ -1584,12 +1881,17 @@ export const EstateLotsCrud = ({
                       blockKeyPrefix: event.target.value,
                     }))
                   }
-                  placeholder={`EST-${estateId ?? "ID"}-LOT-`}
+                  placeholder={createDefaultBlockKeyPrefix({
+                    estateIdValue: estateId ?? '',
+                    estateNameValue: normalizedEstateName || null,
+                  })}
                   className="w-full"
                 />
               </div>
               <div className="grid gap-2">
-                <span className="text-sm font-medium">Block number</span>
+                <span className="text-sm font-medium">
+                  Starting block number (optional)
+                </span>
                 <Input
                   value={dxfForm.blockNumber}
                   onChange={(event) =>
@@ -1601,6 +1903,11 @@ export const EstateLotsCrud = ({
                   placeholder="1"
                   className="w-full"
                 />
+                <span className="text-xs text-slate-500">
+                  Imported lots increment from this number (for example 1, 2,
+                  3...). Leave blank to auto-start from the next available
+                  block number for this estate.
+                </span>
               </div>
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Section number</span>
@@ -1759,7 +2066,7 @@ export const EstateLotsCrud = ({
         </div>
       )}
 
-      {showLotForm && (
+      {showLotForm && (enableManualLotEntry || Boolean(editingLotId)) && (
         <div className="mb-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
           <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
@@ -1767,17 +2074,20 @@ export const EstateLotsCrud = ({
                 {editingLotId ? "Edit lot" : "Manual lot entry"}
               </h3>
               <p className="text-sm text-muted-foreground">
-                Use this for one-off exceptions. DXF import is recommended for
-                normal onboarding.
+                {editingLotId
+                  ? "Update this lot's details."
+                  : "Use this for one-off exceptions. DXF import is recommended for normal onboarding."}
               </p>
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-8 px-2 text-xs"
-              label="New lot"
-              onClick={openNewLotForm}
-            />
+            {enableManualLotEntry && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-8 px-2 text-xs"
+                label="New lot"
+                onClick={openNewLotForm}
+              />
+            )}
             <Button
               type="button"
               variant="outline"
@@ -1789,6 +2099,48 @@ export const EstateLotsCrud = ({
 
           <form onSubmit={handleSaveLot} className="grid gap-4">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Block key *</span>
+                <Input
+                  value={lotForm.blockKey}
+                  onChange={(event) =>
+                    setLotForm((prev) => ({
+                      ...prev,
+                      blockKey: event.target.value,
+                    }))
+                  }
+                  placeholder="NE-12-3"
+                  className="w-full"
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Block number</span>
+                <Input
+                  value={lotForm.blockNumber}
+                  onChange={(event) =>
+                    setLotForm((prev) => ({
+                      ...prev,
+                      blockNumber: event.target.value,
+                    }))
+                  }
+                  placeholder="1"
+                  className="w-full"
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Area (sqm) *</span>
+                <Input
+                  value={lotForm.areaSqm}
+                  onChange={(event) =>
+                    setLotForm((prev) => ({
+                      ...prev,
+                      areaSqm: event.target.value,
+                    }))
+                  }
+                  placeholder="450"
+                  className="w-full"
+                />
+              </div>
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Zoning *</span>
                 <Input
@@ -1829,7 +2181,7 @@ export const EstateLotsCrud = ({
               </div>
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Lifecycle stage *</span>
-                <Input
+                <select
                   value={lotForm.lifecycleStage}
                   onChange={(event) =>
                     setLotForm((prev) => ({
@@ -1837,12 +2189,26 @@ export const EstateLotsCrud = ({
                       lifecycleStage: event.target.value,
                     }))
                   }
-                  placeholder="Released"
-                  className="w-full"
-                />
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">Select lifecycle stage</option>
+                  {LIFECYCLE_STAGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                  {lotForm.lifecycleStage &&
+                    !LIFECYCLE_STAGE_OPTIONS.some(
+                      (option) => option.value === lotForm.lifecycleStage
+                    ) && (
+                      <option value={lotForm.lifecycleStage}>
+                        {lotForm.lifecycleStage}
+                      </option>
+                    )}
+                </select>
               </div>
               <div className="grid gap-2">
-                <span className="text-sm font-medium">Road facing *</span>
+                <span className="text-sm font-medium">Road facing</span>
                 <Input
                   value={lotForm.roadFacing}
                   onChange={(event) =>
@@ -1875,97 +2241,29 @@ export const EstateLotsCrud = ({
                 </span>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-8 px-2 text-xs"
-                label={
-                  showAdvancedLotFields
-                    ? "Hide advanced fields"
-                    : "Show advanced fields"
-                }
-                onClick={() =>
-                  setShowAdvancedLotFields((previous) => !previous)
-                }
-              />
-              <span className="text-xs text-slate-500">
-                Block key and area default automatically for quick manual entry.
-              </span>
-            </div>
-            {showAdvancedLotFields && (
+            {editingLotId && (
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-8 px-2 text-xs"
+                  label={
+                    showAdvancedLotFields
+                      ? "Hide advanced fields"
+                      : "Show advanced fields"
+                  }
+                  onClick={() =>
+                    setShowAdvancedLotFields((previous) => !previous)
+                  }
+                />
+                <span className="text-xs text-slate-500">
+                  Show or hide full lot metadata and geometry fields.
+                </span>
+              </div>
+            )}
+            {showAllLotFields && (
               <>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Block key *</span>
-                <Input
-                  value={lotForm.blockKey}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      blockKey: event.target.value,
-                    }))
-                  }
-                  placeholder="EST-123-LOT-1"
-                  className="w-full"
-                />
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Estate ID *</span>
-                <Input
-                  value={lotForm.estateId}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      estateId: event.target.value,
-                    }))
-                  }
-                  placeholder={estateId ?? "estate-id"}
-                  className="w-full"
-                />
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Area (sqm) *</span>
-                <Input
-                  value={lotForm.areaSqm}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      areaSqm: event.target.value,
-                    }))
-                  }
-                  placeholder="450"
-                  className="w-full"
-                />
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Zoning *</span>
-                <Input
-                  value={lotForm.zoning}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      zoning: event.target.value,
-                    }))
-                  }
-                  placeholder="R1"
-                  className="w-full"
-                />
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Block number</span>
-                <Input
-                  value={lotForm.blockNumber}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      blockNumber: event.target.value,
-                    }))
-                  }
-                  placeholder="1"
-                  className="w-full"
-                />
-              </div>
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Section number</span>
                 <Input
@@ -2019,20 +2317,6 @@ export const EstateLotsCrud = ({
                     }))
                   }
                   placeholder="Section A"
-                  className="w-full"
-                />
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Lifecycle stage</span>
-                <Input
-                  value={lotForm.lifecycleStage}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      lifecycleStage: event.target.value,
-                    }))
-                  }
-                  placeholder="Released"
                   className="w-full"
                 />
               </div>
@@ -2120,20 +2404,6 @@ export const EstateLotsCrud = ({
                   className="w-full"
                 />
               </div>
-              <div className="grid gap-2 md:col-span-2 lg:col-span-3">
-                <span className="text-sm font-medium">Overlays</span>
-                <Input
-                  value={lotForm.overlays}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      overlays: event.target.value,
-                    }))
-                  }
-                  placeholder="Flood, Heritage"
-                  className="w-full"
-                />
-              </div>
               <div className="grid gap-2 md:col-span-2 lg:col-span-2">
                 <span className="text-sm font-medium">Lot boundary preview</span>
                 <div className="rounded-md border border-slate-200 bg-white p-3">
@@ -2146,7 +2416,7 @@ export const EstateLotsCrud = ({
                       width={frontageEdges.viewWidth}
                       height={frontageEdges.viewHeight}
                       viewBox={`0 0 ${frontageEdges.viewWidth} ${frontageEdges.viewHeight}`}
-                      className="mx-auto"
+                      className="mx-auto pointer-events-auto"
                     >
                       <polygon
                         points={frontageEdges.polygonPoints}
@@ -2168,6 +2438,7 @@ export const EstateLotsCrud = ({
                             stroke={selected ? "#0F766E" : "#64748B"}
                             strokeWidth={selected ? 4 : 2}
                             strokeLinecap="round"
+                            className="cursor-pointer pointer-events-auto"
                             onClick={(event) => {
                               if (!frontageEdges) {
                                 return;
@@ -2250,32 +2521,6 @@ export const EstateLotsCrud = ({
             </label>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div className="grid gap-2">
-                <span className="text-sm font-medium">Lot type</span>
-                <select
-                  value={lotForm.lotType}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      lotType: event.target.value,
-                    }))
-                  }
-                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  <option value="">(not set)</option>
-                  {LOT_TYPE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                  {lotForm.lotType &&
-                    !LOT_TYPE_OPTIONS.some(
-                      (option) => option.value === lotForm.lotType
-                    ) && (
-                      <option value={lotForm.lotType}>{lotForm.lotType}</option>
-                    )}
-                </select>
-              </div>
-              <div className="grid gap-2">
                 <span className="text-sm font-medium">Frontage (m)</span>
                 <Input
                   value={lotForm.frontageM}
@@ -2288,20 +2533,6 @@ export const EstateLotsCrud = ({
                   type="number"
                   step="0.1"
                   placeholder="18.2"
-                  className="w-full"
-                />
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Road facing</span>
-                <Input
-                  value={lotForm.roadFacing}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      roadFacing: event.target.value,
-                    }))
-                  }
-                  placeholder="Yass Valley Way"
                   className="w-full"
                 />
               </div>

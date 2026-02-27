@@ -8,7 +8,6 @@ export type EstateRecord = {
   email?: string | null;
   phone?: string | null;
   logoUrl?: string | null;
-  themeColor?: string | null;
   isPrototype?: boolean | null;
   status?: string | null;
   [key: string]: unknown;
@@ -21,5 +20,4 @@ export type EstateCreatePayload = {
   email?: string;
   phone?: string;
   logoUrl?: string;
-  themeColor?: string;
 };

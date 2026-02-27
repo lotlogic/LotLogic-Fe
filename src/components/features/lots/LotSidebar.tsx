@@ -136,6 +136,12 @@ export const LotSidebar = ({
 
   const zoningColor = getZoningColor(lot.zoning);
   const zoningText = lot.zoning || "--";
+  const displayLotId =
+    lot.displayLotId !== undefined && lot.displayLotId !== null
+      ? String(lot.displayLotId)
+      : lot.id !== undefined && lot.id !== null
+      ? String(lot.id)
+      : "--";
 
   const handleShowHouseDesign = () => {
     // Remove validation - allow API call with just lot ID since backend supports optional parameters
@@ -259,7 +265,7 @@ export const LotSidebar = ({
       {/* Lot details only shown when not in filter mode */}
       {!showFilter && (
         <div className="text-brand-muted mt-1 text-base font-normal">
-          {`Lot ID: ${lot.id || "--"}, ${
+          {`Lot ID: ${displayLotId}, ${
             lot.suburb
               ?.toLowerCase()
               .replace(/\b\w/g, (l) => l.toUpperCase()) || "--"
@@ -329,6 +335,7 @@ export const LotSidebar = ({
               lot={{
                 estateId: lot.estateId ?? "",
                 lotId: lot.id ?? "",
+                lotDisplayId: displayLotId,
                 suburb: lot.suburb ?? "",
                 address: lot.address ?? "",
                 size: lot.size ?? "",
@@ -408,6 +415,7 @@ export const LotSidebar = ({
             selectedHouseDesign={quoteDesign}
             lotDetails={{
               id: String(lot.id || ""),
+              displayId: displayLotId,
               suburb: lot.suburb || "",
               address: lot.address || "",
             }}
@@ -422,7 +430,7 @@ export const LotSidebar = ({
         }`}
         open={showFloorPlanModal && !!selectedHouseDesignForModals}
         onClose={() => setShowFloorPlanModal(false)}
-        title={`Lot ID: ${lot.id}, ${
+        title={`Lot ID: ${displayLotId}, ${
           selectedHouseDesignForModals?.title || ""
         }`}
         imageSrc={
