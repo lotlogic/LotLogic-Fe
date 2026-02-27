@@ -86,6 +86,19 @@ const emptyForm: FloorPlanForm = {
   hasFrontFacingServiceAreas: "",
 };
 
+const ARCHITECTURAL_STYLE_OPTIONS = [
+  "Contemporary",
+  "Modern",
+  "Hamptons",
+  "Traditional Australian",
+  "Coastal",
+  "Farmhouse",
+  "Minimalist",
+  "Classic",
+  "Industrial",
+  "Other",
+] as const;
+
 const toNumber = (value: string): number | null => {
   const num = Number(value);
   return Number.isFinite(num) ? num : null;
@@ -172,6 +185,18 @@ export const FloorPlanCrud = ({
       return name.includes(needle) || id.includes(needle);
     });
   }, [floorPlans, filterText]);
+
+  const architecturalStyleOptions = useMemo(() => {
+    const base = [...ARCHITECTURAL_STYLE_OPTIONS];
+    const currentStyle = form.architecturalStyle.trim();
+    if (!currentStyle) {
+      return base;
+    }
+    const exists = base.some(
+      (option) => option.toLowerCase() === currentStyle.toLowerCase()
+    );
+    return exists ? base : [...base, currentStyle];
+  }, [form.architecturalStyle]);
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -498,7 +523,7 @@ export const FloorPlanCrud = ({
                 />
               </div>
               <div className="grid gap-2">
-                <span className="text-sm font-medium">Design Depth</span>
+                <span className="text-sm font-medium">Building Depth (m)</span>
                 <Input
                   type="number"
                   step="0.1"
@@ -607,7 +632,7 @@ export const FloorPlanCrud = ({
               </div>
               <div className="grid gap-2 md:col-span-2">
                 <span className="text-sm font-medium">Architectural Style</span>
-                <Input
+                <select
                   value={form.architecturalStyle}
                   onChange={(event) =>
                     setForm((prev) => ({
@@ -615,13 +640,19 @@ export const FloorPlanCrud = ({
                       architecturalStyle: event.target.value,
                     }))
                   }
-                  className="w-full"
-                  placeholder="Traditional Australian"
-                />
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="">Select style</option>
+                  {architecturalStyleOptions.map((style) => (
+                    <option key={style} value={style}>
+                      {style}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="grid gap-2">
                 <span className="text-sm font-medium">
-                  Front-facing service areas
+                  Front service areas visible from street
                 </span>
                 <select
                   value={form.hasFrontFacingServiceAreas}
@@ -634,9 +665,9 @@ export const FloorPlanCrud = ({
                   }
                   className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <option value="">(not set)</option>
-                  <option value="false">false</option>
-                  <option value="true">true</option>
+                  <option value="">Not set</option>
+                  <option value="false">No</option>
+                  <option value="true">Yes</option>
                 </select>
               </div>
             </div>
