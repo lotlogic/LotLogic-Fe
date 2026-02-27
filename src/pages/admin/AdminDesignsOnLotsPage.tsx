@@ -30,7 +30,9 @@ const AdminDesignsOnLotsPage = () => {
     } catch (error) {
       setRecords([]);
       setErrorMessage(
-        error instanceof Error ? error.message : "Failed to load designs on lots."
+        error instanceof Error
+          ? error.message
+          : "Failed to load plan-lot matches."
       );
     } finally {
       setLoading(false);
@@ -64,7 +66,7 @@ const AdminDesignsOnLotsPage = () => {
 
   return (
     <div className="container py-8 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Designs On Lots</h1>
+      <h1 className="text-3xl font-bold mb-6">Plan-Lot Matches</h1>
       <AdminNav />
       <div className="flex flex-wrap gap-2 mb-6 mt-4">
         <Button
@@ -137,7 +139,7 @@ const AdminDesignsOnLotsPage = () => {
                   colSpan={5}
                   className="p-4 text-center text-sm text-muted-foreground"
                 >
-                  Loading design-on-lot rows...
+                  Loading plan-lot matches...
                 </td>
               </tr>
             )}
@@ -169,7 +171,7 @@ const AdminDesignsOnLotsPage = () => {
                   colSpan={5}
                   className="p-4 text-center text-sm text-muted-foreground"
                 >
-                  No design-on-lot rows match the current filters.
+                  No plan-lot matches match the current filters.
                 </td>
               </tr>
             )}
