@@ -12,6 +12,8 @@ import {
   type FacadePayload,
   type FacadeRecord,
 } from "@/components/admin/facades/FacadeCrud";
+import { BuilderPerformancePanel } from "@/components/admin/builders/BuilderPerformancePanel";
+import { BuilderLeadsPanel } from "@/components/admin/builders/BuilderLeadsPanel";
 import { adminApi } from "@/lib/api/adminApi";
 import { adminAuth } from "@/lib/auth/adminAuth";
 import { useAdminSession } from "@/lib/admin/adminSession";
@@ -843,6 +845,22 @@ const AdminBuilderPage = () => {
             </div>
           )}
         </div>
+      </section>
+
+      <section className="mt-10">
+        <BuilderPerformancePanel
+          builderId={builderId}
+          title="Design View Performance"
+          subtitle="View data for this builder's house designs."
+        />
+      </section>
+
+      <section className="mt-10">
+        <BuilderLeadsPanel
+          builderId={builderId}
+          title="Builder Enquiries"
+          subtitle="Review submitted leads and recent enquiry activity."
+        />
       </section>
 
       <section className="mt-10">

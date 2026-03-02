@@ -82,6 +82,10 @@ export const GetYourQuoteSidebar = ({
     lotDetails.displayId !== undefined && lotDetails.displayId !== null
       ? String(lotDetails.displayId)
       : String(lotDetails.id);
+  const analyticsLotId =
+    lotDetails.blockKey !== undefined && lotDetails.blockKey !== null
+      ? String(lotDetails.blockKey)
+      : lotDisplayId;
 
   // Form state
   const [formData, setFormData] = useState<QuoteFormData>({
@@ -148,8 +152,14 @@ export const GetYourQuoteSidebar = ({
     trackQuoteFormInteraction("Field Updated", {
       field,
       hasValue: !!value.trim(),
-      lotId: lotDetails.id,
+      estateId: lotDetails.estateId,
+      lotId: analyticsLotId,
+      lotDbId: lotDetails.id,
       houseDesignId: selectedHouseDesign?.id,
+      houseDesignName: selectedHouseDesign?.title,
+      builderName: inferredBuilder.builderLabel,
+      builderIds: inferredBuilder.builderIds,
+      builderId: inferredBuilder.builderIds[0],
     });
   };
 
@@ -180,10 +190,16 @@ export const GetYourQuoteSidebar = ({
 
       // Track successful enquiry submission
       trackEnquirySubmitted({
-        lotId: lotDetails.id,
+        estateId: lotDetails.estateId,
+        lotId: analyticsLotId,
+        lotDbId: lotDetails.id,
         houseDesignId: selectedHouseDesign?.id || "",
+        houseDesignName: selectedHouseDesign?.title,
+        builderName: inferredBuilder.builderLabel,
         facadeId: null,
         builder: builderIds,
+        builderIds,
+        builderId: builderIds[0],
       });
 
       setShowThankYou(true);

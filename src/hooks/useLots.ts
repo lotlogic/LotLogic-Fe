@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { lotApi, type DatabaseLot } from "../lib/api/lotApi";
+import { normalizeLotLifecycle } from "@/constants/lotLifecycle";
 
 export const useLots = (estateId?: string) => {
   return useQuery({
@@ -13,12 +14,14 @@ export const useLots = (estateId?: string) => {
 export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
   return {
     type: "FeatureCollection" as const,
-    features: lots.map((lot) => {
+    features: lots.reduce<GeoJSON.Feature[]>((acc, lot) => {
+      const lifecycleStage = normalizeLotLifecycle(lot.lifecycleStage);
+      if (lifecycleStage !== "available") {
+        return acc;
+      }
+
       const lotId = String(lot.id);
-      const lotNumber =
-        lot.blockNumber != null
-          ? String(lot.blockNumber)
-          : lotId;
+      const lotNumber = lot.blockNumber != null ? String(lot.blockNumber) : lotId;
 
       // ---- Extract s1..s4 and check exact match ----
       const propsArr = lot?.geojson?.properties || [];
@@ -37,15 +40,9 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
       const s3 = propsArr.find((o) => "s3" in o)?.s3 ?? null;
       const s4 = propsArr.find((o) => "s4" in o)?.s4 ?? null;
 
-      // Normalize lifecycleStage
-      const lifecycleStage = String(
-        lot.lifecycleStage ?? "unavailable"
-      ).toLowerCase();
+      const isRed = hasExactS1S2S3S4;
 
-      // Determine if lot is red
-      const isRed = lifecycleStage === "available" && hasExactS1S2S3S4;
-
-      return {
+      acc.push({
         type: "Feature" as const,
         geometry: lot.geometry,
         properties: {
@@ -56,7 +53,7 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
           LAND_USE_POLICY_ZONES: lot.zoning ?? "unknown",
           OVERLAY_PROVISION_ZONES: lot.overlays?.join(", ") ?? "",
           LOT_NUMBER: lotNumber,
-          STAGE: lot.lifecycleStage ?? "available",
+          STAGE: lifecycleStage,
           ID: lotId,
           BLOCK_NUMBER: lot.blockNumber ?? null,
           SECTION_NUMBER: lot.sectionNumber ?? null,
@@ -77,7 +74,9 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
           depth: lot.geojson.depth,
           frontageCoordinate: lot.frontageCoordinate,
         },
-      };
-    }),
+      });
+
+      return acc;
+    }, []),
   };
 };

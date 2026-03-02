@@ -6,6 +6,9 @@ import type {
 } from "axios";
 import { getAdminApiBaseUrl } from "@/lib/api/adminApiBase";
 import type {
+  BuilderPerformanceSummary,
+  EstatePerformanceSummary,
+  BuilderLeadsResponse,
   CreateBuilderEstateApprovalPayload,
   CreateBuilderEstateApprovalResponse,
   CreateEstateRuleSetPayload,
@@ -171,6 +174,14 @@ const lotZoningRulePath = (key: LotZoningRuleKey) =>
 
 const builderUsersPath = (builderId: AdminId) =>
   `${idPath("builders", builderId)}/users`;
+const builderLeadsPath = (builderId: AdminId) =>
+  `${idPath("builders", builderId)}/leads`;
+const builderPerformancePath = (builderId: AdminId) =>
+  `${idPath("builders", builderId)}/performance`;
+const builderLeadsExportPath = (builderId: AdminId) =>
+  `${builderLeadsPath(builderId)}/export`;
+const builderLeadPath = (builderId: AdminId, leadId: AdminId) =>
+  `${builderLeadsPath(builderId)}/${encodeId(leadId)}`;
 
 const builderUserPath = (builderId: AdminId, userId: AdminId) =>
   `${builderUsersPath(builderId)}/${encodeId(userId)}`;
@@ -201,6 +212,8 @@ const estateBuilderApprovalPath = (estateId: AdminId, builderId: AdminId) =>
 
 const estateRecomputePath = (estateId: AdminId) =>
   `${idPath("estates", estateId)}/recompute-design-on-lot`;
+const estatePerformancePath = (estateId: AdminId) =>
+  `${idPath("estates", estateId)}/performance`;
 
 export const adminApi = {
   async getStateRuleSets<T = StateRuleSetRecord>(
@@ -339,6 +352,12 @@ export const adminApi = {
     estateId: AdminId
   ): Promise<T> {
     return data(adminApiClient.post<T>(estateRecomputePath(estateId)));
+  },
+  async getEstatePerformance<T = EstatePerformanceSummary>(
+    estateId: AdminId,
+    params?: AdminQuery
+  ): Promise<T> {
+    return data(adminApiClient.get<T>(estatePerformancePath(estateId), { params }));
   },
 
   async getLots<T = unknown>(params?: AdminQuery): Promise<T[]> {
@@ -532,6 +551,31 @@ export const adminApi = {
     userId: AdminId
   ): Promise<T> {
     return data(adminApiClient.delete<T>(builderUserPath(id, userId)));
+  },
+  async getBuilderLeads<T = BuilderLeadsResponse>(
+    id: AdminId,
+    params?: AdminQuery
+  ): Promise<T> {
+    return data(adminApiClient.get<T>(builderLeadsPath(id), { params }));
+  },
+  async getBuilderPerformance<T = BuilderPerformanceSummary>(
+    id: AdminId,
+    params?: AdminQuery
+  ): Promise<T> {
+    return data(adminApiClient.get<T>(builderPerformancePath(id), { params }));
+  },
+  async updateBuilderLeadStatus<
+    T = { leadId: string; enquiryId: string; status: string; updatedAt: string },
+    B extends Record<string, unknown> = Record<string, unknown>
+  >(id: AdminId, leadId: AdminId, payload: B): Promise<T> {
+    return data(adminApiClient.patch<T>(builderLeadPath(id, leadId), payload));
+  },
+  async exportBuilderLeadsCsv(id: AdminId, params?: AdminQuery): Promise<Blob> {
+    const response = await adminApiClient.get(builderLeadsExportPath(id), {
+      params,
+      responseType: "blob",
+    });
+    return response.data as Blob;
   },
 
   async getBrandSettings<T = unknown>(params?: AdminQuery): Promise<T[]> {

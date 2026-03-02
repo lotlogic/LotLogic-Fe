@@ -7,6 +7,7 @@ import {
   EstateLotsCrud,
   type EstateLotRecord,
 } from "@/components/admin/estates/EstateLotsCrud";
+import { EstatePerformancePanel } from "@/components/admin/estates/EstatePerformancePanel";
 import { EstateRuleLayersCrud } from "@/components/admin/estates/EstateRuleLayersCrud";
 import { adminApi } from "@/lib/api/adminApi";
 import {
@@ -540,6 +541,8 @@ const AdminEstatePage = () => {
       )}
 
       <section className="mt-6 grid gap-6">
+        {estateId && <EstatePerformancePanel estateId={estateId} />}
+
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-[1.1fr_1fr]">
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold mb-1">Estate properties</h2>

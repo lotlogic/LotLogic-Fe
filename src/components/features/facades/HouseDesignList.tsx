@@ -8,6 +8,7 @@ import {
 } from "@/constants/content";
 import { useHouseDesigns } from "@/hooks/useHouseDesigns";
 import {
+  trackHouseDesignView,
   trackHouseDesignInteraction,
   trackPropertySaved,
 } from "@/lib/analytics/mixpanel";
@@ -131,7 +132,11 @@ export const HouseDesignList = ({
     data: apiResponse,
     isLoading,
     error,
-  } = useHouseDesigns(lot.lotId?.toString() || null, apiFilters, true);
+  } = useHouseDesigns(
+    lot.lotDbId?.toString() || lot.lotId?.toString() || null,
+    apiFilters,
+    true
+  );
 
   // Safely extract house designs with fallback
   const houseDesigns = (apiResponse?.houseDesigns as HouseDesignItem[]) || [];
@@ -168,7 +173,13 @@ export const HouseDesignList = ({
     // Track property save/remove
     trackPropertySaved(
       lot.lotId?.toString() || "",
-      !isCurrentlySaved ? "saved" : "removed"
+      !isCurrentlySaved ? "saved" : "removed",
+      {
+        estateId: lot.estateId,
+        lotDbId: lot.lotDbId,
+        builderId: clickedHouse.builderId,
+        builder: clickedHouse.builder,
+      }
     );
 
     // Toggle saved state using Zustand store
@@ -214,13 +225,19 @@ export const HouseDesignList = ({
     const houseWithOverlayOnly = { ...house, overlayOnly: true };
     onDesignClick(houseWithOverlayOnly);
 
-    trackHouseDesignInteraction("Viewed", {
+    trackHouseDesignView(house.id, {
       id: house.id,
+      name: house.title,
       title: house.title,
+      estateId: lot.estateId,
       bedrooms: house.bedrooms,
       bathrooms: house.bathrooms,
       area: house.area,
       lotId: lot.lotId,
+      lotDbId: lot.lotDbId,
+      builderId: house.builderId,
+      builderName: house.builderName,
+      builder: house.builder,
     });
   };
 
@@ -243,10 +260,15 @@ export const HouseDesignList = ({
       trackHouseDesignInteraction("Floor Plan Viewed", {
         id: house.id,
         title: house.title,
+        estateId: lot.estateId,
         bedrooms: house.bedrooms,
         bathrooms: house.bathrooms,
         area: house.area,
         lotId: lot.lotId,
+        lotDbId: lot.lotDbId,
+        builderId: house.builderId,
+        builderName: house.builderName,
+        builder: house.builder,
       });
       return;
     }
@@ -258,10 +280,15 @@ export const HouseDesignList = ({
     trackHouseDesignInteraction("Facades Viewed", {
       id: house.id,
       title: house.title,
+      estateId: lot.estateId,
       bedrooms: house.bedrooms,
       bathrooms: house.bathrooms,
       area: house.area,
       lotId: lot.lotId,
+      lotDbId: lot.lotDbId,
+      builderId: house.builderId,
+      builderName: house.builderName,
+      builder: house.builder,
     });
   };
 
@@ -633,10 +660,15 @@ export const HouseDesignList = ({
                     trackHouseDesignInteraction("Floor Plan Viewed", {
                       id: house.id,
                       title: house.title,
+                      estateId: lot.estateId,
                       bedrooms: house.bedrooms,
                       bathrooms: house.bathrooms,
                       area: house.area,
                       lotId: lot.lotId,
+                      lotDbId: lot.lotDbId,
+                      builderId: house.builderId,
+                      builderName: house.builderName,
+                      builder: house.builder,
                     });
                   }}
                   className="cursor-pointer rounded-lg bg-brand-primary py-2 px-4 font-medium text-white transition-colors hover:bg-[var(--color-primary-hover)]"
@@ -652,10 +684,15 @@ export const HouseDesignList = ({
                     trackHouseDesignInteraction("Facades Viewed", {
                       id: house.id,
                       title: house.title,
+                      estateId: lot.estateId,
                       bedrooms: house.bedrooms,
                       bathrooms: house.bathrooms,
                       area: house.area,
                       lotId: lot.lotId,
+                      lotDbId: lot.lotDbId,
+                      builderId: house.builderId,
+                      builderName: house.builderName,
+                      builder: house.builder,
                     });
                   }}
                   className="cursor-pointer rounded-lg bg-brand-primary py-2 px-4 font-medium text-white transition-colors hover:bg-[var(--color-primary-hover)]"
@@ -676,10 +713,15 @@ export const HouseDesignList = ({
                     trackHouseDesignInteraction("Enquiry Initiated", {
                       id: house.id,
                       title: house.title,
+                      estateId: lot.estateId,
                       bedrooms: house.bedrooms,
                       bathrooms: house.bathrooms,
                       area: house.area,
                       lotId: lot.lotId,
+                      lotDbId: lot.lotDbId,
+                      builderId: house.builderId,
+                      builderName: house.builderName,
+                      builder: house.builder,
                     });
                   }}
                   className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-brand bg-brand py-3 px-4 font-medium text-brand transition-colors hover:border-brand-primary hover:bg-brand-primary hover:text-white"

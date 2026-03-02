@@ -113,6 +113,203 @@ export type BuilderEstateApprovalRecord = {
   [key: string]: unknown;
 };
 
+export type BuilderLeadLotSummary = {
+  id?: string;
+  estateId?: string | null;
+  blockKey?: string | null;
+  blockNumber?: number | null;
+  address?: string | null;
+  lifecycleStage?: string | null;
+  [key: string]: unknown;
+};
+
+export type BuilderLeadFloorPlanSummary = {
+  id?: string;
+  name?: string | null;
+  builderId?: string | null;
+  [key: string]: unknown;
+};
+
+export type BuilderLeadStatus = "PENDING" | "PROCESSED";
+
+export type BuilderPerformanceSummary = {
+  builderId: string;
+  range?: {
+    from?: string;
+    to?: string;
+    [key: string]: unknown;
+  } | null;
+  source?: {
+    provider?: string;
+    configured?: boolean;
+    available?: boolean;
+    message?: string | null;
+    [key: string]: unknown;
+  } | null;
+  stats?: {
+    viewsTotal?: number;
+    viewsLast7Days?: number;
+    viewsLast30Days?: number;
+    uniqueLotsViewed?: number;
+    uniqueDesignsViewed?: number;
+    [key: string]: unknown;
+  } | null;
+  viewsByLot?: Array<{
+    lotId?: string;
+    lotLabel?: string | null;
+    lotDbId?: string | null;
+    blockKey?: string | null;
+    lotKey?: string | null;
+    lotDisplayId?: string | null;
+    displayLotId?: string | null;
+    views?: number;
+    [key: string]: unknown;
+  }>;
+  viewsByDesign?: Array<{
+    designId?: string;
+    designName?: string | null;
+    designLabel?: string | null;
+    houseDesignLabel?: string | null;
+    builderId?: string | null;
+    builderName?: string | null;
+    views?: number;
+    [key: string]: unknown;
+  }>;
+  [key: string]: unknown;
+};
+
+export type EstatePerformanceSummary = {
+  estateId: string;
+  range?: {
+    from?: string;
+    to?: string;
+    [key: string]: unknown;
+  } | null;
+  source?: {
+    provider?: string;
+    configured?: boolean;
+    available?: boolean;
+    message?: string | null;
+    [key: string]: unknown;
+  } | null;
+  stats?: {
+    viewsTotal?: number;
+    viewsLast7Days?: number;
+    viewsLast30Days?: number;
+    uniqueLotsViewed?: number;
+    uniqueDesignsViewed?: number;
+    uniqueBuildersViewed?: number;
+    enquiriesTotal?: number;
+    enquiriesHot?: number;
+    enquiriesLast7Days?: number;
+    enquiriesLast30Days?: number;
+    enquiriesPending?: number;
+    enquiriesProcessed?: number;
+    totalMatchedPlans?: number;
+    [key: string]: unknown;
+  } | null;
+  viewsByLot?: Array<{
+    lotId?: string;
+    lotLabel?: string | null;
+    views?: number;
+    [key: string]: unknown;
+  }>;
+  viewsByDesign?: Array<{
+    designId?: string;
+    designName?: string | null;
+    builderId?: string | null;
+    builderName?: string | null;
+    views?: number;
+    [key: string]: unknown;
+  }>;
+  viewsByBuilder?: Array<{
+    builderId?: string;
+    builderName?: string | null;
+    views?: number;
+    [key: string]: unknown;
+  }>;
+  matchesByDesign?: Array<{
+    designId?: string;
+    designName?: string | null;
+    builderId?: string | null;
+    builderName?: string | null;
+    matches?: number;
+    [key: string]: unknown;
+  }>;
+  enquiriesByLot?: Array<{
+    lotId?: string;
+    lotLabel?: string | null;
+    enquiries?: number;
+    [key: string]: unknown;
+  }>;
+  enquiriesByBuilder?: Array<{
+    builderId?: string;
+    builderName?: string | null;
+    enquiries?: number;
+    [key: string]: unknown;
+  }>;
+  [key: string]: unknown;
+};
+
+export type BuilderLeadEnquiry = {
+  id?: string;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  comments?: string | null;
+  hotLead?: boolean | null;
+  status?: BuilderLeadStatus | null;
+  estateId?: string | null;
+  lotId?: string | null;
+  floorPlanId?: string | null;
+  facadeId?: string | null;
+  createdAt?: string | null;
+  lot?: BuilderLeadLotSummary | null;
+  floorPlan?: BuilderLeadFloorPlanSummary | null;
+  [key: string]: unknown;
+};
+
+export type BuilderLeadRecord = {
+  id: string;
+  builderId?: string | null;
+  createdAt?: string | null;
+  enquiry?: BuilderLeadEnquiry | null;
+  [key: string]: unknown;
+};
+
+export type BuilderLeadsResponse = {
+  builder?: {
+    id?: string;
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    [key: string]: unknown;
+  } | null;
+  filters?: {
+    hotLead?: boolean | null;
+    status?: BuilderLeadStatus | null;
+    [key: string]: unknown;
+  } | null;
+  pagination?: {
+    page?: number;
+    pageSize?: number;
+    total?: number;
+    totalPages?: number;
+    [key: string]: unknown;
+  } | null;
+  stats?: {
+    totalSubmitted?: number;
+    hotLeadSubmitted?: number;
+    submittedLast7Days?: number;
+    submittedLast30Days?: number;
+    pendingSubmitted?: number;
+    processedSubmitted?: number;
+    [key: string]: unknown;
+  } | null;
+  items?: BuilderLeadRecord[];
+  [key: string]: unknown;
+};
+
 export type DesignOnLotRecord = {
   id: string;
   lotId?: string | null;

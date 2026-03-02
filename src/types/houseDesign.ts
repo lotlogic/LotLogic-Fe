@@ -11,6 +11,12 @@ export interface HouseDesignItem {
   area: string;
   builderId?: string;
   builderName?: string;
+  builder?:
+    | {
+        id?: string;
+        name?: string;
+      }
+    | string;
   width?: number;
   depth?: number;
   image: string;
@@ -37,6 +43,7 @@ export interface HouseDesignListProps {
   lot: {
     estateId?: string | number;
     lotId: string | number;
+    lotDbId?: string | number;
     lotDisplayId?: string | number;
     suburb: string;
     address: string;
@@ -58,6 +65,8 @@ export interface GetYourQuoteSidebarProps {
   selectedHouseDesign: HouseDesignItem | null;
   lotDetails: {
     id: string | number;
+    estateId?: string | number;
+    blockKey?: string | number;
     displayId?: string | number;
     suburb: string;
     address: string;

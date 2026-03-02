@@ -6,15 +6,62 @@ import {
 } from "../lib/api/lotApi";
 import type { HouseDesignItem } from "../types/houseDesign";
 
+const normalizeText = (value: unknown): string | undefined => {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+  const normalized = String(value).trim();
+  return normalized || undefined;
+};
+
+const resolveBuilderContext = (
+  apiDesign: HouseDesignItemResponse
+): Pick<HouseDesignItem, "builderId" | "builderName" | "builder"> => {
+  const rawBuilder = apiDesign.builder;
+  const builderRecord =
+    rawBuilder && typeof rawBuilder === "object"
+      ? (rawBuilder as { id?: string | null; name?: string | null })
+      : undefined;
+
+  const builderId =
+    normalizeText(apiDesign.builderId) ??
+    normalizeText(builderRecord?.id) ??
+    (typeof rawBuilder === "string" ? normalizeText(rawBuilder) : undefined);
+  const builderName =
+    normalizeText(apiDesign.builderName) ??
+    normalizeText(builderRecord?.name) ??
+    (typeof rawBuilder === "string" ? normalizeText(rawBuilder) : undefined);
+
+  const builder =
+    builderRecord &&
+    (normalizeText(builderRecord.id) || normalizeText(builderRecord.name))
+      ? {
+          id: normalizeText(builderRecord.id),
+          name: normalizeText(builderRecord.name),
+        }
+      : typeof rawBuilder === "string"
+      ? normalizeText(rawBuilder)
+      : undefined;
+
+  return {
+    builderId,
+    builderName,
+    builder,
+  };
+};
+
 // Convert API response to frontend format
 const convertApiResponseToHouseDesign = (
   apiDesign: HouseDesignItemResponse
 ): HouseDesignItem => {
+  const builderContext = resolveBuilderContext(apiDesign);
+
   return {
     ...apiDesign,
     area: apiDesign.area.toString(),
-    builderId: apiDesign.builderId ?? undefined,
-    builderName: apiDesign.builderName ?? undefined,
+    builderId: builderContext.builderId,
+    builderName: builderContext.builderName,
+    builder: builderContext.builder,
     storeys: 1, // Default to 1 storey
     floorPlanImage: apiDesign.floorPlanImage || undefined,
   };

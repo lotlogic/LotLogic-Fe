@@ -11,6 +11,8 @@ import {
   type FacadePayload,
   type FacadeRecord,
 } from "@/components/admin/facades/FacadeCrud";
+import { BuilderPerformancePanel } from "@/components/admin/builders/BuilderPerformancePanel";
+import { BuilderLeadsPanel } from "@/components/admin/builders/BuilderLeadsPanel";
 import type {
   AdminUser,
   BuilderRecord,
@@ -59,11 +61,14 @@ type FacadePanelProps = {
   floorPlanId: string;
   floorPlanOptions: Array<{ id: string; label: string }>;
   loadFacades: (floorPlanId: string) => Promise<FacadeRecord[]>;
-  createFacade: (floorPlanId: string, payload: FacadePayload) => Promise<unknown>;
+  createFacade: (
+    floorPlanId: string,
+    payload: FacadePayload,
+  ) => Promise<unknown>;
   updateFacade: (
     floorPlanId: string,
     id: string,
-    payload: FacadePayload
+    payload: FacadePayload,
   ) => Promise<unknown>;
   deleteFacade: (floorPlanId: string, id: string) => Promise<unknown>;
 };
@@ -82,11 +87,10 @@ const FacadePanel = ({
     setShowFacades(false);
   }, [floorPlanId]);
 
-  const option =
-    floorPlanOptions.find((item) => item.id === floorPlanId) ?? {
-      id: floorPlanId,
-      label: floorPlanId,
-    };
+  const option = floorPlanOptions.find((item) => item.id === floorPlanId) ?? {
+    id: floorPlanId,
+    label: floorPlanId,
+  };
 
   return (
     <div className="grid gap-3">
@@ -167,11 +171,11 @@ const DashboardBuilderPage = () => {
 
   const { access, hasAssignments } = useMemo(
     () => resolveDashboardAccess(whoAmI),
-    [whoAmI]
+    [whoAmI],
   );
   const isAdmin = role === "ADMIN";
   const isAssigned = Boolean(
-    builderId && access.builderIds.includes(builderId)
+    builderId && access.builderIds.includes(builderId),
   );
   const hasAccess = hasAssignments && isAssigned;
 
@@ -183,7 +187,7 @@ const DashboardBuilderPage = () => {
   const [saving, setSaving] = useState(false);
   const [saveErrorMessage, setSaveErrorMessage] = useState<string | null>(null);
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(
-    null
+    null,
   );
 
   const [deleteAction, setDeleteAction] = useState(false);
@@ -202,7 +206,7 @@ const DashboardBuilderPage = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersErrorMessage, setUsersErrorMessage] = useState<string | null>(
-    null
+    null,
   );
   const [userFilter, setUserFilter] = useState("");
   const [showAddPanel, setShowAddPanel] = useState(false);
@@ -210,7 +214,7 @@ const DashboardBuilderPage = () => {
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteErrorMessage, setInviteErrorMessage] = useState<string | null>(
-    null
+    null,
   );
 
   const [floorPlans, setFloorPlans] = useState<FloorPlanRecord[]>([]);
@@ -218,9 +222,9 @@ const DashboardBuilderPage = () => {
     BuilderEstateApprovalView[]
   >([]);
   const [estateApprovalsLoading, setEstateApprovalsLoading] = useState(false);
-  const [estateApprovalsError, setEstateApprovalsError] = useState<string | null>(
-    null
-  );
+  const [estateApprovalsError, setEstateApprovalsError] = useState<
+    string | null
+  >(null);
 
   const applyBuilder = useCallback((data: BuilderRecord) => {
     setBuilder(data);
@@ -245,7 +249,7 @@ const DashboardBuilderPage = () => {
     } catch (error) {
       setBuilder(null);
       setErrorMessage(
-        getAdminApiErrorMessage(error, "Failed to load builder.")
+        getAdminApiErrorMessage(error, "Failed to load builder."),
       );
     } finally {
       setLoading(false);
@@ -260,7 +264,7 @@ const DashboardBuilderPage = () => {
       setUsers(data);
     } catch (error) {
       setUsersErrorMessage(
-        error instanceof Error ? error.message : "Failed to load users."
+        error instanceof Error ? error.message : "Failed to load users.",
       );
     } finally {
       setUsersLoading(false);
@@ -281,7 +285,7 @@ const DashboardBuilderPage = () => {
     } catch (error) {
       setTeamMembers([]);
       setTeamMembersErrorMessage(
-        getAdminApiErrorMessage(error, "Failed to load team members.")
+        getAdminApiErrorMessage(error, "Failed to load team members."),
       );
     } finally {
       setTeamMembersLoading(false);
@@ -296,14 +300,14 @@ const DashboardBuilderPage = () => {
     try {
       const data = await adminApi.getFloorPlans<FloorPlanRecord>({ builderId });
       const scoped = data.filter(
-        (plan) => String(plan.builderId ?? "") === builderId
+        (plan) => String(plan.builderId ?? "") === builderId,
       );
       setFloorPlans(scoped);
       return scoped;
     } catch (error) {
       setFloorPlans([]);
       throw new Error(
-        getAdminApiErrorMessage(error, "Failed to load floor plans.")
+        getAdminApiErrorMessage(error, "Failed to load floor plans."),
       );
     }
   }, [builderId]);
@@ -324,23 +328,25 @@ const DashboardBuilderPage = () => {
           try {
             const approvals =
               await adminApi.getEstateBuilderApprovals<BuilderEstateApprovalRecord>(
-                estate.id
+                estate.id,
               );
             return { estate, approvals };
           } catch {
             return { estate, approvals: [] as BuilderEstateApprovalRecord[] };
           }
-        })
+        }),
       );
 
       const scoped = approvalsByEstate
         .flatMap(({ estate, approvals }) =>
           approvals
-            .filter((approval) => String(approval.builderId ?? "") === builderId)
+            .filter(
+              (approval) => String(approval.builderId ?? "") === builderId,
+            )
             .map((approval) => ({
               ...approval,
               estateName: estate.name?.trim() ? estate.name : estate.id,
-            }))
+            })),
         )
         .sort((left, right) => left.estateName.localeCompare(right.estateName));
 
@@ -348,25 +354,22 @@ const DashboardBuilderPage = () => {
     } catch (error) {
       setEstateApprovals([]);
       setEstateApprovalsError(
-        getAdminApiErrorMessage(error, "Failed to load approved estates.")
+        getAdminApiErrorMessage(error, "Failed to load approved estates."),
       );
     } finally {
       setEstateApprovalsLoading(false);
     }
   }, [builderId]);
 
-  const createFloorPlan = useCallback(
-    async (payload: FloorPlanPayload) => {
-      try {
-        return await adminApi.createFloorPlan(payload);
-      } catch (error) {
-        throw new Error(
-          getAdminApiErrorMessage(error, "Failed to create floor plan.")
-        );
-      }
-    },
-    []
-  );
+  const createFloorPlan = useCallback(async (payload: FloorPlanPayload) => {
+    try {
+      return await adminApi.createFloorPlan(payload);
+    } catch (error) {
+      throw new Error(
+        getAdminApiErrorMessage(error, "Failed to create floor plan."),
+      );
+    }
+  }, []);
 
   const updateFloorPlan = useCallback(
     async (id: string, payload: FloorPlanPayload) => {
@@ -374,32 +377,29 @@ const DashboardBuilderPage = () => {
         return await adminApi.updateFloorPlan(id, payload);
       } catch (error) {
         throw new Error(
-          getAdminApiErrorMessage(error, "Failed to update floor plan.")
+          getAdminApiErrorMessage(error, "Failed to update floor plan."),
         );
       }
     },
-    []
+    [],
   );
 
-  const deleteFloorPlan = useCallback(
-    async (id: string) => {
-      try {
-        return await adminApi.deleteFloorPlan(id);
-      } catch (error) {
-        throw new Error(
-          getAdminApiErrorMessage(error, "Failed to delete floor plan.")
-        );
-      }
-    },
-    []
-  );
+  const deleteFloorPlan = useCallback(async (id: string) => {
+    try {
+      return await adminApi.deleteFloorPlan(id);
+    } catch (error) {
+      throw new Error(
+        getAdminApiErrorMessage(error, "Failed to delete floor plan."),
+      );
+    }
+  }, []);
 
   const loadFacades = useCallback(async (floorPlanId: string) => {
     try {
       return await adminApi.getFacades<FacadeRecord>(floorPlanId);
     } catch (error) {
       throw new Error(
-        getAdminApiErrorMessage(error, "Failed to load facades.")
+        getAdminApiErrorMessage(error, "Failed to load facades."),
       );
     }
   }, []);
@@ -410,11 +410,11 @@ const DashboardBuilderPage = () => {
         return await adminApi.createFacade(floorPlanId, payload);
       } catch (error) {
         throw new Error(
-          getAdminApiErrorMessage(error, "Failed to create facade.")
+          getAdminApiErrorMessage(error, "Failed to create facade."),
         );
       }
     },
-    []
+    [],
   );
 
   const updateFacade = useCallback(
@@ -423,25 +423,22 @@ const DashboardBuilderPage = () => {
         return await adminApi.updateFacade(floorPlanId, id, payload);
       } catch (error) {
         throw new Error(
-          getAdminApiErrorMessage(error, "Failed to update facade.")
+          getAdminApiErrorMessage(error, "Failed to update facade."),
         );
       }
     },
-    []
+    [],
   );
 
-  const deleteFacade = useCallback(
-    async (floorPlanId: string, id: string) => {
-      try {
-        return await adminApi.deleteFacade(floorPlanId, id);
-      } catch (error) {
-        throw new Error(
-          getAdminApiErrorMessage(error, "Failed to delete facade.")
-        );
-      }
-    },
-    []
-  );
+  const deleteFacade = useCallback(async (floorPlanId: string, id: string) => {
+    try {
+      return await adminApi.deleteFacade(floorPlanId, id);
+    } catch (error) {
+      throw new Error(
+        getAdminApiErrorMessage(error, "Failed to delete facade."),
+      );
+    }
+  }, []);
 
   useEffect(() => {
     if (!hasAccess) {
@@ -495,17 +492,17 @@ const DashboardBuilderPage = () => {
           label: `${name} (${plan.id})`,
         };
       }),
-    [floorPlans]
+    [floorPlans],
   );
 
   const teamUserIds = useMemo(
     () => new Set(teamMembers.map((member) => member.userId)),
-    [teamMembers]
+    [teamMembers],
   );
 
   const availableUsers = useMemo(
     () => users.filter((user) => !teamUserIds.has(user.id)),
-    [teamUserIds, users]
+    [teamUserIds, users],
   );
 
   const filteredAvailableUsers = useMemo(() => {
@@ -543,7 +540,7 @@ const DashboardBuilderPage = () => {
       setSaveSuccessMessage("Builder updated.");
     } catch (error) {
       setSaveErrorMessage(
-        getAdminApiErrorMessage(error, "Failed to update builder.")
+        getAdminApiErrorMessage(error, "Failed to update builder."),
       );
     } finally {
       setSaving(false);
@@ -555,7 +552,7 @@ const DashboardBuilderPage = () => {
       return;
     }
     const confirmed = window.confirm(
-      "Delete this builder? This cannot be undone."
+      "Delete this builder? This cannot be undone.",
     );
     if (!confirmed) {
       return;
@@ -568,7 +565,7 @@ const DashboardBuilderPage = () => {
       navigate("/dashboard");
     } catch (error) {
       setSaveErrorMessage(
-        getAdminApiErrorMessage(error, "Failed to delete builder.")
+        getAdminApiErrorMessage(error, "Failed to delete builder."),
       );
     } finally {
       setDeleteAction(false);
@@ -587,7 +584,7 @@ const DashboardBuilderPage = () => {
       await loadTeamMembers();
     } catch (error) {
       setTeamErrorMessage(
-        getAdminApiErrorMessage(error, "Failed to add team member.")
+        getAdminApiErrorMessage(error, "Failed to add team member."),
       );
     } finally {
       setTeamAction(null);
@@ -611,7 +608,7 @@ const DashboardBuilderPage = () => {
       await loadTeamMembers();
     } catch (error) {
       setTeamErrorMessage(
-        getAdminApiErrorMessage(error, "Failed to remove team member.")
+        getAdminApiErrorMessage(error, "Failed to remove team member."),
       );
     } finally {
       setTeamAction(null);
@@ -654,7 +651,7 @@ const DashboardBuilderPage = () => {
       setInviteName("");
     } catch (error) {
       setInviteErrorMessage(
-        getAdminApiErrorMessage(error, "Failed to invite user.")
+        getAdminApiErrorMessage(error, "Failed to invite user."),
       );
     } finally {
       setTeamAction(null);
@@ -671,7 +668,13 @@ const DashboardBuilderPage = () => {
       loadFloorPlans(),
       loadEstateApprovals(),
     ]);
-  }, [hasAccess, loadBuilder, loadEstateApprovals, loadFloorPlans, loadTeamMembers]);
+  }, [
+    hasAccess,
+    loadBuilder,
+    loadEstateApprovals,
+    loadFloorPlans,
+    loadTeamMembers,
+  ]);
 
   const actions = (
     <Button
@@ -883,9 +886,7 @@ const DashboardBuilderPage = () => {
                   {teamMembers.map((member) => {
                     const user = member.user;
                     const name = user ? getUserName(user) : "(unknown)";
-                    const contact = user
-                      ? getUserContact(user)
-                      : member.userId;
+                    const contact = user ? getUserContact(user) : member.userId;
                     return (
                       <tr key={member.userId}>
                         <td className="p-3 border-b border-slate-100 text-sm">
@@ -1008,16 +1009,17 @@ const DashboardBuilderPage = () => {
                               </td>
                             </tr>
                           ))}
-                        {!usersLoading && filteredAvailableUsers.length === 0 && (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="p-3 text-center text-sm text-muted-foreground"
-                            >
-                              No available users match the filter.
-                            </td>
-                          </tr>
-                        )}
+                        {!usersLoading &&
+                          filteredAvailableUsers.length === 0 && (
+                            <tr>
+                              <td
+                                colSpan={4}
+                                className="p-3 text-center text-sm text-muted-foreground"
+                              >
+                                No available users match the filter.
+                              </td>
+                            </tr>
+                          )}
                       </tbody>
                     </table>
                   </div>
@@ -1068,80 +1070,108 @@ const DashboardBuilderPage = () => {
         </div>
       </section>
 
-      <section className="mb-10 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
-          <div>
-            <h2 className="text-xl font-semibold m-0">Approved Estates</h2>
-            <p className="text-sm text-muted-foreground m-0">
-              View where your builder company is approved. Floor plans stay
-              globally available for matching and are filtered by approvals at
-              runtime.
+      <section className="mb-10">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+            <div>
+              <h2 className="text-xl font-semibold m-0">Approved Estates</h2>
+              <p className="text-sm text-muted-foreground m-0">
+                View where your builder company is approved. Floor plans stay
+                globally available for matching and are filtered by approvals at
+                runtime.
+              </p>
+            </div>
+            <Button
+              onClick={loadEstateApprovals}
+              variant="outline"
+              className="h-8 text-xs"
+              label={
+                estateApprovalsLoading ? "Refreshing..." : "Refresh approvals"
+              }
+              loading={estateApprovalsLoading}
+              disabled={estateApprovalsLoading}
+            />
+          </div>
+
+          {estateApprovalsError && (
+            <div className="mb-3 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
+              {estateApprovalsError}
+            </div>
+          )}
+
+          {estateApprovalsLoading ? (
+            <p className="text-sm text-muted-foreground">
+              Loading approved estates...
             </p>
-          </div>
-          <Button
-            onClick={loadEstateApprovals}
-            variant="outline"
-            className="h-8 text-xs"
-            label={estateApprovalsLoading ? "Refreshing..." : "Refresh approvals"}
-            loading={estateApprovalsLoading}
-            disabled={estateApprovalsLoading}
-          />
-        </div>
-
-        {estateApprovalsError && (
-          <div className="mb-3 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
-            {estateApprovalsError}
-          </div>
-        )}
-
-        {estateApprovalsLoading ? (
-          <p className="text-sm text-muted-foreground">Loading approved estates...</p>
-        ) : estateApprovals.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No estate approvals found for this builder.
-          </p>
-        ) : (
-          <div className="overflow-auto border rounded-lg">
-            <table className="w-full border-collapse min-w-[680px]">
-              <thead>
-                <tr className="bg-slate-100 text-left">
-                  <th className="p-3 border-b font-medium text-sm text-slate-700">
-                    Estate
-                  </th>
-                  <th className="p-3 border-b font-medium text-sm text-slate-700">
-                    Status
-                  </th>
-                  <th className="p-3 border-b font-medium text-sm text-slate-700">
-                    Effective From
-                  </th>
-                  <th className="p-3 border-b font-medium text-sm text-slate-700">
-                    Available Floor Plans
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {estateApprovals.map((approval) => (
-                  <tr key={approval.id}>
-                    <td className="p-3 border-b border-slate-100 text-sm">
-                      {approval.estateName}
-                    </td>
-                    <td className="p-3 border-b border-slate-100 text-sm">
-                      {approval.status ?? "--"}
-                    </td>
-                    <td className="p-3 border-b border-slate-100 text-sm">
-                      <span title={formatDateTimeForTooltip(approval.effectiveFrom)}>
-                        {formatDateForCell(approval.effectiveFrom)}
-                      </span>
-                    </td>
-                    <td className="p-3 border-b border-slate-100 text-sm">
-                      {floorPlans.length}
-                    </td>
+          ) : estateApprovals.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No estate approvals found for this builder.
+            </p>
+          ) : (
+            <div className="overflow-auto border rounded-lg">
+              <table className="w-full border-collapse min-w-[680px]">
+                <thead>
+                  <tr className="bg-slate-100 text-left">
+                    <th className="p-3 border-b font-medium text-sm text-slate-700">
+                      Estate
+                    </th>
+                    <th className="p-3 border-b font-medium text-sm text-slate-700">
+                      Status
+                    </th>
+                    <th className="p-3 border-b font-medium text-sm text-slate-700">
+                      Effective From
+                    </th>
+                    <th className="p-3 border-b font-medium text-sm text-slate-700">
+                      Available Floor Plans
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {estateApprovals.map((approval) => (
+                    <tr key={approval.id}>
+                      <td className="p-3 border-b border-slate-100 text-sm">
+                        {approval.estateName}
+                      </td>
+                      <td className="p-3 border-b border-slate-100 text-sm">
+                        {approval.status ?? "--"}
+                      </td>
+                      <td className="p-3 border-b border-slate-100 text-sm">
+                        <span
+                          title={formatDateTimeForTooltip(
+                            approval.effectiveFrom,
+                          )}
+                        >
+                          {formatDateForCell(approval.effectiveFrom)}
+                        </span>
+                      </td>
+                      <td className="p-3 border-b border-slate-100 text-sm">
+                        {floorPlans.length}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="mb-10">
+        <BuilderPerformancePanel
+          builderId={builderId}
+          enabled={hasAccess}
+          title="Design View Performance"
+          subtitle="View data for this builder's house designs."
+        />
+      </section>
+
+      <section className="mb-10">
+        <BuilderLeadsPanel
+          builderId={builderId}
+          enabled={hasAccess}
+          title="Builder Enquiries"
+          subtitle="Track submitted leads and identify hot lead activity."
+        />
       </section>
 
       <section className="mb-10">

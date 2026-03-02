@@ -1,4 +1,4 @@
-import type { FormEvent, ReactNode } from "react";
+import type { ChangeEvent, FormEvent, ReactNode } from "react";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { AdminUploadField } from "@/components/admin/AdminUploadField";
 import { Button } from "@/components/ui/Button";
@@ -64,7 +64,7 @@ type FloorPlanForm = {
   storeys: string;
   buildingHeight_m: string;
   roofPitch_deg: string;
-  architecturalStyle: string;
+  architecturalStyle: string[];
   hasFrontFacingServiceAreas: "" | "true" | "false";
 };
 
@@ -83,7 +83,7 @@ const emptyForm: FloorPlanForm = {
   storeys: "",
   buildingHeight_m: "",
   roofPitch_deg: "",
-  architecturalStyle: "",
+  architecturalStyle: [],
   hasFrontFacingServiceAreas: "",
 };
 
@@ -91,13 +91,13 @@ const ARCHITECTURAL_STYLE_OPTIONS = [
   "Contemporary",
   "Modern",
   "Hamptons",
-  "Traditional Australian",
   "Coastal",
   "Farmhouse",
-  "Minimalist",
-  "Classic",
-  "Industrial",
-  "Other",
+  "Scandi",
+  "Traditional",
+  "Federation",
+  "Country",
+  "Mixed Materials",
 ] as const;
 
 const toNumber = (value: string): number | null => {
@@ -122,7 +122,7 @@ const parseOptionalNumberField = (
 type CsvImportDefaults = {
   storeys: string;
   roofPitch_deg: string;
-  architecturalStyle: string;
+  architecturalStyle: string[];
   hasFrontFacingServiceAreas: "" | "true" | "false";
 };
 
@@ -141,7 +141,7 @@ type CsvImportResult = {
 };
 
 const CSV_IMPORT_TEMPLATE = `id,name,floorplanUrl,bedrooms,bathrooms,garages,areaSqm,width,depth,rumpus,alfresco,pergola,storeys,buildingHeight_m,roofPitch_deg,architecturalStyle,hasFrontFacingServiceAreas,facades
-,Acacia 21,https://cdn.example.com/floorplans/acacia-21.pdf,4,2,2,210,12.5,18.2,true,true,false,1,8.9,22.5,Contemporary,false,"https://cdn.example.com/facades/acacia-modern.jpg,https://cdn.example.com/facades/acacia-classic.jpg"`;
+,Acacia 21,https://cdn.example.com/floorplans/acacia-21.pdf,4,2,2,210,12.5,18.2,true,true,false,1,8.9,22.5,"Contemporary,Coastal",false,"https://cdn.example.com/facades/acacia-modern.jpg,https://cdn.example.com/facades/acacia-classic.jpg"`;
 
 const parseCsvRecords = (text: string): Record<string, string>[] => {
   const rows: string[][] = [];
@@ -227,21 +227,74 @@ const parseBooleanField = (
   return { ok: false };
 };
 
-const resolveArchitecturalStyle = (
+const parseArchitecturalStyles = (
   rawValue: string
-): { ok: true; value: string } | { ok: false } => {
+): { ok: true; value: string[] } | { ok: false; invalidValues: string[] } => {
   const trimmed = rawValue.trim();
   if (!trimmed) {
-    return { ok: true, value: "" };
+    return { ok: true, value: [] };
   }
-  const matched = ARCHITECTURAL_STYLE_OPTIONS.find(
-    (option) => option.toLowerCase() === trimmed.toLowerCase()
-  );
-  if (!matched) {
-    return { ok: false };
+
+  const tokens = trimmed
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  const selected = new Set<string>();
+  const invalidValues: string[] = [];
+
+  for (const token of tokens) {
+    const matched = ARCHITECTURAL_STYLE_OPTIONS.find(
+      (option) => option.toLowerCase() === token.toLowerCase()
+    );
+    if (!matched) {
+      invalidValues.push(token);
+      continue;
+    }
+    selected.add(matched);
   }
-  return { ok: true, value: matched };
+
+  if (invalidValues.length > 0) {
+    return { ok: false, invalidValues };
+  }
+
+  return { ok: true, value: Array.from(selected) };
 };
+
+const parseArchitecturalStylesFromStoredValue = (
+  rawValue: string | null | undefined
+): string[] => {
+  const normalized = String(rawValue ?? "").trim();
+  if (!normalized) {
+    return [];
+  }
+
+  const parsed = parseArchitecturalStyles(normalized);
+  if (parsed.ok) {
+    return parsed.value;
+  }
+
+  // Ignore unknown historical values in legacy rows.
+  const fallbackValues: string[] = [];
+  normalized
+    .split(",")
+    .map((token) => token.trim())
+    .filter(Boolean)
+    .forEach((token) => {
+      const matched = ARCHITECTURAL_STYLE_OPTIONS.find(
+        (option) => option.toLowerCase() === token.toLowerCase()
+      );
+      if (matched) {
+        fallbackValues.push(matched);
+      }
+    });
+  return fallbackValues;
+};
+
+const formatArchitecturalStyles = (values: string[]): string =>
+  values.join(", ");
+
+const getSelectedValues = (event: ChangeEvent<HTMLSelectElement>): string[] =>
+  Array.from(event.target.selectedOptions).map((option) => option.value);
 
 const splitFacadeUrls = (rawValue: string): string[] => {
   if (!rawValue.trim()) {
@@ -344,7 +397,7 @@ export const FloorPlanCrud = ({
   const [csvDefaults, setCsvDefaults] = useState<CsvImportDefaults>({
     storeys: "",
     roofPitch_deg: "",
-    architecturalStyle: "",
+    architecturalStyle: [],
     hasFrontFacingServiceAreas: "",
   });
 
@@ -378,18 +431,6 @@ export const FloorPlanCrud = ({
       return name.includes(needle) || id.includes(needle);
     });
   }, [floorPlans, filterText]);
-
-  const architecturalStyleOptions = useMemo(() => {
-    const base = [...ARCHITECTURAL_STYLE_OPTIONS];
-    const currentStyle = form.architecturalStyle.trim();
-    if (!currentStyle) {
-      return base;
-    }
-    const exists = base.some(
-      (option) => option.toLowerCase() === currentStyle.toLowerCase()
-    );
-    return exists ? base : [...base, currentStyle];
-  }, [form.architecturalStyle]);
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -707,23 +748,26 @@ export const FloorPlanCrud = ({
           continue;
         }
 
-        const rowArchitecturalStyle = pickString(
-          row["architecturalstyle"],
+        const defaultArchitecturalStyle = formatArchitecturalStyles(
           csvDefaults.architecturalStyle
         );
-        const architecturalStyleResult = resolveArchitecturalStyle(
+        const rowArchitecturalStyle = pickString(
+          row["architecturalstyle"],
+          defaultArchitecturalStyle
+        );
+        const architecturalStyleResult = parseArchitecturalStyles(
           rowArchitecturalStyle
         );
         if (!architecturalStyleResult.ok) {
           errors.push({
             rowNumber,
             rowLabel,
-            message: `architecturalStyle must be one of: ${ARCHITECTURAL_STYLE_OPTIONS.join(", ")}.`,
+            message: `architecturalStyle has invalid value(s): ${architecturalStyleResult.invalidValues.join(", ")}. Use one or more of: ${ARCHITECTURAL_STYLE_OPTIONS.join(", ")}.`,
           });
           continue;
         }
         const architecturalStyle =
-          architecturalStyleResult.value ||
+          formatArchitecturalStyles(architecturalStyleResult.value) ||
           pickString(existingPlan?.architecturalStyle);
         const facadeUrls = splitFacadeUrls(
           pickString(row["facades"], row["facadeurls"], row["facade_urls"])
@@ -923,7 +967,9 @@ export const FloorPlanCrud = ({
       storeys: plan.storeys?.toString() ?? "",
       buildingHeight_m: plan.buildingHeight_m?.toString() ?? "",
       roofPitch_deg: plan.roofPitch_deg?.toString() ?? "",
-      architecturalStyle: plan.architecturalStyle ?? "",
+      architecturalStyle: parseArchitecturalStylesFromStoredValue(
+        plan.architecturalStyle
+      ),
       hasFrontFacingServiceAreas:
         typeof plan.hasFrontFacingServiceAreas === "boolean"
           ? plan.hasFrontFacingServiceAreas
@@ -1005,9 +1051,13 @@ export const FloorPlanCrud = ({
     if (roofPitchResult.value !== undefined) {
       payload.roofPitch_deg = roofPitchResult.value;
     }
-    const trimmedStyle = form.architecturalStyle.trim();
-    if (trimmedStyle) {
-      payload.architecturalStyle = trimmedStyle;
+    const selectedArchitecturalStyles = form.architecturalStyle.filter((style) =>
+      ARCHITECTURAL_STYLE_OPTIONS.some((option) => option === style)
+    );
+    if (selectedArchitecturalStyles.length > 0) {
+      payload.architecturalStyle = formatArchitecturalStyles(
+        selectedArchitecturalStyles
+      );
     }
     if (form.hasFrontFacingServiceAreas !== "") {
       payload.hasFrontFacingServiceAreas =
@@ -1123,7 +1173,8 @@ export const FloorPlanCrud = ({
               </p>
               <p className="text-xs text-slate-500 mt-1 mb-0">
                 <code className="mx-1 rounded bg-slate-100 px-1 py-0.5">architecturalStyle</code>{" "}
-                must be one of: {ARCHITECTURAL_STYLE_OPTIONS.join(", ")}.
+                accepts one or more comma-separated values from:{" "}
+                {ARCHITECTURAL_STYLE_OPTIONS.join(", ")}.
               </p>
             </div>
             <Button
@@ -1196,18 +1247,22 @@ export const FloorPlanCrud = ({
                     onChange={(event) =>
                       setCsvDefaults((previous) => ({
                         ...previous,
-                        architecturalStyle: event.target.value,
+                        architecturalStyle: getSelectedValues(event),
                       }))
                     }
-                    className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    multiple
+                    size={Math.min(ARCHITECTURAL_STYLE_OPTIONS.length, 6)}
+                    className="min-h-28 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    <option value="">No default</option>
                     {ARCHITECTURAL_STYLE_OPTIONS.map((style) => (
                       <option key={style} value={style}>
                         {style}
                       </option>
                     ))}
                   </select>
+                  <p className="m-0 text-[11px] text-slate-500">
+                    Leave all unselected for no default.
+                  </p>
                 </div>
                 <div className="grid gap-2">
                   <span className="text-xs text-slate-600">
@@ -1511,18 +1566,22 @@ export const FloorPlanCrud = ({
                   onChange={(event) =>
                     setForm((prev) => ({
                       ...prev,
-                      architecturalStyle: event.target.value,
+                      architecturalStyle: getSelectedValues(event),
                     }))
                   }
-                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  multiple
+                  size={Math.min(ARCHITECTURAL_STYLE_OPTIONS.length, 6)}
+                  className="min-h-28 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <option value="">Select style</option>
-                  {architecturalStyleOptions.map((style) => (
+                  {ARCHITECTURAL_STYLE_OPTIONS.map((style) => (
                     <option key={style} value={style}>
                       {style}
                     </option>
                   ))}
                 </select>
+                <p className="m-0 text-xs text-slate-500">
+                  Select one or more styles.
+                </p>
               </div>
               <div className="grid gap-2">
                 <span className="text-sm font-medium">

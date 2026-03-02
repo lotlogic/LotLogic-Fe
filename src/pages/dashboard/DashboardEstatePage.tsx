@@ -7,6 +7,7 @@ import {
   type DxfImportResult,
   type EstateLotRecord,
 } from "@/components/admin/estates/EstateLotsCrud";
+import { EstatePerformancePanel } from "@/components/admin/estates/EstatePerformancePanel";
 import { EstateRuleLayersCrud } from "@/components/admin/estates/EstateRuleLayersCrud";
 import type { EstateRecord } from "@/components/admin/estates/types";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
@@ -653,7 +654,13 @@ const DashboardEstatePage = () => {
         </div>
       )}
 
-      <section className="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+      {estateId && (
+        <section className="mb-10">
+          <EstatePerformancePanel estateId={estateId} enabled={hasAccess} />
+        </section>
+      )}
+
+      <section className="mb-10 grid items-start gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold mb-1">Estate properties</h2>
           <p className="text-sm text-muted-foreground mb-4">
@@ -809,7 +816,7 @@ const DashboardEstatePage = () => {
           )}
         </div>
 
-        <div className="grid gap-6 h-fit">
+        <div className="h-fit">
           <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm h-fit">
             <div className="flex items-center justify-between gap-2 mb-4">
               <h2 className="text-xl font-bold mt-0 mb-0">Team Members</h2>
@@ -1056,25 +1063,29 @@ const DashboardEstatePage = () => {
               </div>
             )}
           </div>
-
-          {estateId && (
-            <EstateRuleLayersCrud estateId={estateId} mode="builderApprovals" />
-          )}
         </div>
       </section>
 
-      <EstateLotsCrud
-        estateId={estateId}
-        estateName={form.name}
-        estateAddress={form.address}
-        loadLots={loadLots}
-        createLot={createLot}
-        updateLot={updateLot}
-        deleteLot={deleteLot}
-        deleteAllLots={isAdmin ? (id) => adminApi.deleteEstateLots(id) : undefined}
-        importLotsDxf={importLotsDxf}
-        recomputeEstateDesignOnLot={(id) => adminApi.recomputeEstateDesignOnLot(id)}
-      />
+      {estateId && (
+        <section className="mb-10">
+          <EstateRuleLayersCrud estateId={estateId} mode="builderApprovals" />
+        </section>
+      )}
+
+      <section className="mb-10">
+        <EstateLotsCrud
+          estateId={estateId}
+          estateName={form.name}
+          estateAddress={form.address}
+          loadLots={loadLots}
+          createLot={createLot}
+          updateLot={updateLot}
+          deleteLot={deleteLot}
+          deleteAllLots={isAdmin ? (id) => adminApi.deleteEstateLots(id) : undefined}
+          importLotsDxf={importLotsDxf}
+          recomputeEstateDesignOnLot={(id) => adminApi.recomputeEstateDesignOnLot(id)}
+        />
+      </section>
     </DashboardLayout>
   );
 };

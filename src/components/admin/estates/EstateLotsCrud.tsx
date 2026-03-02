@@ -10,6 +10,11 @@ import {
   type CreateLotInput,
 } from "@/lib/api/adminApi";
 import { getAdminApiErrorMessage } from "@/lib/api/adminApiErrors";
+import {
+  LOT_LIFECYCLE_OPTIONS,
+  getLotLifecycleLabel,
+  normalizeLotLifecycle,
+} from "@/constants/lotLifecycle";
 import type {
   CreateLotConstraintResponse,
   EstateRuleSetRecord,
@@ -222,10 +227,7 @@ const LOT_TYPE_OPTIONS = [
   { value: "other", label: "Other" },
 ] as const;
 
-const LIFECYCLE_STAGE_OPTIONS = [
-  { value: "available", label: "Available" },
-  { value: "unavailable", label: "Unavailable" },
-] as const;
+const LIFECYCLE_STAGE_OPTIONS = LOT_LIFECYCLE_OPTIONS;
 
 const sanitizeBlockKeyToken = (value: string) =>
   value
@@ -569,6 +571,8 @@ const coerceBoolean = (value: unknown) => {
 const buildLotForm = (lot: EstateLotRecord, estateIdValue: string): LotForm => {
   const geojsonRecord = getGeojsonRecord(lot.geojson);
   const metadata = getGeojsonMetadata(geojsonRecord);
+  const rawLifecycleStage = stringifyValue(lot.lifecycleStage ?? lot.status);
+  const normalizedLifecycleStage = normalizeLotLifecycle(rawLifecycleStage);
   const readValue = (key: string) =>
     (lot as Record<string, unknown>)[key] ??
     metadata?.[key] ??
@@ -586,7 +590,7 @@ const buildLotForm = (lot: EstateLotRecord, estateIdValue: string): LotForm => {
     address: stringifyValue(lot.address),
     district: stringifyValue(lot.district),
     division: stringifyValue(lot.division),
-    lifecycleStage: stringifyValue(lot.lifecycleStage ?? lot.status),
+    lifecycleStage: normalizedLifecycleStage ?? rawLifecycleStage,
     overlays: Array.isArray(lot.overlays) ? lot.overlays.join(", ") : "",
     geojson: lot.geojson ? JSON.stringify(lot.geojson, null, 2) : "",
     estateId: stringifyValue(extractLotEstateId(lot) ?? estateIdValue),
@@ -663,10 +667,15 @@ const getLotAddress = (lot: EstateLotRecord) => {
   return formatLotValue(address);
 };
 
-const getLotStage = (lot: EstateLotRecord) =>
-  formatLotValue(
-    lot.lifecycleStage ?? lot.status ?? (lot as { stage?: string }).stage
-  );
+const getLotStage = (lot: EstateLotRecord) => {
+  const rawValue =
+    lot.lifecycleStage ?? lot.status ?? (lot as { stage?: string }).stage;
+  const normalized = normalizeLotLifecycle(rawValue);
+  if (normalized) {
+    return getLotLifecycleLabel(normalized);
+  }
+  return formatLotValue(rawValue);
+};
 
 const getLotArea = (lot: EstateLotRecord) =>
   formatLotValue(
@@ -1262,6 +1271,17 @@ export const EstateLotsCrud = ({
       return;
     }
 
+    const normalizedLifecycleStage = normalizeLotLifecycle(
+      dxfForm.lifecycleStage
+    );
+    if (!normalizedLifecycleStage) {
+      setDxfError(
+        "Lifecycle stage must be one of: Available, Reserved, or Sold."
+      );
+      setDxfImporting(false);
+      return;
+    }
+
     const addField = (key: string, value: string | number | null) => {
       if (value === null || value === undefined) {
         return;
@@ -1282,7 +1302,7 @@ export const EstateLotsCrud = ({
     addField("district", dxfForm.district);
     addField("division", dxfForm.division);
     addField("lotType", dxfForm.lotType);
-    addField("lifecycleStage", dxfForm.lifecycleStage);
+    addField("lifecycleStage", normalizedLifecycleStage);
     addField("layer", dxfForm.layer);
     addField("minArea", minAreaValue);
     addField("sourceSrid", sourceSridValue);
@@ -1347,6 +1367,14 @@ export const EstateLotsCrud = ({
     const trimmedLifecycleStage = lotForm.lifecycleStage.trim();
     if (!trimmedLifecycleStage) {
       setLotFormError("Lifecycle stage is required.");
+      setLotSaving(false);
+      return;
+    }
+    const normalizedLifecycleStage = normalizeLotLifecycle(trimmedLifecycleStage);
+    if (!normalizedLifecycleStage) {
+      setLotFormError(
+        "Lifecycle stage must be one of: Available, Reserved, or Sold."
+      );
       setLotSaving(false);
       return;
     }
@@ -1490,7 +1518,7 @@ export const EstateLotsCrud = ({
       address: normalizeOptional(lotForm.address),
       district: normalizeOptional(lotForm.district),
       division: normalizeOptional(lotForm.division),
-      lifecycleStage: trimmedLifecycleStage,
+      lifecycleStage: normalizedLifecycleStage,
       overlays: parseOverlays(lotForm.overlays),
       frontageM: frontageMResult.value,
       lotType: trimmedLotType,
@@ -1665,7 +1693,12 @@ export const EstateLotsCrud = ({
         String(lot.id ?? "").toLowerCase(),
         address,
         String(lot.zoning ?? "").toLowerCase(),
-        String(lot.lifecycleStage ?? "").toLowerCase(),
+        String(
+          normalizeLotLifecycle(lot.lifecycleStage ?? lot.status) ??
+            lot.lifecycleStage ??
+            lot.status ??
+            ""
+        ).toLowerCase(),
         String(lot.blockKey ?? "").toLowerCase(),
       ];
       return haystacks.some((value) => value.includes(needle));

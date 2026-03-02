@@ -503,6 +503,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
           onClose={handleCloseSidebar}
           lot={{
             estateId: selectedLot.properties.estateId || estateId || "",
+            blockKey: selectedLot.properties.BLOCK_KEY || "",
             id:
               selectedLot.properties.ID?.toString() ||
               selectedLot.properties.databaseId,

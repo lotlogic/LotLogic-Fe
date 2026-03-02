@@ -7,7 +7,7 @@ import {
   lotApi,
   resolvePrototypeEstateId,
 } from "@/lib/api/lotApi";
-import { trackEvent } from "@/lib/analytics/mixpanel";
+import { setAnalyticsContext, trackEvent } from "@/lib/analytics/mixpanel";
 import { getRuntimeConfig } from "@/lib/runtime/runtimeConfig";
 import { useMobileNavigationStore } from "@/stores/mobileNavigationStore";
 import { preloadCriticalComponents } from "@/utils/preload";
@@ -47,6 +47,12 @@ export const PrototypePage = ({ estateId }: PrototypePageProps) => {
       version: "1.0.0",
     });
   }, []);
+
+  useEffect(() => {
+    setAnalyticsContext({
+      estateId: resolvedEstateId,
+    });
+  }, [resolvedEstateId]);
 
   // Preload critical components after initial render
   useEffect(() => {

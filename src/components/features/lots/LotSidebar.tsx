@@ -7,6 +7,7 @@ import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignF
 import Sidebar from "@/components/ui/Sidebar";
 import { useContent } from "@/hooks/useContent";
 import { useHouseDesigns } from "@/hooks/useHouseDesigns";
+import { setAnalyticsContext } from "@/lib/analytics/mixpanel";
 import { getImageUrl } from "@/lib/api/lotApi";
 import { getZoningColor, hexToRgba } from "@/lib/utils/zoning";
 import { useModalStore } from "@/stores/modalStore";
@@ -57,6 +58,14 @@ export const LotSidebar = ({
 
   // Get house designs and zoning data for dynamic FSR - only when user clicks "Show House Designs"
   const lotId = lot.id?.toString() || null;
+  const analyticsLotKey =
+    lot.blockKey !== undefined && lot.blockKey !== null
+      ? String(lot.blockKey)
+      : lot.displayLotId !== undefined && lot.displayLotId !== null
+      ? String(lot.displayLotId)
+      : lot.id !== undefined && lot.id !== null
+      ? String(lot.id)
+      : "";
 
   // Reset sidebar state when lot changes
   useEffect(() => {
@@ -74,6 +83,18 @@ export const LotSidebar = ({
     setMinSize(NaN);
     setMaxSize(NaN);
   }, [lot.id]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    setAnalyticsContext({
+      lotId: analyticsLotKey,
+      lotDbId: lot.id,
+      estateId: lot.estateId,
+    });
+  }, [analyticsLotKey, lot.estateId, lot.id, open]);
 
   // Only create filters object if any filters are actually set
   const hasAnyFilters =
@@ -334,7 +355,8 @@ export const LotSidebar = ({
               }}
               lot={{
                 estateId: lot.estateId ?? "",
-                lotId: lot.id ?? "",
+                lotId: analyticsLotKey,
+                lotDbId: lot.id ?? "",
                 lotDisplayId: displayLotId,
                 suburb: lot.suburb ?? "",
                 address: lot.address ?? "",
@@ -415,6 +437,8 @@ export const LotSidebar = ({
             selectedHouseDesign={quoteDesign}
             lotDetails={{
               id: String(lot.id || ""),
+              estateId: lot.estateId || "",
+              blockKey: analyticsLotKey,
               displayId: displayLotId,
               suburb: lot.suburb || "",
               address: lot.address || "",
