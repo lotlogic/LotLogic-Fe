@@ -1,4 +1,4 @@
-/* LotLogic embed loader
+/* LotCheck embed loader
  *
  * Example:
  * <script
@@ -13,13 +13,13 @@
   var script = document.currentScript;
 
   if (!script) {
-    console.error("[LotLogic] Unable to resolve current script element.");
+    console.error("[LotCheck] Unable to resolve current script element.");
     return;
   }
 
   var estateId = (script.getAttribute("data-estate-id") || "").trim();
   if (!estateId) {
-    console.error("[LotLogic] Missing required data-estate-id attribute.");
+    console.error("[LotCheck] Missing required data-estate-id attribute.");
     return;
   }
 
@@ -50,7 +50,7 @@
   iframe.style.border = "0";
   iframe.style.display = "block";
   iframe.setAttribute("allowfullscreen", "true");
-  iframe.setAttribute("title", "LotLogic Estate Viewer");
+  iframe.setAttribute("title", "LotCheck Estate Viewer");
   iframe.setAttribute("referrerpolicy", "strict-origin-when-cross-origin");
 
   var host = null;

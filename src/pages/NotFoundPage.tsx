@@ -5,7 +5,6 @@ export const NotFoundPage = () => {
   return (
     <div className="bg-stone-50 font-body text-[var(--color-ink)]">
       <LandingHeader
-        logoText="lotcheck."
         primaryAction={{
           label: "Back to homepage",
           href: "/",

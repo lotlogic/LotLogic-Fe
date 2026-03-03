@@ -2,21 +2,21 @@ export const PrivacyPolicyContent = () => {
   return (
     <div className="prose prose-sm max-w-none text-brand leading-7">
       <h3 className="text-lg font-semibold mt-0 mb-3">
-        Privacy Policy – LotLogic (operated by BlockPlanner Pty Ltd)
+        Privacy Policy – LotCheck (operated by BlockPlanner Pty Ltd)
       </h3>
       <p className="my-2">
         <strong>Effective Date:</strong> 18 September 2025
       </p>
       <p className="my-2">
         BlockPlanner Pty Ltd (ABN 78 688 846 915) (“BlockPlanner”, “we”, “our”,
-        “us”) owns and operates the LotLogic tool, which is a registered
-        trademark of BlockPlanner. LotLogic is a digital product that helps
+        “us”) owns and operates the LotCheck tool, which is a registered
+        trademark of BlockPlanner. LotCheck is a digital product that helps
         buyers explore land lots and request builder quotes through estate
         developer websites.
       </p>
       <p className="my-2">
         This Privacy Policy explains how BlockPlanner handles personal
-        information when you use the LotLogic demo quoting tool.
+        information when you use the LotCheck demo quoting tool.
       </p>
       <p className="my-2">
         We are bound by the Privacy Act 1988 (Cth), including the Australian
@@ -28,7 +28,7 @@ export const PrivacyPolicyContent = () => {
       </h4>
       <p className="my-2">
         Email:{" "}
-        <a href="mailto:privacy@blockplanner.com.au" className="text-blue-600">
+        <a href="mailto:privacy@blockplanner.com.au" className="text-brand-primary">
           privacy@blockplanner.com.au
         </a>
         <br />
@@ -245,7 +245,7 @@ export const PrivacyPolicyContent = () => {
         If you are not satisfied with our handling of your complaint, you may
         contact the Office of the Australian Information Commissioner (OAIC):{" "}
         <a
-          className="text-blue-600"
+          className="text-brand-primary"
           href="https://www.oaic.gov.au"
           target="_blank"
           rel="noreferrer"

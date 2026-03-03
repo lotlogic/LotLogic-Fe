@@ -38,7 +38,7 @@ export class ErrorBoundary extends React.Component<
               alignItems: "center",
               justifyContent: "center",
               minHeight: "100vh",
-              backgroundColor: "#FFFFFF",
+              backgroundColor: "var(--color-bg-primary)",
             }}
           >
             <div style={{ textAlign: "center", padding: "24px" }}>
@@ -62,7 +62,7 @@ export class ErrorBoundary extends React.Component<
                 style={{
                   fontSize: "24px",
                   fontWeight: 600,
-                  color: "#111827",
+                  color: "var(--color-text-primary)",
                   marginBottom: "8px",
                 }}
               >
@@ -72,7 +72,7 @@ export class ErrorBoundary extends React.Component<
               <p
                 style={{
                   fontSize: "16px",
-                  color: "#6B7280",
+                  color: "var(--color-text-secondary)",
                   marginBottom: "20px",
                 }}
               >
@@ -83,7 +83,7 @@ export class ErrorBoundary extends React.Component<
                 onClick={() => window.location.reload()}
                 style={{
                   backgroundColor: colors.primary,
-                  color: "#FFFFFF",
+                  color: "var(--color-bg-primary)",
                   border: "none",
                   borderRadius: "8px",
                   padding: "12px 20px",

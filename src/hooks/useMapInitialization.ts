@@ -114,7 +114,7 @@ export const useMapInitialization = (
           "fill-outline-color": [
             "case",
             ["boolean", ["feature-state", "selected"], false],
-            "#2F5D62",
+            "#2B3D48",
             ["==", ["get", "lifecycleStage"], "sold"],
             "#7f1d1d",
             ["==", ["get", "lifecycleStage"], "reserved"],
@@ -128,7 +128,7 @@ export const useMapInitialization = (
         id: "demo-lot-outline",
         type: "line",
         source: "demo-lot-source",
-        paint: { "line-color": "#2F5D62", "line-width": 1.5 },
+        paint: { "line-color": "#2B3D48", "line-width": 1.5 },
       });
 
       map.addLayer({

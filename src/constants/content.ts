@@ -2,22 +2,22 @@
 export const APP_CONTENT = {
   // App-wide content
   app: {
-    name: "LotLogic",
+    name: "LotCheck",
     tagline: "Build Your Dream Home",
     description: "Find your perfect lot and design your dream home",
   },
 
   // Brand assets
   brand: {
-    logo: "/images/logos/logo.png",
+    logo: "/images/logos/lotcheck-logo-full-colour.svg",
     favicon: "/favicon.png",
-    logoAlt: "LotLogic Logo",
-    title: "LOTLOGIC",
+    logoAlt: "LotCheck Logo",
+    title: "LotCheck",
   },
 
   // Header content
   header: {
-    title: "LotLogic",
+    title: "LotCheck",
     subtitle: "Build Your Dream Home",
     searchPlaceholder: "Search for lots...",
   },
@@ -147,39 +147,39 @@ export const APP_CONTENT = {
 
   // Brand colors (for easy customization)
   colors: {
-    primary: "#2F5D62",
-    secondary: "#EAEFEF",
-    accent: "#1a3d42",
+    primary: "#EF7B6C",
+    secondary: "#2B3D48",
+    accent: "#D9685A",
     success: "#10B981",
     warning: "#F59E0B",
     error: "#EF4444",
     // Additional colors found in components
-    toast: "#345B5B",
+    toast: "#2B3D48",
     gray: {
       100: "#F7F7F8",
-      200: "#EAEFEF",
-      300: "#D1D5DB",
-      400: "#9CA3AF",
-      600: "#6B7280",
-      700: "#374151",
+      200: "#E5E9EC",
+      300: "#D0D7DC",
+      400: "#A1AAB2",
+      600: "#5F6E76",
+      700: "#44535B",
     },
     text: {
-      primary: "#000000",
-      secondary: "#6B7280",
-      light: "#9CA3AF",
+      primary: "#2B3D48",
+      secondary: "#5F6E76",
+      light: "#A1AAB2",
     },
     background: {
       primary: "#FFFFFF",
-      secondary: "#F9FAFB",
-      accent: "#eaf3f2",
+      secondary: "#F7F8F9",
+      accent: "#FFF2F0",
     },
   },
 
   // Typography
   typography: {
     fontFamily: {
-      primary: "Inter, system-ui, sans-serif",
-      secondary: "Georgia, serif",
+      primary: "Montserrat, Arial, sans-serif",
+      secondary: "Calibri, Arial, sans-serif",
     },
     fontSize: {
       xs: "0.75rem",

@@ -11,7 +11,7 @@ const adminLinks: Array<{
   { to: "/admin/estates", label: "Estates" },
   { to: "/admin/design-on-lots", label: "Plan-Lot Matches" },
   { to: "/admin/builders", label: "Builders" },
-  { to: "/admin/brand-settings", label: "Platform Branding" },
+  { to: "/admin/brand-settings", label: "Embed Branding" },
 ];
 
 export const AdminNav = () => {

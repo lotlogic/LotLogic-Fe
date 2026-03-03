@@ -38,7 +38,7 @@ export const MobileNavigation = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center">
-            <img src={brand.logo} alt={brand.logoAlt} width={32} height={32} />
+            <img src={brand.logo} alt={brand.logoAlt} className="h-6 w-auto" />
             <span
               className="ml-2 text-lg font-semibold"
               style={{ color: colors.primary }}

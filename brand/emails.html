@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LotCheck — Email & Login Mockups</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Montserrat', Arial, sans-serif;
+    background: #F5F4F2;
+    color: #2B3D48;
+    padding: 40px 20px;
+  }
+
+  /* ─── PAGE LAYOUT ─── */
+  .page-title {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+  .page-title h1 {
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #EF7B6C;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .page-title h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2B3D48;
+  }
+  .page-title p {
+    font-size: 14px;
+    color: #7A8C95;
+    margin-top: 8px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #EF7B6C;
+    margin-bottom: 16px;
+    margin-top: 64px;
+  }
+  .section-desc {
+    font-size: 13px;
+    color: #7A8C95;
+    margin-bottom: 32px;
+    max-width: 620px;
+  }
+
+  .mockup-wrapper {
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  /* ─── LOGIN SCREEN MOCKUP ─── */
+  .browser-chrome {
+    background: #E8E7E5;
+    border-radius: 10px 10px 0 0;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #D0CFC9;
+    border-bottom: none;
+  }
+  .browser-dots { display: flex; gap: 6px; }
+  .browser-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .dot-red { background: #FF5F57; }
+  .dot-yellow { background: #FFBD2E; }
+  .dot-green { background: #28CA41; }
+  .browser-bar {
+    flex: 1;
+    background: white;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: #7A8C95;
+    margin-left: 8px;
+  }
+
+  .login-screen {
+    background: #2B3D48;
+    border: 1px solid #D0CFC9;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+    position: relative;
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* background house image simulation */
+  .login-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #2B3D48 0%, #3a4f5e 40%, #2B3D48 100%);
+    opacity: 0.9;
+  }
+  .login-bg-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(43, 61, 72, 0.75);
+  }
+
+  /* Entra top banner */
+  .entra-banner {
+    position: relative;
+    z-index: 2;
+    background: #2B3D48;
+    padding: 14px 24px;
+    border-bottom: 1px solid rgba(239,123,108,0.3);
+  }
+  .entra-banner img {
+    height: 24px;
+    display: block;
+  }
+  .entra-banner .logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+  }
+  .entra-banner .logo-text span { color: #EF7B6C; }
+
+  /* Login card */
+  .login-card-outer {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+  }
+  .login-card {
+    background: white;
+    border-radius: 4px;
+    padding: 32px 32px 24px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+  }
+  .card-logo {
+    margin-bottom: 24px;
+  }
+  .card-logo img {
+    height: 28px;
+  }
+  .card-logo .logo-text {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2B3D48;
+  }
+  .card-logo .logo-text span { color: #EF7B6C; }
+  .card-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: #2B3D48;
+    margin-bottom: 20px;
+  }
+  .card-input {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid #2B3D48;
+    padding: 8px 0;
+    font-size: 14px;
+    font-family: inherit;
+    color: #2B3D48;
+    outline: none;
+    margin-bottom: 8px;
+    background: transparent;
+  }
+  .card-input::placeholder { color: #B0BEC5; }
+  .card-link {
+    font-size: 12px;
+    color: #0F6CBD;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 24px;
+  }
+  .card-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+  }
+  .btn-back {
+    padding: 8px 20px;
+    background: #E8E7E5;
+    border: 1px solid #C0C0C0;
+    border-radius: 2px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #2B3D48;
+    cursor: pointer;
+  }
+  .btn-next {
+    padding: 8px 20px;
+    background: #EF7B6C;
+    border: none;
+    border-radius: 2px;
+    font-size: 14px;
+    font-family: inherit;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .card-info {
+    background: #F5F4F2;
+    border-radius: 4px;
+    padding: 14px;
+    font-size: 11.5px;
+    color: #4A5E6A;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+  .card-info strong { color: #2B3D48; }
+  .card-info a { color: #EF7B6C; text-decoration: none; font-weight: 600; }
+  .card-sign-options {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 0;
+    border-top: 1px solid #E8E7E5;
+    font-size: 12px;
+    color: #4A5E6A;
+  }
+  .card-sign-options svg { color: #7A8C95; }
+
+  .entra-footer {
+    position: relative;
+    z-index: 2;
+    padding: 10px 24px;
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    background: rgba(43,61,72,0.6);
+  }
+  .entra-footer a { color: rgba(255,255,255,0.5); text-decoration: none; }
+
+  /* ─── EMAIL MOCKUP ─── */
+  .email-client {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #D0CFC9;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  }
+  .email-client-header {
+    background: #E8E7E5;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #D0CFC9;
+  }
+  .email-meta {
+    background: white;
+    padding: 16px 24px;
+    border-bottom: 1px solid #E8E7E5;
+    font-size: 12px;
+    color: #7A8C95;
+  }
+  .email-meta .subject {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2B3D48;
+    margin-bottom: 6px;
+  }
+  .email-meta .from { margin-bottom: 2px; }
+  .email-meta strong { color: #2B3D48; }
+  .email-body {
+    background: #F5F4F2;
+    padding: 32px 24px;
+  }
+
+  /* Email inner template */
+  .email-template {
+    max-width: 540px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    font-size: 14px;
+  }
+  .email-header {
+    background: #2B3D48;
+    padding: 24px 32px;
+  }
+  .email-header img {
+    height: 22px;
+    display: block;
+  }
+  .email-header .logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+  }
+  .email-header .logo-text span { color: #EF7B6C; }
+  .email-accent-bar {
+    height: 4px;
+    background: #EF7B6C;
+  }
+  .email-content {
+    padding: 36px 40px;
+    line-height: 1.7;
+    color: #2B3D48;
+  }
+  .email-content p { margin-bottom: 16px; }
+  .email-content p:last-child { margin-bottom: 0; }
+  .email-greeting {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px !important;
+  }
+  .email-cta {
+    text-align: center;
+    margin: 28px 0 !important;
+  }
+  .email-cta a {
+    display: inline-block;
+    background: #EF7B6C;
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 14px 32px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+  .email-list {
+    background: #F5F4F2;
+    border-radius: 6px;
+    padding: 16px 20px 16px 36px;
+    margin: 0 0 16px 0;
+  }
+  .email-list li {
+    margin-bottom: 8px;
+    color: #2B3D48;
+    font-size: 13.5px;
+  }
+  .email-list li:last-child { margin-bottom: 0; }
+  .email-ps {
+    font-size: 12px;
+    color: #7A8C95;
+    font-style: italic;
+    padding-top: 16px;
+    border-top: 1px solid #E8E7E5;
+    margin-top: 8px !important;
+  }
+  .email-footer {
+    background: #2B3D48;
+    padding: 20px 40px;
+    text-align: center;
+  }
+  .email-footer p {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.6;
+  }
+  .email-footer a { color: #EF7B6C; text-decoration: none; }
+
+  /* ─── SECTION DIVIDER ─── */
+  .mockup-label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #7A8C95;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .mockup-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #D0CFC9;
+  }
+
+  .note-box {
+    background: #FEF3CD;
+    border-left: 4px solid #EF7B6C;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #5C4020;
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="page-title">
+  <h1>Brand Mockups</h1>
+  <h2>LotCheck — Email & Login Screen</h2>
+  <p>Visual reference for Henry · February 2026</p>
+</div>
+
+<div class="mockup-wrapper">
+
+  <!-- ─── LOGIN SCREEN ─────────────────────────────────── -->
+  <p class="section-label">01 — Microsoft Entra Login Screen</p>
+  <p class="section-desc">The screen users see when they click the invitation link. Entra ID allows: header banner image, body text, button colour (limited — Microsoft blue is default; peach CTA shown below as ideal), and footer links.</p>
+
+  <div class="note-box">
+    <strong>For Henry:</strong> The "Next" button colour in Entra ID is controlled by the "accent colour" setting in the branding config — set to <strong>#EF7B6C</strong> (LotCheck peach). The header banner should use the white-on-dark logo variation on the dark grey background (#2B3D48). The card itself is always white — Microsoft constraint.
+  </div>
+
+  <div class="browser-chrome">
+    <div class="browser-dots">
+      <div class="browser-dot dot-red"></div>
+      <div class="browser-dot dot-yellow"></div>
+      <div class="browser-dot dot-green"></div>
+    </div>
+    <div class="browser-bar">portal.lotcheck.com.au</div>
+  </div>
+
+  <div class="login-screen">
+    <div class="login-bg"></div>
+
+    <!-- Entra branded banner -->
+    <div class="entra-banner">
+      <div class="logo-text"><span>lot</span>check.</div>
+    </div>
+
+    <div class="login-card-outer">
+      <div class="login-card">
+        <div class="card-logo">
+          <div class="logo-text" style="font-size:16px;"><span>lot</span>check.</div>
+        </div>
+        <div class="card-title">Sign in</div>
+        <input class="card-input" type="text" placeholder="Email address" readonly>
+        <a class="card-link" href="#">Can't access your account?</a>
+        <div class="card-buttons">
+          <button class="btn-back">Back</button>
+          <button class="btn-next">Next →</button>
+        </div>
+        <div class="card-info">
+          <strong>Welcome to LotCheck</strong><br>
+          Sign in with the email address your invitation was sent to. This should be your work email — not a personal Gmail or Outlook account.<br><br>
+          <strong>Do not use a personal Microsoft account to sign in.</strong><br><br>
+          <a href="#">Need help? Contact us</a>
+        </div>
+        <div class="card-sign-options">
+          ⚙ Sign-in options
+        </div>
+      </div>
+    </div>
+
+    <div class="entra-footer">
+      <a href="#">Terms of Use</a>
+      <a href="#">Privacy</a>
+    </div>
+  </div>
+
+  <!-- ─── EMAIL: ESTATE ─────────────────────────────────── -->
+  <p class="section-label" style="margin-top:64px;">02 — Estate Manager Invitation Email</p>
+  <p class="section-desc">Sent when admin creates the estate in the portal. Warm, direct, single CTA. The recipient has already signed the agreement — this is the moment they get access.</p>
+
+  <div class="email-client">
+    <div class="email-client-header">
+      <div class="browser-dots">
+        <div class="browser-dot dot-red"></div>
+        <div class="browser-dot dot-yellow"></div>
+        <div class="browser-dot dot-green"></div>
+      </div>
+      <div style="font-size:12px;color:#7A8C95;margin-left:8px;">Outlook / Gmail</div>
+    </div>
+    <div class="email-meta">
+      <div class="subject">You're set up on LotCheck — here's how to get started</div>
+      <div class="from"><strong>From:</strong> LotCheck &lt;noreply@lotcheck.com.au&gt;</div>
+      <div><strong>To:</strong> Sarah Mitchell &lt;sarah@hamiltonrise.com.au&gt;</div>
+    </div>
+    <div class="email-body">
+      <div class="email-template">
+        <div class="email-header">
+          <div class="logo-text"><span>lot</span>check.</div>
+        </div>
+        <div class="email-accent-bar"></div>
+        <div class="email-content">
+          <p class="email-greeting">Hi Sarah,</p>
+          <p>You're all set up on LotCheck. Your account is ready and your estate portal is waiting — just click the button below to log in and get started.</p>
+          <p class="email-cta"><a href="#">Set up your account →</a></p>
+          <p>Once you're in, you'll be able to:</p>
+          <ul class="email-list">
+            <li>Add your team members</li>
+            <li>Upload your estate logo and set your brand colour</li>
+            <li>Review the builders we've approved for your estate</li>
+          </ul>
+          <p>If you run into anything, just reply to this email or contact us directly — we're here to help you get set up quickly.</p>
+          <p>Talk soon,<br><strong>The LotCheck Team</strong></p>
+          <p class="email-ps">Use the same email address this was sent to when you sign in.</p>
+        </div>
+        <div class="email-footer">
+          <p>LotCheck Pty Ltd · 47 Wentworth Avenue, Kingston ACT 2604<br>
+          <a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── EMAIL: BUILDER (ESTATE INVITE) ───────────────── -->
+  <p class="section-label" style="margin-top:64px;">03 — Builder Invitation Email (via Estate)</p>
+  <p class="section-desc">Sent when an estate approves a builder. Names the specific estate. Works harder to explain the value and set expectations — the ask (upload plans) requires real effort.</p>
+
+  <div class="email-client">
+    <div class="email-client-header">
+      <div class="browser-dots">
+        <div class="browser-dot dot-red"></div>
+        <div class="browser-dot dot-yellow"></div>
+        <div class="browser-dot dot-green"></div>
+      </div>
+      <div style="font-size:12px;color:#7A8C95;margin-left:8px;">Outlook / Gmail</div>
+    </div>
+    <div class="email-meta">
+      <div class="subject">You've been invited to list your plans on Hamilton Rise</div>
+      <div class="from"><strong>From:</strong> LotCheck &lt;noreply@lotcheck.com.au&gt;</div>
+      <div><strong>To:</strong> James Harper &lt;james@designhomes.com.au&gt;</div>
+    </div>
+    <div class="email-body">
+      <div class="email-template">
+        <div class="email-header">
+          <div class="logo-text"><span>lot</span>check.</div>
+        </div>
+        <div class="email-accent-bar"></div>
+        <div class="email-content">
+          <p class="email-greeting">Hi James,</p>
+          <p><strong>Hamilton Rise</strong> has invited you to list your floor plans on LotCheck.</p>
+          <p>LotCheck is a planning tool that helps buyers visualise how house designs fit on specific lots. When a buyer is browsing Hamilton Rise, your matched plans appear alongside the lot — generating qualified enquiries directly to you.</p>
+          <p>To get your plans in front of buyers, you'll need to upload them to your builder profile. It takes about 20–30 minutes for an initial set of plans, and you can add more at any time.</p>
+          <p class="email-cta"><a href="#">Set up your account →</a></p>
+          <p>Once you're in, you'll be able to:</p>
+          <ul class="email-list">
+            <li>Review Hamilton Rise's design guidelines</li>
+            <li>Upload your floor plans (name, dimensions, storeys, key features)</li>
+            <li>See which of your plans match available lots</li>
+          </ul>
+          <p>If you have questions before getting started, just reply to this email.</p>
+          <p><strong>The LotCheck Team</strong></p>
+        </div>
+        <div class="email-footer">
+          <p>LotCheck Pty Ltd · 47 Wentworth Avenue, Kingston ACT 2604<br>
+          <a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── EMAIL: BUILDER (DIRECT) ──────────────────────── -->
+  <p class="section-label" style="margin-top:64px;">04 — Builder Welcome Email (Direct Onboarding)</p>
+  <p class="section-desc">For builders who reached out to us directly and have been added before a specific estate connection is ready. Brief, positive, sets expectations.</p>
+
+  <div class="email-client">
+    <div class="email-client-header">
+      <div class="browser-dots">
+        <div class="browser-dot dot-red"></div>
+        <div class="browser-dot dot-yellow"></div>
+        <div class="browser-dot dot-green"></div>
+      </div>
+      <div style="font-size:12px;color:#7A8C95;margin-left:8px;">Outlook / Gmail</div>
+    </div>
+    <div class="email-meta">
+      <div class="subject">Welcome to LotCheck — your account is ready</div>
+      <div class="from"><strong>From:</strong> LotCheck &lt;noreply@lotcheck.com.au&gt;</div>
+      <div><strong>To:</strong> James Harper &lt;james@designhomes.com.au&gt;</div>
+    </div>
+    <div class="email-body">
+      <div class="email-template">
+        <div class="email-header">
+          <div class="logo-text"><span>lot</span>check.</div>
+        </div>
+        <div class="email-accent-bar"></div>
+        <div class="email-content">
+          <p class="email-greeting">Hi James,</p>
+          <p>Your LotCheck account is set up and ready to go.</p>
+          <p>We're in the process of connecting you with estates in your area — you'll receive a separate notification when you're approved for a specific estate. In the meantime, you can log in now to set up your builder profile and upload your floor plans so you're ready when those connections come through.</p>
+          <p class="email-cta"><a href="#">Access your account →</a></p>
+          <p>Once you're in:</p>
+          <ul class="email-list">
+            <li>Add your company details and logo</li>
+            <li>Upload your floor plans — name, dimensions, storeys, key features</li>
+            <li>We'll notify you when your plans are live on an estate</li>
+          </ul>
+          <p>Any questions, just reply here.</p>
+          <p><strong>The LotCheck Team</strong></p>
+        </div>
+        <div class="email-footer">
+          <p>LotCheck Pty Ltd · 47 Wentworth Avenue, Kingston ACT 2604<br>
+          <a href="#">Unsubscribe</a> · <a href="#">Privacy Policy</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:60px;padding:24px;background:#2B3D48;border-radius:8px;text-align:center;">
+    <div class="logo-text" style="font-size:22px;color:white;margin-bottom:8px;font-family:'Montserrat',Arial,sans-serif;font-weight:700;"><span style="color:#EF7B6C;">lot</span>check.</div>
+    <p style="font-size:11px;color:rgba(255,255,255,0.4);letter-spacing:2px;text-transform:uppercase;">Brand Mockups · For Henry · Feb 2026</p>
+  </div>
+
+</div>
+</body>
+</html>

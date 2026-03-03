@@ -67,48 +67,57 @@ const resolveBrandQuery = (): BrandQueryParams | undefined => {
 };
 
 async function bootstrap() {
-  try {
-    const currentBrand = await getCurrentBrand(resolveBrandQuery());
-    const prototypeEstateId =
-      typeof currentBrand?.estateId === "string"
-        ? currentBrand.estateId.trim() || undefined
-        : undefined;
-    setRuntimeConfig({ prototypeEstateId });
+  const brandQuery = resolveBrandQuery();
+  const shouldApplyEmbedBrand = Boolean(brandQuery);
 
-    if (currentBrand?.logoUrl) {
-      setFavicon(currentBrand.logoUrl);
+  setRuntimeConfig({ prototypeEstateId: undefined });
+
+  if (shouldApplyEmbedBrand) {
+    try {
+      const currentBrand = await getCurrentBrand(brandQuery);
+      const prototypeEstateId =
+        typeof currentBrand?.estateId === "string"
+          ? currentBrand.estateId.trim() || undefined
+          : undefined;
+      setRuntimeConfig({ prototypeEstateId });
+
+      APP_CONTENT.app.name = currentBrand?.name ?? APP_CONTENT.app.name;
+      APP_CONTENT.brand.logo = currentBrand?.logoUrl ?? APP_CONTENT.brand.logo;
+      APP_CONTENT.brand.favicon =
+        currentBrand?.logoUrl ?? APP_CONTENT.brand.favicon;
+      APP_CONTENT.brand.title = currentBrand?.title ?? APP_CONTENT.brand.title;
+      APP_CONTENT.header.title = currentBrand?.name ?? APP_CONTENT.header.title;
+
+      APP_CONTENT.colors.primary =
+        currentBrand?.primaryColor ?? APP_CONTENT.colors.primary;
+      APP_CONTENT.colors.accent =
+        currentBrand?.secondaryColor ?? APP_CONTENT.colors.accent;
+      APP_CONTENT.colors.text.primary =
+        currentBrand?.textPrimaryColor ?? APP_CONTENT.colors.text.primary;
+      APP_CONTENT.colors.text.secondary =
+        currentBrand?.textSecondaryColor ?? APP_CONTENT.colors.text.secondary;
+      APP_CONTENT.colors.background.primary =
+        currentBrand?.bgPrimaryColor ?? APP_CONTENT.colors.background.primary;
+      APP_CONTENT.colors.background.secondary =
+        currentBrand?.bgSecondaryColor ?? APP_CONTENT.colors.background.secondary;
+
+      APP_CONTENT.typography.fontFamily.primary =
+        currentBrand?.fontFamilyPrimary ??
+        APP_CONTENT.typography.fontFamily.primary;
+      APP_CONTENT.typography.fontFamily.secondary =
+        currentBrand?.fontFamilySecondary ??
+        APP_CONTENT.typography.fontFamily.secondary;
+    } catch (err) {
+      console.error("Embed brand init failed", err);
     }
-    document.title = currentBrand?.name ?? "Lotlogic";
-
-    APP_CONTENT.app.name = currentBrand?.name ?? APP_CONTENT.app.name;
-    APP_CONTENT.brand.logo = currentBrand?.logoUrl ?? APP_CONTENT.brand.logo;
-    APP_CONTENT.brand.favicon =
-      currentBrand?.logoUrl ?? APP_CONTENT.brand.favicon;
-    APP_CONTENT.brand.title = currentBrand?.title ?? APP_CONTENT.brand.title;
-    APP_CONTENT.header.title = currentBrand?.name ?? APP_CONTENT.header.title;
-
-    APP_CONTENT.colors.primary =
-      currentBrand?.primaryColor ?? APP_CONTENT.colors.primary;
-    APP_CONTENT.colors.accent =
-      currentBrand?.secondaryColor ?? APP_CONTENT.colors.accent;
-    APP_CONTENT.colors.text.primary =
-      currentBrand?.textPrimaryColor ?? APP_CONTENT.colors.text.primary;
-    APP_CONTENT.colors.text.secondary =
-      currentBrand?.textSecondaryColor ?? APP_CONTENT.colors.text.secondary;
-    APP_CONTENT.colors.background.primary =
-      currentBrand?.bgPrimaryColor ?? APP_CONTENT.colors.background.primary;
-    APP_CONTENT.colors.background.secondary =
-      currentBrand?.bgSecondaryColor ?? APP_CONTENT.colors.background.secondary;
-
-    APP_CONTENT.typography.fontFamily.primary =
-      currentBrand?.fontFamilyPrimary ??
-      APP_CONTENT.typography.fontFamily.primary;
-    APP_CONTENT.typography.fontFamily.secondary =
-      currentBrand?.fontFamilySecondary ??
-      APP_CONTENT.typography.fontFamily.secondary;
-  } catch (err) {
-    console.error("Brand init failed", err);
   }
+
+  if (APP_CONTENT.brand.favicon) {
+    setFavicon(APP_CONTENT.brand.favicon);
+  }
+
+  document.title = APP_CONTENT.app.name;
+
   if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) {
     clearBrandThemeOverrides();
   } else {

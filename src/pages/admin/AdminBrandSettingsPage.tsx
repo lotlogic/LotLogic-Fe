@@ -150,7 +150,9 @@ const AdminBrandSettingsPage = () => {
       setSettingsList(data);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Failed to load brand settings."
+        error instanceof Error
+          ? error.message
+          : "Failed to load embed brand settings."
       );
     } finally {
       setLoading(false);
@@ -243,13 +245,15 @@ const AdminBrandSettingsPage = () => {
       const created = await adminApi.createBrandSetting<BrandSettings>(payload);
       await loadSettings();
       setForm(emptyForm);
-      setSaveSuccessMessage("Brand settings created.");
+      setSaveSuccessMessage("Embed brand settings created.");
       if (created?.guid) {
         setLastCreatedGuid(created.guid);
       }
     } catch (error) {
       setSaveErrorMessage(
-        error instanceof Error ? error.message : "Failed to create brand settings."
+        error instanceof Error
+          ? error.message
+          : "Failed to create embed brand settings."
       );
     } finally {
       setSaving(false);
@@ -262,13 +266,17 @@ const AdminBrandSettingsPage = () => {
 
   return (
     <div className="container py-8 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Brand Settings</h1>
+      <h1 className="text-3xl font-bold mb-6">Embed Brand Settings</h1>
+      <p className="text-sm text-slate-600 -mt-3 mb-5">
+        These settings are applied to client-facing <code>/prototype</code> and{" "}
+        <code>/embed</code> routes only.
+      </p>
       <AdminNav />
       <div className="flex flex-wrap gap-3 mb-6 items-center">
         <Button
           onClick={loadSettings}
           disabled={loading}
-          label="Refresh settings"
+          label="Refresh embed settings"
           loading={loading}
         />
         <Button onClick={handleLogout} variant="outline" label="Sign out" />
@@ -284,7 +292,7 @@ const AdminBrandSettingsPage = () => {
               return next;
             })
           }
-          label={showAddForm ? "Cancel" : "Add brand settings"}
+          label={showAddForm ? "Cancel" : "Add embed brand settings"}
           variant={showAddForm ? "outline" : "primary"}
           className="ml-auto"
         />
@@ -295,7 +303,7 @@ const AdminBrandSettingsPage = () => {
           onSubmit={handleCreate}
           className="grid gap-5 p-5 border rounded-lg mb-6 bg-slate-50"
         >
-          <h2 className="text-lg font-semibold">New Brand Settings</h2>
+          <h2 className="text-lg font-semibold">New Embed Brand Settings</h2>
           <div className="grid gap-4">
             <div className="grid gap-2">
               <span className="text-sm font-medium">Name *</span>
@@ -303,7 +311,7 @@ const AdminBrandSettingsPage = () => {
                 value={form.name}
                 onChange={(event) => updateField("name")(event.target.value)}
                 className="w-full"
-                placeholder="LotLogic"
+                placeholder="Client Brand Name"
                 required
               />
             </div>
@@ -313,13 +321,13 @@ const AdminBrandSettingsPage = () => {
                 value={form.title}
                 onChange={(event) => updateField("title")(event.target.value)}
                 className="w-full"
-                placeholder="LotLogic Block Planner"
+                placeholder="Client Embed Title"
                 required
               />
             </div>
             <div className="grid gap-2">
               <AdminUploadField
-                label="Logo URL *"
+                label="Embed Logo URL *"
                 value={form.logoUrl}
                 onChange={updateField("logoUrl")}
                 placeholder="https://example.com/logo.png"
@@ -432,7 +440,7 @@ const AdminBrandSettingsPage = () => {
               type="submit"
               disabled={saving}
               loading={saving}
-              label="Create brand settings"
+              label="Create embed brand settings"
             />
             <Button
               type="button"
@@ -477,7 +485,7 @@ const AdminBrandSettingsPage = () => {
 
       {loading && (
         <p className="text-muted-foreground p-4 text-center">
-          Loading brand settings...
+          Loading embed brand settings...
         </p>
       )}
       {errorMessage && <p className="text-destructive p-4">{errorMessage}</p>}
@@ -547,7 +555,7 @@ const AdminBrandSettingsPage = () => {
                     colSpan={6}
                     className="p-4 text-center text-muted-foreground"
                   >
-                    No brand settings match the current filter.
+                    No embed brand settings match the current filter.
                   </td>
                 </tr>
               )}

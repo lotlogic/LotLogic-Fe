@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AdminAuthRequiredError, adminAuth } from "@/lib/auth/adminAuth";
+import { brand } from "@/constants/content";
 import { Button } from "@/components/ui/Button";
 
 type LoginState = "loading" | "idle" | "error";
@@ -163,13 +164,13 @@ const AdminLoginPage = () => {
             <article className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
               <div className="mb-6 flex items-center gap-4">
                 <img
-                  src="/images/logos/logo.png"
-                  alt="LotCheck"
+                  src={brand.logo}
+                  alt={brand.logoAlt}
                   className="h-10 w-auto rounded"
                 />
                 <div>
                   <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                    LotCheck Portal
+                    {brand.title} Portal
                   </p>
                   <h1 className="m-0 text-3xl font-bold">
                     {redirectContext.accessTitle}

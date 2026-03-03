@@ -1,4 +1,4 @@
-import { brand, colors } from "@/constants/content";
+import { brand } from "@/constants/content";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 
@@ -26,20 +26,13 @@ export const Header = () => {
             <Link
               to="/"
               className="flex items-center rounded-md hover:opacity-80 transition-opacity"
-              aria-label="Meals on Wheels NSW - Go to homepage"
+              aria-label={`${brand.title} - Go to homepage`}
             >
               <img
                 src={brand.logo}
                 alt={brand.logoAlt}
-                width={40}
-                height={40}
+                className="h-9 w-auto"
               />
-              <span
-                className="ml-3 text-2xl font-bold tracking-tight"
-                style={{ color: colors.primary }}
-              >
-                {brand.title}
-              </span>
             </Link>
             <div className="flex items-center gap-4"></div>
           </div>

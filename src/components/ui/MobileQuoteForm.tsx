@@ -102,7 +102,7 @@ export const MobileQuoteForm = ({
           {selectedDesign?.size && (
             <div
               className="rounded-2xl p-4"
-              style={{ backgroundColor: "#BFCDCE" }}
+              style={{ backgroundColor: "var(--color-bg-accent)" }}
             >
               <div className="text-gray-900 font-semibold text-base">
                 Estimated Building Cost
@@ -144,7 +144,7 @@ export const MobileQuoteForm = ({
                 }))
               }
               placeholder="Any specific requirements or questions?"
-              className="w-full p-3 border border-gray-300 rounded-lg resize-none h-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg resize-none h-24 focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
             />
           </div>
 
@@ -199,13 +199,13 @@ export const MobileQuoteForm = ({
                     termsAccepted: e.target.checked,
                   }))
                 }
-                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                className="mt-1 w-4 h-4 text-[var(--color-primary)] border-gray-300 rounded focus:ring-[var(--color-primary)] focus:ring-2"
               />
               <span className="text-sm text-gray-700">
                 I agree to the{" "}
                 <a
                   href="#"
-                  className="text-blue-600 hover:underline"
+                  className="text-[var(--color-primary)] hover:underline"
                   onClick={(e) => {
                     e.preventDefault();
                     setShowTerms(true);

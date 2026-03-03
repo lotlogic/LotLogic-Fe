@@ -157,7 +157,7 @@ const AdminBrandSettingPage = () => {
 
   const loadSettings = useCallback(async () => {
     if (!guid) {
-      setErrorMessage("Brand settings GUID is missing.");
+      setErrorMessage("Embed brand settings GUID is missing.");
       setLoading(false);
       return;
     }
@@ -172,7 +172,7 @@ const AdminBrandSettingPage = () => {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : "Failed to load brand settings."
+          : "Failed to load embed brand settings."
       );
     } finally {
       setLoading(false);
@@ -247,10 +247,12 @@ const AdminBrandSettingPage = () => {
     try {
       await adminApi.updateBrandSetting(guid, payload);
       await loadSettings();
-      setSaveSuccessMessage("Brand settings updated.");
+      setSaveSuccessMessage("Embed brand settings updated.");
     } catch (error) {
       setSaveErrorMessage(
-        error instanceof Error ? error.message : "Failed to save brand settings."
+        error instanceof Error
+          ? error.message
+          : "Failed to save embed brand settings."
       );
     } finally {
       setSaving(false);
@@ -262,7 +264,7 @@ const AdminBrandSettingPage = () => {
       return;
     }
     const confirmed = window.confirm(
-      "Delete these brand settings? This cannot be undone."
+      "Delete these embed brand settings? This cannot be undone."
     );
     if (!confirmed) {
       return;
@@ -275,7 +277,9 @@ const AdminBrandSettingPage = () => {
       navigate("/admin/brand-settings");
     } catch (error) {
       setSaveErrorMessage(
-        error instanceof Error ? error.message : "Failed to delete brand settings."
+        error instanceof Error
+          ? error.message
+          : "Failed to delete embed brand settings."
       );
     } finally {
       setSaving(false);
@@ -295,7 +299,7 @@ const AdminBrandSettingPage = () => {
   if (loading) {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        Loading brand settings...
+        Loading embed brand settings...
       </div>
     );
   }
@@ -303,7 +307,11 @@ const AdminBrandSettingPage = () => {
   if (errorMessage) {
     return (
       <div className="container py-8 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Brand Settings</h1>
+        <h1 className="text-3xl font-bold mb-6">Embed Brand Settings</h1>
+        <p className="text-sm text-slate-600 -mt-3 mb-5">
+          These settings are applied to client-facing <code>/prototype</code>{" "}
+          and <code>/embed</code> routes only.
+        </p>
         <AdminNav />
         <p className="text-destructive mb-4">{errorMessage}</p>
         <div className="flex gap-2">
@@ -321,16 +329,24 @@ const AdminBrandSettingPage = () => {
   if (!settings) {
     return (
       <div className="container py-8 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Brand Settings</h1>
+        <h1 className="text-3xl font-bold mb-6">Embed Brand Settings</h1>
+        <p className="text-sm text-slate-600 -mt-3 mb-5">
+          These settings are applied to client-facing <code>/prototype</code>{" "}
+          and <code>/embed</code> routes only.
+        </p>
         <AdminNav />
-        <p className="text-muted-foreground">Brand settings not found.</p>
+        <p className="text-muted-foreground">Embed brand settings not found.</p>
       </div>
     );
   }
 
   return (
     <div className="container py-8 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Brand Settings</h1>
+      <h1 className="text-3xl font-bold mb-6">Embed Brand Settings</h1>
+      <p className="text-sm text-slate-600 -mt-3 mb-5">
+        These settings are applied to client-facing <code>/prototype</code> and{" "}
+        <code>/embed</code> routes only.
+      </p>
       <AdminNav />
       <div className="flex flex-wrap gap-3 mb-6 items-center">
         <Button
@@ -338,13 +354,15 @@ const AdminBrandSettingPage = () => {
           variant="outline"
           label="Back to list"
         />
-        <Button onClick={loadSettings} label="Refresh settings" />
+        <Button onClick={loadSettings} label="Refresh embed settings" />
         <Button onClick={handleLogout} variant="outline" label="Sign out" />
       </div>
 
       <section className="grid gap-6 grid-cols-1 lg:grid-cols-[1.2fr_1fr]">
         <div className="border rounded-lg p-6 bg-white shadow-sm">
-          <h2 className="text-xl font-bold mb-4 mt-0">Edit Brand Settings</h2>
+          <h2 className="text-xl font-bold mb-4 mt-0">
+            Edit Embed Brand Settings
+          </h2>
           <form onSubmit={handleSave} className="grid gap-5">
             <div className="grid gap-4">
               <div className="grid gap-2">
@@ -367,7 +385,7 @@ const AdminBrandSettingPage = () => {
               </div>
               <div className="grid gap-2">
                 <AdminUploadField
-                  label="Logo URL *"
+                  label="Embed Logo URL *"
                   value={form.logoUrl}
                   onChange={updateField("logoUrl")}
                   required

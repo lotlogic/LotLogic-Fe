@@ -60,7 +60,7 @@ export const TextModal: React.FC<TextModalProps> = ({
         <DialogTitle
           sx={{
             padding: "20px",
-            borderBottom: "1px solid #e5e7eb",
+            borderBottom: "1px solid var(--color-border)",
           }}
         >
           <div>
@@ -71,7 +71,7 @@ export const TextModal: React.FC<TextModalProps> = ({
                 sx={{
                   fontSize: "18px",
                   fontWeight: 600,
-                  color: "#111827",
+                  color: "var(--color-text-primary)",
                 }}
               >
                 {title}
@@ -97,12 +97,12 @@ export const TextModal: React.FC<TextModalProps> = ({
           position: "absolute",
           top: 10,
           right: 10,
-          color: "#6b7280",
+          color: "var(--color-text-secondary)",
           padding: "8px",
           borderRadius: "50%",
           "&:hover": {
-            backgroundColor: "#f3f4f6",
-            color: "#374151",
+            backgroundColor: "var(--color-muted)",
+            color: "var(--color-text-primary)",
           },
         }}
       >

@@ -15,6 +15,13 @@ const GENERIC_FONTS = new Set([
   "fangsong",
 ]);
 
+const NON_GOOGLE_FONTS = new Set([
+  "calibri",
+  "arial",
+  "arial black",
+  "times new roman",
+]);
+
 const extractPrimaryFont = (value: string): string => {
   const first = value
     .split(",")[0]
@@ -28,7 +35,11 @@ const isLoadableFont = (value: string): boolean => {
     return false;
   }
   const normalized = value.toLowerCase().trim();
-  return normalized.length > 0 && !GENERIC_FONTS.has(normalized);
+  return (
+    normalized.length > 0 &&
+    !GENERIC_FONTS.has(normalized) &&
+    !NON_GOOGLE_FONTS.has(normalized)
+  );
 };
 
 const encodeGoogleFont = (value: string): string =>

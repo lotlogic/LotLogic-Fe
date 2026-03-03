@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { brand } from "@/constants/content";
 
 export type LandingHeaderAction = {
   label: string;
@@ -10,7 +11,6 @@ export type LandingHeaderAction = {
 };
 
 export type LandingHeaderProps = {
-  logoText?: string;
   logoHref?: string;
   primaryAction?: LandingHeaderAction;
   secondaryAction?: LandingHeaderAction;
@@ -55,7 +55,6 @@ const renderAction = (
 };
 
 export const LandingHeader = ({
-  logoText = "lotcheck.",
   logoHref = "/",
   primaryAction,
   secondaryAction,
@@ -79,6 +78,9 @@ export const LandingHeader = ({
 
   const isScrolled = useScrollState && scrolled;
   const isLight = alwaysLight || !isScrolled;
+  const logoSrc = isLight
+    ? "/images/logos/lotcheck-logo-white.svg"
+    : brand.logo;
 
   return (
     <header
@@ -91,11 +93,14 @@ export const LandingHeader = ({
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-8">
         <Link
           to={logoHref}
-          className={`text-2xl font-display font-bold tracking-tight md:text-3xl ${
-            isLight ? "text-white" : "text-[var(--color-ink)]"
-          }`}
+          className="inline-flex items-center"
+          aria-label={brand.title}
         >
-          {logoText}
+          <img
+            src={logoSrc}
+            alt={brand.logoAlt}
+            className="h-7 w-auto md:h-8"
+          />
         </Link>
 
         <div className="flex items-center gap-3">

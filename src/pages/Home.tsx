@@ -1,4 +1,5 @@
 import LandingHeader from "@/components/landing/LandingHeader";
+import { brand } from "@/constants/content";
 import {
   beforePainPoints,
   benefits,
@@ -88,7 +89,6 @@ export const HomePage = () => {
   return (
     <div className="bg-stone-50 font-body text-[var(--color-ink)]">
       <LandingHeader
-        logoText="lotcheck."
         primaryAction={{
           label: "Book a demo",
           onClick: scrollToDemoForm,
@@ -191,10 +191,10 @@ export const HomePage = () => {
                     >
                       <rect x="10" y="10" width="45" height="45" fill="currentColor" opacity="0.25" />
                       <rect x="65" y="10" width="45" height="45" fill="currentColor" opacity="0.25" />
-                      <rect x="120" y="10" width="45" height="45" fill="#ff6b6b" opacity="0.7" />
-                      <rect x="175" y="10" width="35" height="45" fill="#ff6b6b" opacity="0.7" />
+                      <rect x="120" y="10" width="45" height="45" fill="var(--color-primary)" opacity="0.7" />
+                      <rect x="175" y="10" width="35" height="45" fill="var(--color-primary)" opacity="0.7" />
                       <rect x="10" y="65" width="45" height="45" fill="currentColor" opacity="0.25" />
-                      <rect x="65" y="65" width="45" height="45" fill="#ff6b6b" opacity="0.7" />
+                      <rect x="65" y="65" width="45" height="45" fill="var(--color-primary)" opacity="0.7" />
                     </svg>
                   </div>
                   <div className="space-y-2">
@@ -219,7 +219,7 @@ export const HomePage = () => {
             <div className="grid gap-10 md:grid-cols-2">
               {benefits.map((benefit) => (
                 <div key={benefit} className="relative pl-11">
-                  <span className="absolute left-0 top-1 h-6 w-6 rounded-full bg-[rgba(255,107,107,0.15)]" />
+                  <span className="absolute left-0 top-1 h-6 w-6 rounded-full bg-[rgba(239,123,108,0.15)]" />
                   <Check size={18} className="absolute left-1.5 top-1.5 text-coral" />
                   <p className="body-text-lg">{benefit}</p>
                 </div>
@@ -482,7 +482,11 @@ export const HomePage = () => {
 
         <footer className="bg-stone-900 px-4 py-12 text-white md:px-8">
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
-            <div className="font-display text-2xl font-bold">lotcheck.</div>
+            <img
+              src="/images/logos/lotcheck-logo-white.svg"
+              alt={brand.logoAlt}
+              className="h-8 w-auto"
+            />
             <p className="font-body text-sm text-stone-400">
               © 2026 LotCheck Pty Ltd · ACN 692 936 502
             </p>

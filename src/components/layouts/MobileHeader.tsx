@@ -1,4 +1,4 @@
-import { brand, colors } from "@/constants/content";
+import { brand } from "@/constants/content";
 
 export const MobileHeader = () => {
   const handleLogoClick = () => {
@@ -12,13 +12,7 @@ export const MobileHeader = () => {
         onClick={handleLogoClick}
         className="cursor-pointer hover:opacity-80 transition-opacity flex items-center"
       >
-        <img src={brand.logo} alt={brand.logoAlt} width={32} height={32} />
-        <span
-          className="ml-2 text-xl font-bold tracking-tight"
-          style={{ color: colors.primary }}
-        >
-          {brand.title}
-        </span>
+        <img src={brand.logo} alt={brand.logoAlt} className="h-7 w-auto" />
       </div>
     </header>
   );
