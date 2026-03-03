@@ -8,7 +8,7 @@
 
 There are four email scenarios we need to cover, across two audiences. Each is documented below with the exact copy to use. No technical detail should be visible to recipients \- everything in these emails should feel clean, direct, and distinctly LotCheck.
 
-|  | Sender name for all emails: LotCheck  |  Sending domain: noreply@lotcheck.com.au (update from mail.blockplanner.com.au)  |  Logo: use the horizontal wordmark (lotcheck.) on dark background |
+|  | Sender name for all LotCheck emails: LotCheck  |  Sending domain: noreply@mail.lotcheck.com.au (BlockPlanner emails remain noreply@mail.blockplanner.com.au)  |  Logo: use the horizontal wordmark (lotcheck.) on dark background |
 | :---- | :---- |
 
 # **1\. Estate Manager Emails**
@@ -23,7 +23,7 @@ Triggered when: Admin creates the estate in the portal and sends the invitation.
 
 | EMAIL \- Estate Manager: You're all set up on LotCheck |  |
 | :---- | :---- |
-| **From** | LotCheck \<noreply@lotcheck.com.au\> |
+| **From** | LotCheck \<noreply@mail.lotcheck.com.au\> |
 | **Subject** | You're set up on LotCheck \- here's how to get started |
 | **To** | *\[Estate Manager's email\]* |
 
@@ -67,7 +67,7 @@ Context: The builder knows which estate is involved. They're being given a speci
 
 | EMAIL \- Builder: Invited to \[Estate Name\] on LotCheck |  |
 | :---- | :---- |
-| **From** | LotCheck \<noreply@lotcheck.com.au\> |
+| **From** | LotCheck \<noreply@mail.lotcheck.com.au\> |
 | **Subject** | You've been invited to list your plans on \[Estate Name\] |
 | **To** | *\[Builder contact's email\]* |
 
@@ -107,7 +107,7 @@ Context: There's no specific estate to reference yet. The builder knows us and w
 
 | EMAIL \- Builder: Welcome to LotCheck |  |
 | :---- | :---- |
-| **From** | LotCheck \<noreply@lotcheck.com.au\> |
+| **From** | LotCheck \<noreply@mail.lotcheck.com.au\> |
 | **Subject** | Welcome to LotCheck \- your account is ready |
 | **To** | *\[Builder contact's email\]* |
 
@@ -157,11 +157,10 @@ A few things to confirm or action alongside the copy above:
 
 | Item | Action |
 | :---- | :---- |
-| **Sender domain** | Switch from mail.blockplanner.com.au → noreply@lotcheck.com.au. DNS records in Cloudflare, verify in Mailgun. |
+| **Sender domain** | Use noreply@mail.lotcheck.com.au for LotCheck emails. Keep BlockPlanner emails on noreply@mail.blockplanner.com.au. Confirm DNS records in Cloudflare and verify both domains in Mailgun. |
 | **Sender display name** | Update to 'LotCheck' in Mailgun \- currently shows as 'BlockPlanner' |
 | **Post-accept redirect** | After invitation accepted → should land on the portal dashboard, not the marketing site. Fix redirect URL. |
 | **\[Estate Name\] variable** | Confirm this is available as a dynamic variable in the Scenario 2A template. Pull from the estate record. |
 | **\[First Name\] variable** | Confirm available from the invited user record in both estate and builder templates. |
 | **Button style** | Dark background, 'lotcheck.' teal (\#0F766E) or white text \- match the brand. Avoid default Microsoft blue button styling. |
 | **Help link URL** | support@lotcheck.com.au |
-

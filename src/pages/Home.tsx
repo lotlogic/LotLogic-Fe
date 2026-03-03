@@ -472,7 +472,7 @@ export const HomePage = () => {
                 )}
                 {submitStatus === "error" && (
                   <p className="text-sm text-amber-100">
-                    {submitError || "Couldn't send. Please email privacy@blockplanner.com.au"}
+                    {submitError || "Couldn't send. Please email support@lotcheck.com.au"}
                   </p>
                 )}
               </div>
