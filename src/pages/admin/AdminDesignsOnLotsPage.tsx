@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { adminApi } from "@/lib/api/adminApi";
 import {
@@ -12,6 +12,29 @@ import { Input } from "@/components/ui/Input";
 
 type StatusFilter = DesignOnLotStatus | "ALL";
 
+const formatNumber = (value: unknown): string => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "--";
+  }
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+};
+
+const getPrimaryReasons = (record: DesignOnLotRecord): string[] => {
+  const manual = Array.isArray(record.manualReviewReasons)
+    ? record.manualReviewReasons.filter(Boolean)
+    : [];
+  if (manual.length > 0) {
+    return manual;
+  }
+  const fail = Array.isArray(record.failReasons)
+    ? record.failReasons.filter(Boolean)
+    : [];
+  if (fail.length > 0) {
+    return fail;
+  }
+  return Array.isArray(record.reasons) ? record.reasons.filter(Boolean) : [];
+};
+
 const AdminDesignsOnLotsPage = () => {
   const [records, setRecords] = useState<DesignOnLotRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -20,6 +43,7 @@ const AdminDesignsOnLotsPage = () => {
     "MANUAL_REVIEW"
   );
   const [lotIdFilter, setLotIdFilter] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadRecords = useCallback(async () => {
     setLoading(true);
@@ -121,22 +145,25 @@ const AdminDesignsOnLotsPage = () => {
               <th className="p-3 border-b font-medium text-sm text-slate-700">
                 Lot ID
               </th>
-              <th className="p-3 border-b font-medium text-sm text-slate-700">
-                Floor Plan ID
-              </th>
-              <th className="p-3 border-b font-medium text-sm text-slate-700">
-                Status
-              </th>
-              <th className="p-3 border-b font-medium text-sm text-slate-700">
-                Reasons
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
+                  <th className="p-3 border-b font-medium text-sm text-slate-700">
+                    Floor Plan ID
+                  </th>
+                  <th className="p-3 border-b font-medium text-sm text-slate-700">
+                    Status
+                  </th>
+                  <th className="p-3 border-b font-medium text-sm text-slate-700">
+                    Review reasons
+                  </th>
+                  <th className="p-3 border-b font-medium text-sm text-slate-700 text-right">
+                    Details
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="p-4 text-center text-sm text-muted-foreground"
                 >
                   Loading plan-lot matches...
@@ -144,31 +171,252 @@ const AdminDesignsOnLotsPage = () => {
               </tr>
             )}
             {!loading &&
-              filteredRecords.map((record) => (
-                <tr key={record.id}>
-                  <td className="p-3 border-b border-slate-100 text-xs font-mono text-slate-500">
-                    {record.id}
-                  </td>
-                  <td className="p-3 border-b border-slate-100 text-sm font-mono">
-                    {record.lotId ?? "--"}
-                  </td>
-                  <td className="p-3 border-b border-slate-100 text-sm font-mono">
-                    {record.floorPlanId ?? "--"}
-                  </td>
-                  <td className="p-3 border-b border-slate-100 text-sm">
-                    {record.status ?? "--"}
-                  </td>
-                  <td className="p-3 border-b border-slate-100 text-sm">
-                    {Array.isArray(record.reasons) && record.reasons.length > 0
-                      ? record.reasons.join(", ")
-                      : "--"}
-                  </td>
-                </tr>
-              ))}
+              filteredRecords.map((record) => {
+                const reasons = getPrimaryReasons(record);
+                const showDetails = expandedId === record.id;
+
+                return (
+                  <Fragment key={record.id}>
+                    <tr>
+                      <td className="p-3 border-b border-slate-100 text-xs font-mono text-slate-500">
+                        {record.id}
+                      </td>
+                      <td className="p-3 border-b border-slate-100 text-sm font-mono">
+                        {record.lotId ?? "--"}
+                      </td>
+                      <td className="p-3 border-b border-slate-100 text-sm font-mono">
+                        {record.floorPlanId ?? "--"}
+                      </td>
+                      <td className="p-3 border-b border-slate-100 text-sm">
+                        {record.status ?? "--"}
+                      </td>
+                      <td className="p-3 border-b border-slate-100 text-sm">
+                        {reasons.length > 0 ? (
+                          <div className="grid gap-1">
+                            <span>{reasons[0]}</span>
+                            {reasons.length > 1 ? (
+                              <span className="text-xs text-slate-500">
+                                +{reasons.length - 1} more
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          "--"
+                        )}
+                      </td>
+                      <td className="p-3 border-b border-slate-100 text-right">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-7 px-2 text-xs"
+                          label={showDetails ? "Hide" : "View"}
+                          onClick={() =>
+                            setExpandedId((previous) =>
+                              previous === record.id ? null : record.id
+                            )
+                          }
+                        />
+                      </td>
+                    </tr>
+                    {showDetails && (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="p-3 border-b border-slate-100 bg-slate-50"
+                        >
+                          <div className="grid gap-3 lg:grid-cols-3">
+                            <div className="rounded-md border border-slate-200 bg-white p-3">
+                              <p className="m-0 text-xs uppercase tracking-[0.08em] text-slate-500">
+                                Review Context
+                              </p>
+                              <p className="m-0 mt-1 text-xs text-slate-700">
+                                Assessed: {record.assessedAt ?? "--"}
+                              </p>
+                              <div className="mt-2">
+                                <p className="m-0 text-xs font-medium text-slate-700">
+                                  Manual review reasons
+                                </p>
+                                {Array.isArray(record.manualReviewReasons) &&
+                                record.manualReviewReasons.length > 0 ? (
+                                  <ul className="m-0 mt-1 list-disc pl-4 text-xs text-slate-700">
+                                    {record.manualReviewReasons.map((reason) => (
+                                      <li key={reason}>{reason}</li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="m-0 mt-1 text-xs text-slate-500">
+                                    --
+                                  </p>
+                                )}
+                              </div>
+                              <div className="mt-2">
+                                <p className="m-0 text-xs font-medium text-slate-700">
+                                  Fail reasons
+                                </p>
+                                {Array.isArray(record.failReasons) &&
+                                record.failReasons.length > 0 ? (
+                                  <ul className="m-0 mt-1 list-disc pl-4 text-xs text-slate-700">
+                                    {record.failReasons.map((reason) => (
+                                      <li key={reason}>{reason}</li>
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="m-0 mt-1 text-xs text-slate-500">
+                                    --
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="rounded-md border border-slate-200 bg-white p-3">
+                              <p className="m-0 text-xs uppercase tracking-[0.08em] text-slate-500">
+                                Lot Details
+                              </p>
+                              <dl className="m-0 mt-2 grid gap-1 text-xs">
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Estate</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {record.lot?.estate?.name ?? "--"}
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Block</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {record.lot?.blockNumber ??
+                                      record.lot?.blockKey ??
+                                      "--"}
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Address</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {record.lot?.address ?? "--"}
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Area</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {formatNumber(record.lot?.areaSqm)} m2
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Zoning</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {record.lot?.zoning ?? "--"}
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Lifecycle</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {record.lot?.lifecycleStage ?? "--"}
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Frontage</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {formatNumber(record.lot?.frontageM)} m
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Type</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {record.lot?.lotType ?? "--"}
+                                  </dd>
+                                </div>
+                              </dl>
+                            </div>
+
+                            <div className="rounded-md border border-slate-200 bg-white p-3">
+                              <p className="m-0 text-xs uppercase tracking-[0.08em] text-slate-500">
+                                Floor Plan Details
+                              </p>
+                              <dl className="m-0 mt-2 grid gap-1 text-xs">
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Plan</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {record.floorPlan?.floorplanUrl ? (
+                                      <a
+                                        href={record.floorPlan.floorplanUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-brand-primary underline"
+                                      >
+                                        {record.floorPlan?.name ?? "Open floorplan"}
+                                      </a>
+                                    ) : (
+                                      record.floorPlan?.name ?? "--"
+                                    )}
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Floorplan file</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {record.floorPlan?.floorplanUrl ? (
+                                      <a
+                                        href={record.floorPlan.floorplanUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-brand-primary underline"
+                                      >
+                                        View file
+                                      </a>
+                                    ) : (
+                                      "--"
+                                    )}
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Builder</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {record.floorPlan?.builder?.name ?? "--"}
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Beds/Baths/Garages</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {record.floorPlan?.bedrooms ?? "--"} /{" "}
+                                    {record.floorPlan?.bathrooms ?? "--"} /{" "}
+                                    {record.floorPlan?.garages ?? "--"}
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Area</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {formatNumber(record.floorPlan?.areaSqm)} m2
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">Design (W x D)</dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {formatNumber(record.floorPlan?.width)} x{" "}
+                                    {formatNumber(record.floorPlan?.depth)} m
+                                  </dd>
+                                </div>
+                                <div className="flex justify-between gap-2">
+                                  <dt className="text-slate-500">
+                                    Storeys / Height
+                                  </dt>
+                                  <dd className="m-0 text-slate-800">
+                                    {record.floorPlan?.storeys ?? "--"} /{" "}
+                                    {formatNumber(
+                                      record.floorPlan?.buildingHeight_m
+                                    )}{" "}
+                                    m
+                                  </dd>
+                                </div>
+                              </dl>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
             {!loading && filteredRecords.length === 0 && (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="p-4 text-center text-sm text-muted-foreground"
                 >
                   No plan-lot matches match the current filters.

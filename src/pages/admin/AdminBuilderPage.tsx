@@ -475,6 +475,9 @@ const AdminBuilderPage = () => {
         status: "ACTIVE",
         estateIds: [],
         redirectUrl: inviteRedirectUrl,
+        inviteContext: {
+          scenario: "builder-direct",
+        },
       });
       const invitedUserId =
         result.user?.id ?? result.invitation?.invitedUserId ?? null;

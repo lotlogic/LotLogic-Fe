@@ -31,6 +31,7 @@ import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import DashboardBuilderPage from "./pages/dashboard/DashboardBuilderPage";
 import DashboardEstatePage from "./pages/dashboard/DashboardEstatePage";
+import PortalShell from "./components/layouts/PortalShell";
 import {
   applyBrandTheme,
   clearBrandThemeOverrides,
@@ -56,9 +57,17 @@ const BrandThemeController = () => {
 };
 
 const AdminGate = ({ children }: { children: ReactNode }) => (
-  <RequireAdminAuth>
-    <RequireAdminRole>{children}</RequireAdminRole>
-  </RequireAdminAuth>
+  <PortalShell>
+    <RequireAdminAuth>
+      <RequireAdminRole>{children}</RequireAdminRole>
+    </RequireAdminAuth>
+  </PortalShell>
+);
+
+const DashboardGate = ({ children }: { children: ReactNode }) => (
+  <PortalShell>
+    <RequireAdminAuth>{children}</RequireAdminAuth>
+  </PortalShell>
 );
 
 function App() {
@@ -75,25 +84,25 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <RequireAdminAuth>
+            <DashboardGate>
               <DashboardPage />
-            </RequireAdminAuth>
+            </DashboardGate>
           }
         />
         <Route
           path="/dashboard/builders/:builderId"
           element={
-            <RequireAdminAuth>
+            <DashboardGate>
               <DashboardBuilderPage />
-            </RequireAdminAuth>
+            </DashboardGate>
           }
         />
         <Route
           path="/dashboard/estates/:estateId"
           element={
-            <RequireAdminAuth>
+            <DashboardGate>
               <DashboardEstatePage />
-            </RequireAdminAuth>
+            </DashboardGate>
           }
         />
         <Route

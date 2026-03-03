@@ -174,6 +174,8 @@ const lotZoningRulePath = (key: LotZoningRuleKey) =>
 
 const builderUsersPath = (builderId: AdminId) =>
   `${idPath("builders", builderId)}/users`;
+const builderApprovedEstatesPath = (builderId: AdminId) =>
+  `${idPath("builders", builderId)}/approved-estates`;
 const builderLeadsPath = (builderId: AdminId) =>
   `${idPath("builders", builderId)}/leads`;
 const builderPerformancePath = (builderId: AdminId) =>
@@ -533,6 +535,9 @@ export const adminApi = {
   },
   async getBuilderUsers<T = unknown>(id: AdminId): Promise<T[]> {
     return data(adminApiClient.get<T[]>(builderUsersPath(id)));
+  },
+  async getBuilderApprovedEstates<T = unknown>(id: AdminId): Promise<T[]> {
+    return data(adminApiClient.get<T[]>(builderApprovedEstatesPath(id)));
   },
   async getEstateUsers<T = unknown>(id: AdminId): Promise<T[]> {
     return data(adminApiClient.get<T[]>(`${idPath("estates", id)}/users`));

@@ -469,6 +469,7 @@ const AdminEstatePage = () => {
     setInviteErrorMessage(null);
     setTeamErrorMessage(null);
     try {
+      const estateName = getEstateName(estate) || "your estate";
       await adminApi.inviteUser<AdminInvitationResponse>({
         email,
         displayName,
@@ -476,6 +477,10 @@ const AdminEstatePage = () => {
         status: "ACTIVE",
         estateIds: [estateId],
         redirectUrl: inviteRedirectUrl,
+        inviteContext: {
+          scenario: "estate-manager",
+          estateName,
+        },
       });
       await loadTeamMembers();
       if (showAddPanel) {
@@ -960,12 +965,22 @@ const AdminEstatePage = () => {
             </div>
 
             {estateId && (
-              <EstateRuleLayersCrud estateId={estateId} mode="builderApprovals" />
+              <EstateRuleLayersCrud
+                estateId={estateId}
+                mode="builderApprovals"
+                estateName={getEstateName(estate)}
+              />
             )}
           </div>
         </div>
 
-        {estateId && <EstateRuleLayersCrud estateId={estateId} mode="ruleSet" />}
+        {estateId && (
+          <EstateRuleLayersCrud
+            estateId={estateId}
+            mode="ruleSet"
+            estateName={getEstateName(estate)}
+          />
+        )}
 
         <EstateLotsCrud
           estateId={estateId}

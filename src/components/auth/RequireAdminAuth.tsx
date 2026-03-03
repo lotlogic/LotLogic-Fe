@@ -78,7 +78,11 @@ export const RequireAdminAuth = ({
   }, [reloadWhoAmI]);
 
   if (status === "loading") {
-    return <div>Checking admin access...</div>;
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-10 text-sm text-muted-foreground">
+        Checking permissions...
+      </div>
+    );
   }
 
   if (status === "unauthorized") {
@@ -86,7 +90,11 @@ export const RequireAdminAuth = ({
   }
 
   if (status === "error") {
-    return <div>Admin auth failed: {errorMessage ?? "Unknown error"}</div>;
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-10 text-sm text-destructive">
+        Permission check failed: {errorMessage ?? "Unknown error"}
+      </div>
+    );
   }
 
   const sessionValue = {

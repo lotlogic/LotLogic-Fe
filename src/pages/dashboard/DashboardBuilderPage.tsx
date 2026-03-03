@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   FloorPlanCrud,
@@ -13,6 +13,7 @@ import {
 } from "@/components/admin/facades/FacadeCrud";
 import { BuilderPerformancePanel } from "@/components/admin/builders/BuilderPerformancePanel";
 import { BuilderLeadsPanel } from "@/components/admin/builders/BuilderLeadsPanel";
+import { RuleLayerSummary } from "@/components/admin/rules/RuleLayerSummary";
 import type {
   AdminUser,
   BuilderRecord,
@@ -23,7 +24,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { adminApi } from "@/lib/api/adminApi";
 import { getAdminApiErrorMessage } from "@/lib/api/adminApiErrors";
-import type { BuilderEstateApprovalRecord } from "@/lib/api/adminModels";
 import { useAdminSession } from "@/lib/admin/adminSession";
 import { resolveDashboardAccess } from "@/lib/dashboard/dashboardAccess";
 import {
@@ -47,14 +47,86 @@ type AdminInvitationResponse = {
   [key: string]: unknown;
 };
 
-type EstateSummary = {
+type EstateRuleSetSummary = {
   id: string;
+  estateId?: string | null;
+  jurisdiction?: string | null;
   name?: string | null;
+  version?: number | null;
+  status?: string | null;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+  rules?: Record<string, unknown> | null;
+  sourceUrl?: string | null;
+  notes?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
   [key: string]: unknown;
 };
 
-type BuilderEstateApprovalView = BuilderEstateApprovalRecord & {
+type EstateMatchLotSummary = {
+  lotId?: string | null;
+  lotLabel?: string | null;
+  [key: string]: unknown;
+};
+
+type EstateMatchPlanSummary = {
+  floorPlanId?: string | null;
+  floorPlanName?: string | null;
+  matchedLotCount?: number | null;
+  matchedLots?: EstateMatchLotSummary[];
+  [key: string]: unknown;
+};
+
+type EstateMatchingSummary = {
+  availableLotCount?: number | null;
+  matchedLotCount?: number | null;
+  matchedPlanCount?: number | null;
+  passCombinationCount?: number | null;
+  plans?: EstateMatchPlanSummary[];
+  [key: string]: unknown;
+};
+
+type BuilderApprovedEstateRecord = {
+  id: string;
+  builderId?: string | null;
+  estateId?: string | null;
+  status?: string | null;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+  notes?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  estate?: {
+    id?: string | null;
+    name?: string | null;
+    jurisdiction?: string | null;
+    [key: string]: unknown;
+  } | null;
+  ruleSets?: EstateRuleSetSummary[];
+  currentRuleSet?: EstateRuleSetSummary | null;
+  stateRuleSets?: EstateRuleSetSummary[];
+  currentStateRuleSet?: EstateRuleSetSummary | null;
+  matching?: EstateMatchingSummary | null;
+  [key: string]: unknown;
+};
+
+type BuilderEstateApprovalView = BuilderApprovedEstateRecord & {
   estateName: string;
+};
+
+type FloorPlanMatchBreakdown = {
+  estateName: string;
+  matchedLotCount: number;
+  lotLabels: string[];
+};
+
+type FloorPlanMatchRow = {
+  floorPlanId: string;
+  floorPlanName: string;
+  matchedLotCount: number;
+  matchedEstateCount: number;
+  estateBreakdown: FloorPlanMatchBreakdown[];
 };
 
 type FacadePanelProps = {
@@ -221,6 +293,9 @@ const DashboardBuilderPage = () => {
   const [estateApprovals, setEstateApprovals] = useState<
     BuilderEstateApprovalView[]
   >([]);
+  const [expandedEstateApprovalId, setExpandedEstateApprovalId] = useState<
+    string | null
+  >(null);
   const [estateApprovalsLoading, setEstateApprovalsLoading] = useState(false);
   const [estateApprovalsError, setEstateApprovalsError] = useState<
     string | null
@@ -315,6 +390,7 @@ const DashboardBuilderPage = () => {
   const loadEstateApprovals = useCallback(async () => {
     if (!builderId) {
       setEstateApprovals([]);
+      setExpandedEstateApprovalId(null);
       setEstateApprovalsLoading(false);
       return;
     }
@@ -322,37 +398,27 @@ const DashboardBuilderPage = () => {
     setEstateApprovalsLoading(true);
     setEstateApprovalsError(null);
     try {
-      const estates = await adminApi.getEstates<EstateSummary>();
-      const approvalsByEstate = await Promise.all(
-        estates.map(async (estate) => {
-          try {
-            const approvals =
-              await adminApi.getEstateBuilderApprovals<BuilderEstateApprovalRecord>(
-                estate.id,
-              );
-            return { estate, approvals };
-          } catch {
-            return { estate, approvals: [] as BuilderEstateApprovalRecord[] };
-          }
-        }),
-      );
+      const approvals =
+        await adminApi.getBuilderApprovedEstates<BuilderApprovedEstateRecord>(
+          builderId,
+        );
 
-      const scoped = approvalsByEstate
-        .flatMap(({ estate, approvals }) =>
-          approvals
-            .filter(
-              (approval) => String(approval.builderId ?? "") === builderId,
-            )
-            .map((approval) => ({
-              ...approval,
-              estateName: estate.name?.trim() ? estate.name : estate.id,
-            })),
-        )
+      const scoped = approvals
+        .map((approval) => ({
+          ...approval,
+          estateName:
+            approval.estate?.name && approval.estate.name.trim()
+              ? approval.estate.name.trim()
+              : (approval.estate?.id ??
+                approval.estateId ??
+                "(unknown estate)"),
+        }))
         .sort((left, right) => left.estateName.localeCompare(right.estateName));
 
       setEstateApprovals(scoped);
     } catch (error) {
       setEstateApprovals([]);
+      setExpandedEstateApprovalId(null);
       setEstateApprovalsError(
         getAdminApiErrorMessage(error, "Failed to load approved estates."),
       );
@@ -474,6 +540,7 @@ const DashboardBuilderPage = () => {
   useEffect(() => {
     if (!hasAccess) {
       setEstateApprovals([]);
+      setExpandedEstateApprovalId(null);
       setEstateApprovalsLoading(false);
       return;
     }
@@ -493,6 +560,97 @@ const DashboardBuilderPage = () => {
         };
       }),
     [floorPlans],
+  );
+
+  const floorPlanMatchRows = useMemo<FloorPlanMatchRow[]>(() => {
+    const rowsByPlan = new Map<string, FloorPlanMatchRow>();
+
+    floorPlans.forEach((plan) => {
+      const fallbackName =
+        typeof plan.name === "string" && plan.name.trim()
+          ? plan.name.trim()
+          : "Untitled";
+      rowsByPlan.set(plan.id, {
+        floorPlanId: plan.id,
+        floorPlanName: fallbackName,
+        matchedLotCount: 0,
+        matchedEstateCount: 0,
+        estateBreakdown: [],
+      });
+    });
+
+    estateApprovals.forEach((approval) => {
+      if (approval.status !== "APPROVED") {
+        return;
+      }
+      const planMatches = Array.isArray(approval.matching?.plans)
+        ? approval.matching.plans
+        : [];
+
+      planMatches.forEach((planMatch) => {
+        const floorPlanId = String(planMatch.floorPlanId ?? "").trim();
+        if (!floorPlanId) {
+          return;
+        }
+
+        const fallbackName =
+          typeof planMatch.floorPlanName === "string" &&
+          planMatch.floorPlanName.trim()
+            ? planMatch.floorPlanName.trim()
+            : floorPlanId;
+
+        const existing = rowsByPlan.get(floorPlanId) ?? {
+          floorPlanId,
+          floorPlanName: fallbackName,
+          matchedLotCount: 0,
+          matchedEstateCount: 0,
+          estateBreakdown: [],
+        };
+
+        const matchedLots = Array.isArray(planMatch.matchedLots)
+          ? planMatch.matchedLots
+          : [];
+        const lotLabels = matchedLots
+          .map((lot) =>
+            typeof lot.lotLabel === "string" && lot.lotLabel.trim()
+              ? lot.lotLabel.trim()
+              : String(lot.lotId ?? "--"),
+          )
+          .filter(Boolean);
+
+        const matchedLotCount = Number(
+          planMatch.matchedLotCount ?? lotLabels.length,
+        );
+        existing.matchedLotCount += matchedLotCount;
+        existing.estateBreakdown.push({
+          estateName: approval.estateName,
+          matchedLotCount,
+          lotLabels,
+        });
+        rowsByPlan.set(floorPlanId, existing);
+      });
+    });
+
+    return Array.from(rowsByPlan.values())
+      .map((row) => ({
+        ...row,
+        matchedEstateCount: row.estateBreakdown.length,
+      }))
+      .sort((left, right) => {
+        const matchDelta = right.matchedLotCount - left.matchedLotCount;
+        if (matchDelta !== 0) {
+          return matchDelta;
+        }
+        return left.floorPlanName.localeCompare(right.floorPlanName);
+      });
+  }, [estateApprovals, floorPlans]);
+
+  const floorPlanMatchById = useMemo(
+    () =>
+      new Map(
+        floorPlanMatchRows.map((row) => [row.floorPlanId, row] as const),
+      ),
+    [floorPlanMatchRows],
   );
 
   const teamUserIds = useMemo(
@@ -638,6 +796,9 @@ const DashboardBuilderPage = () => {
         status: "ACTIVE",
         estateIds: [],
         redirectUrl: inviteRedirectUrl,
+        inviteContext: {
+          scenario: "builder-direct",
+        },
       });
       const invitedUserId =
         result.user?.id ?? result.invitation?.invitedUserId ?? null;
@@ -1109,7 +1270,7 @@ const DashboardBuilderPage = () => {
             </p>
           ) : (
             <div className="overflow-auto border rounded-lg">
-              <table className="w-full border-collapse min-w-[680px]">
+              <table className="w-full border-collapse min-w-[920px]">
                 <thead>
                   <tr className="bg-slate-100 text-left">
                     <th className="p-3 border-b font-medium text-sm text-slate-700">
@@ -1124,30 +1285,216 @@ const DashboardBuilderPage = () => {
                     <th className="p-3 border-b font-medium text-sm text-slate-700">
                       Available Floor Plans
                     </th>
+                    <th className="p-3 border-b font-medium text-sm text-slate-700">
+                      Design Rules
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {estateApprovals.map((approval) => (
-                    <tr key={approval.id}>
-                      <td className="p-3 border-b border-slate-100 text-sm">
-                        {approval.estateName}
-                      </td>
-                      <td className="p-3 border-b border-slate-100 text-sm">
-                        {approval.status ?? "--"}
-                      </td>
-                      <td className="p-3 border-b border-slate-100 text-sm">
-                        <span
-                          title={formatDateTimeForTooltip(
-                            approval.effectiveFrom,
-                          )}
-                        >
-                          {formatDateForCell(approval.effectiveFrom)}
-                        </span>
-                      </td>
-                      <td className="p-3 border-b border-slate-100 text-sm">
-                        {floorPlans.length}
-                      </td>
-                    </tr>
+                    <Fragment key={approval.id}>
+                      <tr>
+                        <td className="p-3 border-b border-slate-100 text-sm">
+                          {approval.estateName}
+                        </td>
+                        <td className="p-3 border-b border-slate-100 text-sm">
+                          {approval.status ?? "--"}
+                        </td>
+                        <td className="p-3 border-b border-slate-100 text-sm">
+                          <span
+                            title={formatDateTimeForTooltip(
+                              approval.effectiveFrom,
+                            )}
+                          >
+                            {formatDateForCell(approval.effectiveFrom)}
+                          </span>
+                        </td>
+                        <td className="p-3 border-b border-slate-100 text-sm">
+                          {floorPlans.length}
+                        </td>
+                        <td className="p-3 border-b border-slate-100 text-sm">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {approval.currentRuleSet ||
+                            approval.currentStateRuleSet ? (
+                              <>
+                                <span className="text-xs text-muted-foreground">
+                                  Estate:{" "}
+                                  {approval.currentRuleSet
+                                    ? `${approval.currentRuleSet.name ?? "Rule set"} v${approval.currentRuleSet.version ?? "--"} (${approval.currentRuleSet.status ?? "--"})`
+                                    : "none"}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  State:{" "}
+                                  {approval.currentStateRuleSet
+                                    ? `${approval.currentStateRuleSet.name ?? "Rule set"} v${approval.currentStateRuleSet.version ?? "--"} (${approval.currentStateRuleSet.status ?? "--"})`
+                                    : "none"}
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                No estate rule set published.
+                              </span>
+                            )}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              label={
+                                expandedEstateApprovalId === approval.id
+                                  ? "Hide rules"
+                                  : "View rules"
+                              }
+                              onClick={() =>
+                                setExpandedEstateApprovalId((previous) =>
+                                  previous === approval.id ? null : approval.id,
+                                )
+                              }
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedEstateApprovalId === approval.id && (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="p-3 border-b border-slate-100 bg-slate-50"
+                          >
+                            <div className="grid gap-3">
+                              {approval.currentRuleSet ||
+                              approval.currentStateRuleSet ? (
+                                <>
+                                  <div className="grid gap-3 md:grid-cols-2">
+                                    <div className="grid gap-1 rounded-md border border-slate-200 bg-white p-3">
+                                      <p className="m-0 text-xs uppercase tracking-[0.08em] text-slate-500">
+                                        Estate Rule Set
+                                      </p>
+                                      <p className="m-0 font-medium text-slate-900">
+                                        {approval.currentRuleSet
+                                          ? `${approval.currentRuleSet.name ?? "Rule set"} v${approval.currentRuleSet.version ?? "--"}`
+                                          : "No estate rule set"}
+                                      </p>
+                                      {approval.currentRuleSet ? (
+                                        <>
+                                          <p className="m-0 text-xs text-muted-foreground">
+                                            Status:{" "}
+                                            {approval.currentRuleSet.status ??
+                                              "--"}{" "}
+                                            · Effective from:{" "}
+                                            {formatDateForCell(
+                                              approval.currentRuleSet
+                                                .effectiveFrom,
+                                            )}{" "}
+                                            · Effective to:{" "}
+                                            {formatDateForCell(
+                                              approval.currentRuleSet
+                                                .effectiveTo,
+                                            )}
+                                          </p>
+                                          {approval.currentRuleSet.notes ? (
+                                            <p className="m-0 text-xs text-muted-foreground">
+                                              Notes:{" "}
+                                              {approval.currentRuleSet.notes}
+                                            </p>
+                                          ) : null}
+                                        </>
+                                      ) : (
+                                        <p className="m-0 text-xs text-muted-foreground">
+                                          No estate-specific rules found.
+                                        </p>
+                                      )}
+                                    </div>
+                                    <div className="grid gap-1 rounded-md border border-slate-200 bg-white p-3">
+                                      <p className="m-0 text-xs uppercase tracking-[0.08em] text-slate-500">
+                                        State Rule Set
+                                      </p>
+                                      <p className="m-0 font-medium text-slate-900">
+                                        {approval.currentStateRuleSet
+                                          ? `${approval.currentStateRuleSet.name ?? "Rule set"} v${approval.currentStateRuleSet.version ?? "--"}`
+                                          : "No state rule set"}
+                                      </p>
+                                      {approval.currentStateRuleSet ? (
+                                        <>
+                                          <p className="m-0 text-xs text-muted-foreground">
+                                            Jurisdiction:{" "}
+                                            {approval.currentStateRuleSet
+                                              .jurisdiction ??
+                                              approval.estate?.jurisdiction ??
+                                              "--"}{" "}
+                                            · Status:{" "}
+                                            {approval.currentStateRuleSet
+                                              .status ?? "--"}
+                                          </p>
+                                          <p className="m-0 text-xs text-muted-foreground">
+                                            Effective from:{" "}
+                                            {formatDateForCell(
+                                              approval.currentStateRuleSet
+                                                .effectiveFrom,
+                                            )}{" "}
+                                            · Effective to:{" "}
+                                            {formatDateForCell(
+                                              approval.currentStateRuleSet
+                                                .effectiveTo,
+                                            )}
+                                          </p>
+                                          {approval.currentStateRuleSet
+                                            .sourceUrl ? (
+                                            <a
+                                              className="text-xs text-brand-primary underline"
+                                              href={
+                                                approval.currentStateRuleSet
+                                                  .sourceUrl
+                                              }
+                                              target="_blank"
+                                              rel="noreferrer"
+                                            >
+                                              Open source
+                                            </a>
+                                          ) : null}
+                                        </>
+                                      ) : (
+                                        <p className="m-0 text-xs text-muted-foreground">
+                                          No jurisdiction baseline rules found.
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div className="grid gap-3 md:grid-cols-2">
+                                    <div className="grid gap-1">
+                                      <p className="m-0 text-xs font-medium text-slate-700">
+                                        Estate rule summary
+                                      </p>
+                                      <RuleLayerSummary
+                                        rules={
+                                          approval.currentRuleSet?.rules ?? null
+                                        }
+                                        emptyMessage="No estate-specific rules found."
+                                      />
+                                    </div>
+                                    <div className="grid gap-1">
+                                      <p className="m-0 text-xs font-medium text-slate-700">
+                                        State rule summary
+                                      </p>
+                                      <RuleLayerSummary
+                                        rules={
+                                          approval.currentStateRuleSet?.rules ??
+                                          null
+                                        }
+                                        emptyMessage="No jurisdiction baseline rules found."
+                                      />
+                                    </div>
+                                  </div>
+                                </>
+                              ) : (
+                                <p className="m-0 text-sm text-muted-foreground">
+                                  No design rules available for this estate yet.
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -1189,6 +1536,40 @@ const DashboardBuilderPage = () => {
           updateFloorPlan={updateFloorPlan}
           deleteFloorPlan={deleteFloorPlan}
           builderId={builderId}
+          renderRowDetails={(plan) => {
+            const row = floorPlanMatchById.get(plan.id);
+            if (!row || row.matchedLotCount === 0) {
+              return (
+                <span className="text-slate-500">
+                  Match coverage: no matched available lots yet.
+                </span>
+              );
+            }
+
+            const estateSummary = row.estateBreakdown
+              .slice(0, 2)
+              .map((item) => `${item.estateName} (${item.matchedLotCount})`)
+              .join(", ");
+            const hiddenEstateCount = row.estateBreakdown.length - 2;
+
+            return (
+              <div className="grid gap-0.5">
+                <span>
+                  Match coverage: {row.matchedLotCount} available lots across{" "}
+                  {row.matchedEstateCount} estate
+                  {row.matchedEstateCount === 1 ? "" : "s"}.
+                </span>
+                {estateSummary ? (
+                  <span className="text-slate-500">
+                    {estateSummary}
+                    {hiddenEstateCount > 0
+                      ? ` (+${hiddenEstateCount} more)`
+                      : ""}
+                  </span>
+                ) : null}
+              </div>
+            );
+          }}
           renderEditPanel={(floorPlanId) => (
             <FacadePanel
               floorPlanId={floorPlanId}

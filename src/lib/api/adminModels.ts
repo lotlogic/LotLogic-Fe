@@ -316,8 +316,51 @@ export type DesignOnLotRecord = {
   floorPlanId?: string | null;
   status?: DesignOnLotStatus | null;
   reasons?: string[] | null;
+  failReasons?: string[] | null;
+  manualReviewReasons?: string[] | null;
+  matchedFilters?: Record<string, unknown> | null;
+  assessedAt?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  lot?: {
+    id?: string;
+    blockKey?: string | null;
+    blockNumber?: number | null;
+    address?: string | null;
+    areaSqm?: number | null;
+    zoning?: string | null;
+    lifecycleStage?: string | null;
+    frontageM?: number | null;
+    lotType?: string | null;
+    roadFacing?: string | null;
+    precinct?: string | null;
+    estate?: {
+      id?: string;
+      name?: string | null;
+      jurisdiction?: string | null;
+      [key: string]: unknown;
+    } | null;
+    [key: string]: unknown;
+  } | null;
+  floorPlan?: {
+    id?: string;
+    name?: string | null;
+    floorplanUrl?: string | null;
+    bedrooms?: number | null;
+    bathrooms?: number | null;
+    garages?: number | null;
+    areaSqm?: number | null;
+    width?: number | null;
+    depth?: number | null;
+    storeys?: number | null;
+    buildingHeight_m?: number | null;
+    builder?: {
+      id?: string;
+      name?: string | null;
+      [key: string]: unknown;
+    } | null;
+    [key: string]: unknown;
+  } | null;
   [key: string]: unknown;
 };
 

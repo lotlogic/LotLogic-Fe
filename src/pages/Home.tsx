@@ -313,7 +313,7 @@ export const HomePage = () => {
           </div>
         </section>
 
-        <section className="mt-0 bg-stone-900 px-4 py-20 text-white md:px-8">
+        <section className="mt-0 bg-brand-secondary px-4 py-20 text-white md:px-8">
           <div className="mx-auto max-w-4xl text-center">
             <div className="font-display text-5xl font-bold text-coral">1</div>
             <p className="mt-2 font-display text-2xl font-semibold md:text-3xl">
@@ -480,10 +480,10 @@ export const HomePage = () => {
           </div>
         </section>
 
-        <footer className="bg-stone-900 px-4 py-12 text-white md:px-8">
+        <footer className="bg-brand-secondary px-4 py-12 text-white md:px-8">
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
             <img
-              src="/images/logos/lotcheck-logo-white.svg"
+              src="/images/logos/lotcheck-logo-peach-white.svg"
               alt={brand.logoAlt}
               className="h-8 w-auto"
             />

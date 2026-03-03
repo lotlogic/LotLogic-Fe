@@ -27,13 +27,33 @@ export type EstateRuleLayersCrudMode = "ruleSet" | "builderApprovals";
 type EstateRuleLayersCrudProps = {
   estateId: string;
   mode?: EstateRuleLayersCrudMode;
+  estateName?: string;
 };
 
 type BuilderOption = {
   id: string;
   name?: string | null;
+  email?: string | null;
   [key: string]: unknown;
 };
+
+type AdminInvitationResponse = {
+  invitation?: {
+    invitedUserId?: string;
+    inviteRedeemUrl?: string;
+    [key: string]: unknown;
+  };
+  user?: {
+    id?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+};
+
+const inviteRedirectUrl =
+  typeof window !== "undefined"
+    ? `${window.location.origin}/dashboard`
+    : "/dashboard";
 
 const toDateTimeLocalValue = (date: Date) => {
   const offsetMs = date.getTimezoneOffset() * 60 * 1000;
@@ -68,6 +88,7 @@ const defaultRulesJson = `{
 export const EstateRuleLayersCrud = ({
   estateId,
   mode = "ruleSet",
+  estateName,
 }: EstateRuleLayersCrudProps) => {
   const isRuleSetMode = mode === "ruleSet";
 
@@ -336,6 +357,60 @@ export const EstateRuleLayersCrud = ({
               notes: approvalNotes.trim() || null,
             }
           );
+      if (!isManagingBuilderApproval && approvalStatus === "APPROVED") {
+        const invitedBuilder = builders.find(
+          (builder) => String(builder.id ?? "").trim() === trimmedBuilderId
+        );
+        const inviteEmail =
+          typeof invitedBuilder?.email === "string"
+            ? invitedBuilder.email.trim()
+            : "";
+        const inviteDisplayName =
+          typeof invitedBuilder?.name === "string" && invitedBuilder.name.trim()
+            ? invitedBuilder.name.trim()
+            : inviteEmail;
+        const inviteEstateName =
+          typeof estateName === "string" && estateName.trim()
+            ? estateName.trim()
+            : "your estate";
+
+        if (inviteEmail) {
+          try {
+            const inviteResult = await adminApi.inviteUser<AdminInvitationResponse>(
+              {
+                email: inviteEmail,
+                displayName: inviteDisplayName || inviteEmail,
+                role: "USER",
+                status: "ACTIVE",
+                estateIds: [],
+                redirectUrl: inviteRedirectUrl,
+                inviteContext: {
+                  scenario: "builder-estate",
+                  estateName: inviteEstateName,
+                },
+              }
+            );
+            const invitedUserId =
+              inviteResult.user?.id ??
+              inviteResult.invitation?.invitedUserId ??
+              null;
+            if (invitedUserId) {
+              await adminApi.addBuilderUsers(trimmedBuilderId, [invitedUserId]);
+            }
+          } catch (inviteError) {
+            setApprovalErrorMessage(
+              getAdminApiErrorMessage(
+                inviteError,
+                "Builder approval was saved, but invitation email failed."
+              )
+            );
+          }
+        } else {
+          setApprovalErrorMessage(
+            "Builder approval was saved, but invitation email was skipped because the builder has no email address."
+          );
+        }
+      }
       setApprovalSuccessMessage(
         isManagingBuilderApproval
           ? "Builder approval updated."
@@ -395,6 +470,58 @@ export const EstateRuleLayersCrud = ({
           trimmedBuilderId,
           payload
         );
+      if (nextStatus === "APPROVED") {
+        const inviteEmail =
+          typeof approval.builder?.email === "string"
+            ? approval.builder.email.trim()
+            : "";
+        const inviteDisplayName =
+          typeof approval.builder?.name === "string" &&
+          approval.builder.name.trim()
+            ? approval.builder.name.trim()
+            : inviteEmail;
+        const inviteEstateName =
+          typeof estateName === "string" && estateName.trim()
+            ? estateName.trim()
+            : "your estate";
+
+        if (inviteEmail) {
+          try {
+            const inviteResult = await adminApi.inviteUser<AdminInvitationResponse>(
+              {
+                email: inviteEmail,
+                displayName: inviteDisplayName || inviteEmail,
+                role: "USER",
+                status: "ACTIVE",
+                estateIds: [],
+                redirectUrl: inviteRedirectUrl,
+                inviteContext: {
+                  scenario: "builder-estate",
+                  estateName: inviteEstateName,
+                },
+              }
+            );
+            const invitedUserId =
+              inviteResult.user?.id ??
+              inviteResult.invitation?.invitedUserId ??
+              null;
+            if (invitedUserId) {
+              await adminApi.addBuilderUsers(trimmedBuilderId, [invitedUserId]);
+            }
+          } catch (inviteError) {
+            setApprovalErrorMessage(
+              getAdminApiErrorMessage(
+                inviteError,
+                "Builder was marked approved, but invitation email failed."
+              )
+            );
+          }
+        } else {
+          setApprovalErrorMessage(
+            "Builder was marked approved, but invitation email was skipped because the builder has no email address."
+          );
+        }
+      }
       setApprovalSuccessMessage(
         nextStatus === "REVOKED"
           ? "Builder approval revoked."

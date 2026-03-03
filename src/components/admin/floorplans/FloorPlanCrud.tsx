@@ -360,6 +360,7 @@ type FloorPlanCrudProps = {
   showRefresh?: boolean;
   filterPlaceholder?: string;
   renderEditPanel?: (floorPlanId: string) => ReactNode;
+  renderRowDetails?: (plan: FloorPlanRecord) => ReactNode;
 };
 
 export const FloorPlanCrud = ({
@@ -371,6 +372,7 @@ export const FloorPlanCrud = ({
   showRefresh = true,
   filterPlaceholder = "Filter by name or id",
   renderEditPanel,
+  renderRowDetails,
 }: FloorPlanCrudProps) => {
   const formId = useId();
   const [floorPlans, setFloorPlans] = useState<FloorPlanRecord[]>([]);
@@ -1664,58 +1666,66 @@ export const FloorPlanCrud = ({
                 </tr>
               </thead>
               <tbody>
-                {filteredFloorPlans.map((plan) => (
-                  <tr key={plan.id}>
-                    <td className="p-2 border-b border-slate-100">
-                      <div className="font-medium text-slate-900">
-                        {plan.name ?? "--"}
-                      </div>
-                      <div className="text-xs text-slate-500 truncate max-w-[220px]">
-                        {plan.floorplanUrl ?? "--"}
-                      </div>
-                    </td>
-                    <td className="p-2 border-b border-slate-100">
-                      {plan.bedrooms ?? "--"} / {plan.bathrooms ?? "--"} /{" "}
-                      {plan.garages ?? "--"}
-                    </td>
-                    <td className="p-2 border-b border-slate-100">
-                      {plan.areaSqm ?? "--"}
-                    </td>
-                    <td className="p-2 border-b border-slate-100">
-                      {plan.width ?? "--"} x {plan.depth ?? "--"}
-                    </td>
-                    <td className="p-2 border-b border-slate-100">
-                      {plan.storeys ?? "--"} / {plan.buildingHeight_m ?? "--"}
-                    </td>
-                    <td className="p-2 border-b border-slate-100">
-                      {[
-                        plan.rumpus ? "R" : null,
-                        plan.alfresco ? "A" : null,
-                        plan.pergola ? "P" : null,
-                      ]
-                        .filter(Boolean)
-                        .join(", ") || "--"}
-                    </td>
-                    <td className="p-2 border-b border-slate-100 text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          label="Edit"
-                          variant="ghost"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => startEdit(plan)}
-                        />
-                        <Button
-                          label="Delete"
-                          variant="ghost"
-                          className="h-7 px-2 text-xs text-red-600"
-                          onClick={() => handleDelete(plan.id)}
-                          disabled={deleteId === plan.id}
-                          loading={deleteId === plan.id}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {filteredFloorPlans.map((plan) => {
+                  const rowDetails = renderRowDetails?.(plan) ?? null;
+                  return (
+                    <tr key={plan.id}>
+                      <td className="p-2 border-b border-slate-100">
+                        <div className="font-medium text-slate-900">
+                          {plan.name ?? "--"}
+                        </div>
+                        <div className="text-xs text-slate-500 truncate max-w-[220px]">
+                          {plan.floorplanUrl ?? "--"}
+                        </div>
+                        {rowDetails ? (
+                          <div className="mt-1 text-xs text-slate-600">
+                            {rowDetails}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="p-2 border-b border-slate-100">
+                        {plan.bedrooms ?? "--"} / {plan.bathrooms ?? "--"} /{" "}
+                        {plan.garages ?? "--"}
+                      </td>
+                      <td className="p-2 border-b border-slate-100">
+                        {plan.areaSqm ?? "--"}
+                      </td>
+                      <td className="p-2 border-b border-slate-100">
+                        {plan.width ?? "--"} x {plan.depth ?? "--"}
+                      </td>
+                      <td className="p-2 border-b border-slate-100">
+                        {plan.storeys ?? "--"} / {plan.buildingHeight_m ?? "--"}
+                      </td>
+                      <td className="p-2 border-b border-slate-100">
+                        {[
+                          plan.rumpus ? "R" : null,
+                          plan.alfresco ? "A" : null,
+                          plan.pergola ? "P" : null,
+                        ]
+                          .filter(Boolean)
+                          .join(", ") || "--"}
+                      </td>
+                      <td className="p-2 border-b border-slate-100 text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            label="Edit"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => startEdit(plan)}
+                          />
+                          <Button
+                            label="Delete"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs text-red-600"
+                            onClick={() => handleDelete(plan.id)}
+                            disabled={deleteId === plan.id}
+                            loading={deleteId === plan.id}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

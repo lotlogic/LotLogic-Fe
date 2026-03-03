@@ -79,7 +79,7 @@ export const LandingHeader = ({
   const isScrolled = useScrollState && scrolled;
   const isLight = alwaysLight || !isScrolled;
   const logoSrc = isLight
-    ? "/images/logos/lotcheck-logo-white.svg"
+    ? "/images/logos/lotcheck-logo-peach-white.svg"
     : brand.logo;
 
   return (

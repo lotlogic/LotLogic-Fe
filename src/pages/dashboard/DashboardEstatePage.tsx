@@ -556,6 +556,7 @@ const DashboardEstatePage = () => {
     setInviteErrorMessage(null);
     setTeamErrorMessage(null);
     try {
+      const estateName = getEstateName(estate) || "your estate";
       await adminApi.inviteUser<AdminInvitationResponse>({
         email,
         displayName,
@@ -563,6 +564,10 @@ const DashboardEstatePage = () => {
         status: "ACTIVE",
         estateIds: [estateId],
         redirectUrl: inviteRedirectUrl,
+        inviteContext: {
+          scenario: "estate-manager",
+          estateName,
+        },
       });
       await loadTeamMembers();
       if (showAddPanel && isAdmin) {
@@ -1068,7 +1073,11 @@ const DashboardEstatePage = () => {
 
       {estateId && (
         <section className="mb-10">
-          <EstateRuleLayersCrud estateId={estateId} mode="builderApprovals" />
+          <EstateRuleLayersCrud
+            estateId={estateId}
+            mode="builderApprovals"
+            estateName={getEstateName(estate)}
+          />
         </section>
       )}
 

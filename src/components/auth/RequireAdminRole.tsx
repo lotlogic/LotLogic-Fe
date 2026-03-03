@@ -13,11 +13,19 @@ export const RequireAdminRole = ({
   const { role, loading, errorMessage } = useAdminSession();
 
   if (loading) {
-    return <div>Checking admin role...</div>;
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-10 text-sm text-muted-foreground">
+        Checking permissions...
+      </div>
+    );
   }
 
   if (errorMessage) {
-    return <div>Admin role check failed: {errorMessage}</div>;
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-10 text-sm text-destructive">
+        Permission check failed: {errorMessage}
+      </div>
+    );
   }
 
   const isAdmin = role?.toUpperCase() === "ADMIN";

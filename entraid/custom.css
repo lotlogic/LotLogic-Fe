@@ -1,0 +1,24 @@
+/* Primary button */
+.ext-button.ext-primary {
+  background-color: #EF7B6C !important;
+  border-color: #EF7B6C !important;
+}
+
+.ext-button.ext-primary:hover,
+.ext-button.ext-primary:focus {
+  background-color: #e46a5c !important;
+  border-color: #e46a5c !important;
+}
+
+/* Links (global) */
+a, a:link {
+  color: #EF7B6C !important;
+}
+a:hover, a:focus {
+  color: #e46a5c !important;
+}
+
+/* Boilerplate area (optional) */
+.ext-boilerplate-text a {
+  color: #EF7B6C !important;
+}

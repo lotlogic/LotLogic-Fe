@@ -22,7 +22,7 @@ export const LOT_LIFECYCLE_OPTIONS: ReadonlyArray<{
 }> = [
   {
     value: "available",
-    label: "Available - visible to buyers, eligible for plan matching",
+    label: "Available",
   },
   {
     value: "reserved",
