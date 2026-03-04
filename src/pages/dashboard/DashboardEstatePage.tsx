@@ -565,7 +565,7 @@ const DashboardEstatePage = () => {
         estateIds: [estateId],
         redirectUrl: inviteRedirectUrl,
         inviteContext: {
-          scenario: "estate-manager",
+          scenario: "estate-team",
           estateName,
         },
       });
