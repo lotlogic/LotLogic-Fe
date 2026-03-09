@@ -10,6 +10,13 @@ export type EstateRecord = {
   logoUrl?: string | null;
   isPrototype?: boolean | null;
   status?: string | null;
+  brandSetting?:
+    | {
+        guid?: string | null;
+        name?: string | null;
+        title?: string | null;
+      }
+    | null;
   [key: string]: unknown;
 };
 

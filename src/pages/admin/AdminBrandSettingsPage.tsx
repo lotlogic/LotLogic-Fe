@@ -12,12 +12,6 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-type AdminEstate = {
-  id: string;
-  name?: string | null;
-  [key: string]: unknown;
-};
-
 type BrandSettings = {
   id: string;
   guid: string;
@@ -32,7 +26,9 @@ type BrandSettings = {
   textSecondaryColor?: string | null;
   fontFamilyPrimary?: string | null;
   fontFamilySecondary?: string | null;
-  estateId?: string | null;
+  _count?: {
+    estates?: number;
+  } | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   [key: string]: unknown;
@@ -50,7 +46,6 @@ type BrandSettingsForm = {
   textSecondaryColor: string;
   fontFamilyPrimary: string;
   fontFamilySecondary: string;
-  estateId: string;
 };
 
 const emptyForm: BrandSettingsForm = {
@@ -65,7 +60,6 @@ const emptyForm: BrandSettingsForm = {
   textSecondaryColor: "",
   fontFamilyPrimary: "",
   fontFamilySecondary: "",
-  estateId: "",
 };
 
 const normalizeOptional = (value: string) => {
@@ -74,11 +68,6 @@ const normalizeOptional = (value: string) => {
 };
 
 const normalizeRequired = (value: string) => value.trim();
-
-const getEstateName = (estate: AdminEstate | undefined) =>
-  typeof estate?.name === "string" && estate.name.trim()
-    ? estate.name
-    : estate?.id ?? "--";
 
 type ColorFieldProps = {
   label: string;
@@ -127,12 +116,6 @@ const AdminBrandSettingsPage = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filterText, setFilterText] = useState("");
 
-  const [estates, setEstates] = useState<AdminEstate[]>([]);
-  const [estatesLoading, setEstatesLoading] = useState(false);
-  const [estatesErrorMessage, setEstatesErrorMessage] = useState<string | null>(
-    null
-  );
-
   const [showAddForm, setShowAddForm] = useState(false);
   const [form, setForm] = useState<BrandSettingsForm>(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -159,31 +142,9 @@ const AdminBrandSettingsPage = () => {
     }
   }, []);
 
-  const loadEstates = useCallback(async () => {
-    setEstatesLoading(true);
-    setEstatesErrorMessage(null);
-    try {
-      const data = await adminApi.getEstates<AdminEstate>();
-      setEstates(data);
-    } catch (error) {
-      setEstatesErrorMessage(
-        error instanceof Error ? error.message : "Failed to load estates."
-      );
-    } finally {
-      setEstatesLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     loadSettings();
-    loadEstates();
-  }, [loadSettings, loadEstates]);
-
-  const estateLookup = useMemo(() => {
-    const map = new Map<string, AdminEstate>();
-    estates.forEach((estate) => map.set(estate.id, estate));
-    return map;
-  }, [estates]);
+  }, [loadSettings]);
 
   const filteredSettings = useMemo(() => {
     const needle = filterText.trim().toLowerCase();
@@ -194,13 +155,7 @@ const AdminBrandSettingsPage = () => {
       const name = (setting.name ?? "").toLowerCase();
       const title = (setting.title ?? "").toLowerCase();
       const guid = setting.guid.toLowerCase();
-      const estateId = (setting.estateId ?? "").toLowerCase();
-      return (
-        name.includes(needle) ||
-        title.includes(needle) ||
-        guid.includes(needle) ||
-        estateId.includes(needle)
-      );
+      return name.includes(needle) || title.includes(needle) || guid.includes(needle);
     });
   }, [filterText, settingsList]);
 
@@ -238,7 +193,6 @@ const AdminBrandSettingsPage = () => {
       textSecondaryColor: normalizeOptional(form.textSecondaryColor),
       fontFamilyPrimary: normalizeOptional(form.fontFamilyPrimary),
       fontFamilySecondary: normalizeOptional(form.fontFamilySecondary),
-      estateId: normalizeOptional(form.estateId),
     };
 
     try {
@@ -304,6 +258,9 @@ const AdminBrandSettingsPage = () => {
           className="grid gap-5 p-5 border rounded-lg mb-6 bg-slate-50"
         >
           <h2 className="text-lg font-semibold">New Embed Brand Settings</h2>
+          <p className="text-sm text-muted-foreground">
+            Create reusable themes here, then assign them from an estate page.
+          </p>
           <div className="grid gap-4">
             <div className="grid gap-2">
               <span className="text-sm font-medium">Name *</span>
@@ -336,26 +293,6 @@ const AdminBrandSettingsPage = () => {
                 accept="image/png,image/jpeg,image/webp,image/svg+xml"
                 helperText="Accepted formats: PNG, SVG, JPG, or WEBP. Minimum 200px wide. Square or horizontal format preferred."
               />
-            </div>
-            <div className="grid gap-2">
-              <span className="text-sm font-medium">Estate (optional)</span>
-              <select
-                value={form.estateId}
-                onChange={(event) => updateField("estateId")(event.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <option value="">Unassigned</option>
-                {estates.map((estate) => (
-                  <option key={estate.id} value={estate.id}>
-                    {getEstateName(estate)} ({estate.id})
-                  </option>
-                ))}
-              </select>
-              {estatesErrorMessage && (
-                <span className="text-destructive text-sm">
-                  {estatesErrorMessage}
-                </span>
-              )}
             </div>
           </div>
 
@@ -442,13 +379,6 @@ const AdminBrandSettingsPage = () => {
               loading={saving}
               label="Create embed brand settings"
             />
-            <Button
-              type="button"
-              variant="outline"
-              disabled={saving}
-              label={estatesLoading ? "Loading estates..." : "Reload estates"}
-              onClick={loadEstates}
-            />
             {saveErrorMessage && (
               <span className="text-destructive text-sm">
                 {saveErrorMessage}
@@ -478,7 +408,7 @@ const AdminBrandSettingsPage = () => {
         <Input
           value={filterText}
           onChange={(event) => setFilterText(event.target.value)}
-          placeholder="Filter by name, title, guid, or estate id"
+          placeholder="Filter by name, title, or guid"
           className="flex-1 min-w-[220px]"
         />
       </div>
@@ -502,7 +432,7 @@ const AdminBrandSettingsPage = () => {
                   Title
                 </th>
                 <th className="p-3 border-b font-medium text-sm text-slate-700">
-                  Estate
+                  Used By
                 </th>
                 <th className="p-3 border-b font-medium text-sm text-slate-700">
                   GUID
@@ -525,9 +455,8 @@ const AdminBrandSettingsPage = () => {
                     {setting.title ?? "--"}
                   </td>
                   <td className="p-3 border-b border-slate-100 text-sm">
-                    {setting.estateId
-                      ? getEstateName(estateLookup.get(setting.estateId))
-                      : "--"}
+                    {setting._count?.estates ?? 0} estate
+                    {(setting._count?.estates ?? 0) === 1 ? "" : "s"}
                   </td>
                   <td className="p-3 border-b border-slate-100 text-xs text-slate-400 font-mono">
                     {setting.guid}

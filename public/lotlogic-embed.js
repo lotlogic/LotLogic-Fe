@@ -34,7 +34,6 @@
 
   var embedUrl = baseUrl + "/embed/" + encodeURIComponent(estateId);
   var params = [];
-  params.push("embed=1");
   if (brand) {
     params.push("brand=" + encodeURIComponent(brand));
   }

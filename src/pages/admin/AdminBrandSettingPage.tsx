@@ -12,12 +12,6 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-type AdminEstate = {
-  id: string;
-  name?: string | null;
-  [key: string]: unknown;
-};
-
 type BrandSettings = {
   id: string;
   guid: string;
@@ -32,7 +26,9 @@ type BrandSettings = {
   textSecondaryColor?: string | null;
   fontFamilyPrimary?: string | null;
   fontFamilySecondary?: string | null;
-  estateId?: string | null;
+  _count?: {
+    estates?: number;
+  } | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   [key: string]: unknown;
@@ -50,7 +46,6 @@ type BrandSettingsForm = {
   textSecondaryColor: string;
   fontFamilyPrimary: string;
   fontFamilySecondary: string;
-  estateId: string;
 };
 
 const emptyForm: BrandSettingsForm = {
@@ -65,7 +60,6 @@ const emptyForm: BrandSettingsForm = {
   textSecondaryColor: "",
   fontFamilyPrimary: "",
   fontFamilySecondary: "",
-  estateId: "",
 };
 
 const normalizeOptional = (value: string) => {
@@ -74,11 +68,6 @@ const normalizeOptional = (value: string) => {
 };
 
 const normalizeRequired = (value: string) => value.trim();
-
-const getEstateName = (estate: AdminEstate | undefined) =>
-  typeof estate?.name === "string" && estate.name.trim()
-    ? estate.name
-    : estate?.id ?? "--";
 
 const mapSettingsToForm = (settings: BrandSettings | null): BrandSettingsForm => ({
   name: settings?.name ?? "",
@@ -92,7 +81,6 @@ const mapSettingsToForm = (settings: BrandSettings | null): BrandSettingsForm =>
   textSecondaryColor: settings?.textSecondaryColor ?? "",
   fontFamilyPrimary: settings?.fontFamilyPrimary ?? "",
   fontFamilySecondary: settings?.fontFamilySecondary ?? "",
-  estateId: settings?.estateId ?? "",
 });
 
 type ColorFieldProps = {
@@ -149,12 +137,6 @@ const AdminBrandSettingPage = () => {
     null
   );
 
-  const [estates, setEstates] = useState<AdminEstate[]>([]);
-  const [estatesLoading, setEstatesLoading] = useState(false);
-  const [estatesErrorMessage, setEstatesErrorMessage] = useState<string | null>(
-    null
-  );
-
   const loadSettings = useCallback(async () => {
     if (!guid) {
       setErrorMessage("Embed brand settings GUID is missing.");
@@ -179,31 +161,9 @@ const AdminBrandSettingPage = () => {
     }
   }, [guid]);
 
-  const loadEstates = useCallback(async () => {
-    setEstatesLoading(true);
-    setEstatesErrorMessage(null);
-    try {
-      const data = await adminApi.getEstates<AdminEstate>();
-      setEstates(data);
-    } catch (error) {
-      setEstatesErrorMessage(
-        error instanceof Error ? error.message : "Failed to load estates."
-      );
-    } finally {
-      setEstatesLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     loadSettings();
-    loadEstates();
-  }, [loadSettings, loadEstates]);
-
-  const estateLookup = useMemo(() => {
-    const map = new Map<string, AdminEstate>();
-    estates.forEach((estate) => map.set(estate.id, estate));
-    return map;
-  }, [estates]);
+  }, [loadSettings]);
 
   const updateField =
     <K extends keyof BrandSettingsForm>(key: K) =>
@@ -241,7 +201,6 @@ const AdminBrandSettingPage = () => {
       textSecondaryColor: normalizeOptional(form.textSecondaryColor),
       fontFamilyPrimary: normalizeOptional(form.fontFamilyPrimary),
       fontFamilySecondary: normalizeOptional(form.fontFamilySecondary),
-      estateId: normalizeOptional(form.estateId),
     };
 
     try {
@@ -363,6 +322,10 @@ const AdminBrandSettingPage = () => {
           <h2 className="text-xl font-bold mb-4 mt-0">
             Edit Embed Brand Settings
           </h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            This theme can be reused across multiple estates. Assignment is set
+            from each estate page.
+          </p>
           <form onSubmit={handleSave} className="grid gap-5">
             <div className="grid gap-4">
               <div className="grid gap-2">
@@ -393,26 +356,6 @@ const AdminBrandSettingPage = () => {
                   accept="image/png,image/jpeg,image/webp,image/svg+xml"
                   helperText="Accepted formats: PNG, SVG, JPG, or WEBP. Minimum 200px wide. Square or horizontal format preferred."
                 />
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Estate (optional)</span>
-                <select
-                  value={form.estateId}
-                  onChange={(event) => updateField("estateId")(event.target.value)}
-                  className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="">Unassigned</option>
-                  {estates.map((estate) => (
-                    <option key={estate.id} value={estate.id}>
-                      {getEstateName(estate)} ({estate.id})
-                    </option>
-                  ))}
-                </select>
-                {estatesErrorMessage && (
-                  <span className="text-destructive text-sm">
-                    {estatesErrorMessage}
-                  </span>
-                )}
               </div>
             </div>
 
@@ -547,12 +490,11 @@ const AdminBrandSettingPage = () => {
             </div>
             <div>
               <div className="text-xs uppercase tracking-wide text-slate-500">
-                Estate
+                Used By
               </div>
               <div>
-                {settings.estateId
-                  ? getEstateName(estateLookup.get(settings.estateId))
-                  : "--"}
+                {settings._count?.estates ?? 0} estate
+                {(settings._count?.estates ?? 0) === 1 ? "" : "s"}
               </div>
             </div>
             <div>
@@ -585,16 +527,6 @@ const AdminBrandSettingPage = () => {
                 <div className="text-xs text-slate-500">No logo set.</div>
               )}
             </div>
-          </div>
-          <div className="mt-4">
-            <Button
-              onClick={loadEstates}
-              disabled={estatesLoading}
-              loading={estatesLoading}
-              variant="outline"
-              className="h-8 text-xs"
-              label="Reload estates"
-            />
           </div>
         </aside>
       </section>

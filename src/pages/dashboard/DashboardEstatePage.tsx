@@ -11,6 +11,7 @@ import { EstatePerformancePanel } from "@/components/admin/estates/EstatePerform
 import { EstateRuleLayersCrud } from "@/components/admin/estates/EstateRuleLayersCrud";
 import type { EstateRecord } from "@/components/admin/estates/types";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { EstateEmbedPanel } from "@/components/embed/EstateEmbedPanel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { adminApi, type CreateLotInput } from "@/lib/api/adminApi";
@@ -854,7 +855,7 @@ const DashboardEstatePage = () => {
             )}
             {!teamMembersLoading && teamMembers.length > 0 && (
               <div className="overflow-auto border rounded-lg">
-                <table className="w-full border-collapse min-w-[520px]">
+                <table className="w-full border-collapse min-w-[360px]">
                   <thead>
                     <tr className="bg-slate-100 text-left">
                       <th className="p-3 border-b font-medium text-sm text-slate-700">
@@ -862,14 +863,6 @@ const DashboardEstatePage = () => {
                       </th>
                       <th className="p-3 border-b font-medium text-sm text-slate-700">
                         Email
-                      </th>
-                      {isAdmin && (
-                        <th className="p-3 border-b font-medium text-sm text-slate-700">
-                          Role
-                        </th>
-                      )}
-                      <th className="p-3 border-b font-medium text-sm text-slate-700">
-                        Status
                       </th>
                       <th className="p-3 border-b font-medium text-sm text-slate-700">
                         Actions
@@ -890,14 +883,6 @@ const DashboardEstatePage = () => {
                           </td>
                           <td className="p-3 border-b border-slate-100 text-sm">
                             {contact}
-                          </td>
-                          {isAdmin && (
-                            <td className="p-3 border-b border-slate-100 text-sm">
-                              {user?.role ?? "--"}
-                            </td>
-                          )}
-                          <td className="p-3 border-b border-slate-100 text-sm">
-                            {user?.status ?? "--"}
                           </td>
                           <td className="p-3 border-b border-slate-100 text-sm">
                             <Button
@@ -1067,6 +1052,18 @@ const DashboardEstatePage = () => {
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-6 mt-4 shadow-sm h-fit">
+            <h2 className="text-xl font-bold mt-0 mb-1">Embed Preview</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Open the hosted embed for this estate or copy the example embed
+              code below.
+            </p>
+            <EstateEmbedPanel
+              estateId={estateId}
+              themeGuid={estate?.brandSetting?.guid ?? null}
+            />
           </div>
         </div>
       </section>

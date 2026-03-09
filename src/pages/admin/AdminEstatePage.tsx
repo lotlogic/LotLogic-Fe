@@ -9,6 +9,7 @@ import {
 } from "@/components/admin/estates/EstateLotsCrud";
 import { EstatePerformancePanel } from "@/components/admin/estates/EstatePerformancePanel";
 import { EstateRuleLayersCrud } from "@/components/admin/estates/EstateRuleLayersCrud";
+import { EstateEmbedPanel } from "@/components/embed/EstateEmbedPanel";
 import { adminApi } from "@/lib/api/adminApi";
 import {
   JURISDICTIONS,
@@ -33,6 +34,13 @@ type AdminEstate = {
   phone?: string | null;
   logoUrl?: string | null;
   isPrototype?: boolean | null;
+  brandSetting?:
+    | {
+        guid?: string | null;
+        name?: string | null;
+        title?: string | null;
+      }
+    | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   [key: string]: unknown;
@@ -70,6 +78,16 @@ type AdminInvitationResponse = {
     [key: string]: unknown;
   };
   user?: EstateUser;
+  [key: string]: unknown;
+};
+
+type BrandSettingOption = {
+  guid: string;
+  name?: string | null;
+  title?: string | null;
+  _count?: {
+    estates?: number;
+  } | null;
   [key: string]: unknown;
 };
 
@@ -112,6 +130,15 @@ const getUserContact = (user: EstateUser): string => {
 
 const getUserName = (user: EstateUser): string =>
   user.displayName && user.displayName.trim() ? user.displayName : "(no name)";
+
+const getBrandSettingLabel = (setting: BrandSettingOption): string => {
+  const name = setting.name?.trim();
+  const title = setting.title?.trim();
+  if (name && title && name !== title) {
+    return `${name} (${title})`;
+  }
+  return name || title || setting.guid;
+};
 
 const normalizeOptional = (value: string) => {
   const trimmed = value.trim();
@@ -167,6 +194,13 @@ const AdminEstatePage = () => {
   const [saveSuccessMessage, setSaveSuccessMessage] = useState<string | null>(
     null
   );
+  const [themes, setThemes] = useState<BrandSettingOption[]>([]);
+  const [themesLoading, setThemesLoading] = useState(false);
+  const [themesErrorMessage, setThemesErrorMessage] = useState<string | null>(
+    null
+  );
+  const [selectedThemeGuid, setSelectedThemeGuid] = useState("");
+  const [initialThemeGuid, setInitialThemeGuid] = useState("");
 
   const [users, setUsers] = useState<EstateUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -206,6 +240,25 @@ const AdminEstatePage = () => {
     };
     setForm(nextForm);
     setInitialForm(nextForm);
+    const linkedThemeGuid = data.brandSetting?.guid?.trim() ?? "";
+    setSelectedThemeGuid(linkedThemeGuid);
+    setInitialThemeGuid(linkedThemeGuid);
+  }, []);
+
+  const loadThemes = useCallback(async () => {
+    setThemesLoading(true);
+    setThemesErrorMessage(null);
+    try {
+      const data = await adminApi.getBrandSettings<BrandSettingOption>();
+      setThemes(data);
+    } catch (error) {
+      setThemes([]);
+      setThemesErrorMessage(
+        error instanceof Error ? error.message : "Failed to load themes."
+      );
+    } finally {
+      setThemesLoading(false);
+    }
   }, []);
 
   const loadEstate = useCallback(async () => {
@@ -295,6 +348,12 @@ const AdminEstatePage = () => {
   }, [loadEstate]);
 
   useEffect(() => {
+    if (isAdmin) {
+      loadThemes();
+    }
+  }, [isAdmin, loadThemes]);
+
+  useEffect(() => {
     loadTeamMembers();
   }, [loadTeamMembers]);
 
@@ -354,6 +413,11 @@ const AdminEstatePage = () => {
       payload.isPrototype = form.isPrototype;
     }
 
+    const themeChanged = selectedThemeGuid !== initialThemeGuid;
+    if (themeChanged) {
+      payload.brandGuid = selectedThemeGuid || null;
+    }
+
     if (Object.keys(payload).length === 0) {
       setSaveSuccessMessage("No changes to save.");
       setSaving(false);
@@ -361,7 +425,7 @@ const AdminEstatePage = () => {
     }
     try {
       await adminApi.updateEstate(estateId, payload);
-      await loadEstate();
+      await Promise.all([loadEstate(), loadThemes()]);
       setSaveSuccessMessage("Estate updated.");
     } catch (error) {
       setSaveErrorMessage(
@@ -500,6 +564,16 @@ const AdminEstatePage = () => {
   const handleLogout = async () => {
     await adminAuth.logout();
   };
+
+  const previewThemeGuid = selectedThemeGuid || initialThemeGuid || null;
+
+  const themeOptions = useMemo(
+    () =>
+      [...themes].sort((left, right) =>
+        getBrandSettingLabel(left).localeCompare(getBrandSettingLabel(right))
+      ),
+    [themes]
+  );
 
   const metaEntries = useMemo(() => {
     if (!estate) {
@@ -961,6 +1035,56 @@ const AdminEstatePage = () => {
                     </form>
                   </div>
                 </div>
+              )}
+            </div>
+
+            <div className="border rounded-lg p-6 bg-white shadow-sm h-fit">
+              <h2 className="text-xl font-bold mt-0 mb-1">Embed Settings</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Choose the theme for this estate, then use the preview and embed
+                details below.
+              </p>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Theme</span>
+                <select
+                  value={selectedThemeGuid}
+                  onChange={(event) => setSelectedThemeGuid(event.target.value)}
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  disabled={themesLoading}
+                >
+                  <option value="">No theme selected</option>
+                  {themeOptions.map((theme) => {
+                    const estateCount = theme._count?.estates ?? 0;
+                    return (
+                      <option key={theme.guid} value={theme.guid}>
+                        {estateCount > 0
+                          ? `${getBrandSettingLabel(theme)} - used by ${estateCount} estate${estateCount === 1 ? "" : "s"}`
+                          : getBrandSettingLabel(theme)}
+                      </option>
+                    );
+                  })}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Theme changes are saved when you use Save changes in Estate
+                  properties.
+                </p>
+                {selectedThemeGuid === "" && initialThemeGuid !== "" && (
+                  <p className="text-xs text-amber-700">
+                    Save changes to remove the currently linked theme from this
+                    estate.
+                  </p>
+                )}
+                {themesErrorMessage && (
+                  <p className="text-xs text-destructive">{themesErrorMessage}</p>
+                )}
+              </div>
+
+              {estateId && (
+                <EstateEmbedPanel
+                  className="mt-4"
+                  estateId={estateId}
+                  themeGuid={previewThemeGuid}
+                />
               )}
             </div>
 

@@ -37,6 +37,12 @@ type BuilderForm = {
   phone: string;
 };
 
+type BuilderEstateJoinRequestForm = {
+  estateName: string;
+  estateLocation: string;
+  fitReason: string;
+};
+
 type AdminInvitationResponse = {
   invitation?: {
     invitedUserId?: string;
@@ -201,6 +207,12 @@ const emptyForm: BuilderForm = {
   phone: "",
 };
 
+const emptyEstateJoinRequestForm: BuilderEstateJoinRequestForm = {
+  estateName: "",
+  estateLocation: "",
+  fitReason: "",
+};
+
 const normalizeOptional = (value: string) => {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
@@ -288,6 +300,14 @@ const DashboardBuilderPage = () => {
   const [inviteErrorMessage, setInviteErrorMessage] = useState<string | null>(
     null,
   );
+  const [estateJoinRequestForm, setEstateJoinRequestForm] =
+    useState<BuilderEstateJoinRequestForm>(emptyEstateJoinRequestForm);
+  const [estateJoinRequestSubmitting, setEstateJoinRequestSubmitting] =
+    useState(false);
+  const [estateJoinRequestErrorMessage, setEstateJoinRequestErrorMessage] =
+    useState<string | null>(null);
+  const [estateJoinRequestSuccessMessage, setEstateJoinRequestSuccessMessage] =
+    useState<string | null>(null);
 
   const [floorPlans, setFloorPlans] = useState<FloorPlanRecord[]>([]);
   const [estateApprovals, setEstateApprovals] = useState<
@@ -819,6 +839,45 @@ const DashboardBuilderPage = () => {
     }
   };
 
+  const handleSubmitEstateJoinRequest = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    if (!builderId) {
+      return;
+    }
+
+    const estateName = estateJoinRequestForm.estateName.trim();
+    const estateLocation = estateJoinRequestForm.estateLocation.trim();
+    if (!estateName || !estateLocation) {
+      setEstateJoinRequestErrorMessage(
+        "Estate name and estate location are required.",
+      );
+      setEstateJoinRequestSuccessMessage(null);
+      return;
+    }
+
+    setEstateJoinRequestSubmitting(true);
+    setEstateJoinRequestErrorMessage(null);
+    setEstateJoinRequestSuccessMessage(null);
+
+    try {
+      await adminApi.submitBuilderEstateJoinRequest(builderId, {
+        estateName,
+        estateLocation,
+        fitReason: normalizeOptional(estateJoinRequestForm.fitReason),
+      });
+      setEstateJoinRequestForm(emptyEstateJoinRequestForm);
+      setEstateJoinRequestSuccessMessage("Request submitted.");
+    } catch (error) {
+      setEstateJoinRequestErrorMessage(
+        getAdminApiErrorMessage(error, "Failed to submit request."),
+      );
+    } finally {
+      setEstateJoinRequestSubmitting(false);
+    }
+  };
+
   const handleRefresh = useCallback(async () => {
     if (!hasAccess) {
       return;
@@ -912,8 +971,8 @@ const DashboardBuilderPage = () => {
         </div>
       )}
 
-      <section className="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="mb-8 grid items-start gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+        <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold mb-2">Builder details</h2>
           <p className="text-sm text-muted-foreground mb-4">
             Update the builder contact details below.
@@ -991,243 +1050,319 @@ const DashboardBuilderPage = () => {
           )}
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm h-fit">
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <h2 className="text-xl font-bold mt-0 mb-0">Team Members</h2>
-            <Button
-              onClick={() => setShowAddPanel((prev) => !prev)}
-              variant="outline"
-              className="h-8 text-xs"
-              label={showAddPanel ? "Close add members" : "Add members"}
-            />
-          </div>
-          {teamErrorMessage && (
-            <p className="text-destructive mb-3 text-sm">{teamErrorMessage}</p>
-          )}
-          {teamMembersLoading && (
-            <p className="text-sm text-muted-foreground">
-              Loading team members...
-            </p>
-          )}
-          {teamMembersErrorMessage && (
-            <p className="text-destructive mb-3 text-sm">
-              {teamMembersErrorMessage}
-            </p>
-          )}
-          {!teamMembersLoading && teamMembers.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No team members assigned.
-            </p>
-          )}
-          {!teamMembersLoading && teamMembers.length > 0 && (
-            <div className="overflow-auto border rounded-lg">
-              <table className="w-full border-collapse min-w-[520px]">
-                <thead>
-                  <tr className="bg-slate-100 text-left">
-                    <th className="p-3 border-b font-medium text-sm text-slate-700">
-                      Name
-                    </th>
-                    <th className="p-3 border-b font-medium text-sm text-slate-700">
-                      Email
-                    </th>
-                    {isAdmin && (
-                      <th className="p-3 border-b font-medium text-sm text-slate-700">
-                        Role
-                      </th>
-                    )}
-                    <th className="p-3 border-b font-medium text-sm text-slate-700">
-                      Status
-                    </th>
-                    <th className="p-3 border-b font-medium text-sm text-slate-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {teamMembers.map((member) => {
-                    const user = member.user;
-                    const name = user ? getUserName(user) : "(unknown)";
-                    const contact = user ? getUserContact(user) : member.userId;
-                    return (
-                      <tr key={member.userId}>
-                        <td className="p-3 border-b border-slate-100 text-sm">
-                          {name}
-                        </td>
-                        <td className="p-3 border-b border-slate-100 text-sm">
-                          {contact}
-                        </td>
-                        {isAdmin && (
-                          <td className="p-3 border-b border-slate-100 text-sm">
-                            {user?.role ?? "--"}
-                          </td>
-                        )}
-                        <td className="p-3 border-b border-slate-100 text-sm">
-                          {user?.status ?? "--"}
-                        </td>
-                        <td className="p-3 border-b border-slate-100 text-sm">
-                          <Button
-                            onClick={() => handleRemoveMember(member.userId)}
-                            disabled={teamAction !== null}
-                            loading={
-                              teamAction === "remove" &&
-                              teamActionUserId === member.userId
-                            }
-                            variant="ghost"
-                            className="h-7 px-2 text-xs text-destructive hover:bg-red-50 hover:text-destructive"
-                            label="Remove"
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+        <div className="min-w-0 grid gap-6 h-fit">
+          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-2 mb-4">
+              <h2 className="text-xl font-bold mt-0 mb-0">Team Members</h2>
+              <Button
+                onClick={() => setShowAddPanel((prev) => !prev)}
+                variant="outline"
+                className="h-8 text-xs"
+                label={showAddPanel ? "Close add members" : "Add members"}
+              />
             </div>
-          )}
-          {showAddPanel && (
-            <div
-              className={`mt-4 pt-4 border-t border-slate-100 grid gap-6${isAdmin ? " lg:grid-cols-[1.1fr_1fr]" : ""}`}
-            >
-              {isAdmin && (
-                <div className="border rounded-lg p-6 bg-white shadow-sm">
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <h3 className="font-semibold text-lg m-0">
-                      Add Existing User
-                    </h3>
-                    <Button
-                      onClick={loadUsers}
-                      disabled={usersLoading}
-                      loading={usersLoading}
-                      variant="outline"
-                      className="h-7 text-xs"
-                      label={usersLoading ? "Loading..." : "Reload users"}
-                    />
-                  </div>
-                  <Input
-                    value={userFilter}
-                    onChange={(event) => setUserFilter(event.target.value)}
-                    placeholder="Search by name or email"
-                    className="w-full mb-3"
-                  />
-                  {usersErrorMessage && (
-                    <p className="text-destructive text-sm mb-2">
-                      {usersErrorMessage}
-                    </p>
-                  )}
-                  <div className="max-h-[280px] overflow-auto border rounded-lg bg-white">
-                    <table className="w-full border-collapse min-w-[420px]">
-                      <thead>
-                        <tr className="bg-slate-50 text-left">
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Name
-                          </th>
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Email
-                          </th>
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Role
-                          </th>
-                          <th className="p-2 border-b font-medium text-xs text-slate-500">
-                            Actions
-                          </th>
+            {teamErrorMessage && (
+              <p className="text-destructive mb-3 text-sm">
+                {teamErrorMessage}
+              </p>
+            )}
+            {teamMembersLoading && (
+              <p className="text-sm text-muted-foreground">
+                Loading team members...
+              </p>
+            )}
+            {teamMembersErrorMessage && (
+              <p className="text-destructive mb-3 text-sm">
+                {teamMembersErrorMessage}
+              </p>
+            )}
+            {!teamMembersLoading && teamMembers.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No team members assigned.
+              </p>
+            )}
+            {!teamMembersLoading && teamMembers.length > 0 && (
+              <div className="overflow-auto border rounded-lg">
+                <table className="w-full border-collapse min-w-[360px]">
+                  <thead>
+                    <tr className="bg-slate-100 text-left">
+                      <th className="p-3 border-b font-medium text-sm text-slate-700">
+                        Name
+                      </th>
+                      <th className="p-3 border-b font-medium text-sm text-slate-700">
+                        Email
+                      </th>
+                      <th className="p-3 border-b font-medium text-sm text-slate-700">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teamMembers.map((member) => {
+                      const user = member.user;
+                      const name = user ? getUserName(user) : "(unknown)";
+                      const contact = user
+                        ? getUserContact(user)
+                        : member.userId;
+                      return (
+                        <tr key={member.userId}>
+                          <td className="p-3 border-b border-slate-100 text-sm">
+                            {name}
+                          </td>
+                          <td className="p-3 border-b border-slate-100 text-sm">
+                            {contact}
+                          </td>
+                          <td className="p-3 border-b border-slate-100 text-sm">
+                            <Button
+                              onClick={() => handleRemoveMember(member.userId)}
+                              disabled={teamAction !== null}
+                              loading={
+                                teamAction === "remove" &&
+                                teamActionUserId === member.userId
+                              }
+                              variant="ghost"
+                              className="h-7 px-2 text-xs text-destructive hover:bg-red-50 hover:text-destructive"
+                              label="Remove"
+                            />
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {usersLoading && (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="p-3 text-center text-sm text-muted-foreground"
-                            >
-                              Loading users...
-                            </td>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {showAddPanel && (
+              <div
+                className={`mt-4 pt-4 border-t border-slate-100 grid gap-6${isAdmin ? " lg:grid-cols-[1.1fr_1fr]" : ""}`}
+              >
+                {isAdmin && (
+                  <div className="border rounded-lg p-6 bg-white shadow-sm">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <h3 className="font-semibold text-lg m-0">
+                        Add Existing User
+                      </h3>
+                      <Button
+                        onClick={loadUsers}
+                        disabled={usersLoading}
+                        loading={usersLoading}
+                        variant="outline"
+                        className="h-7 text-xs"
+                        label={usersLoading ? "Loading..." : "Reload users"}
+                      />
+                    </div>
+                    <Input
+                      value={userFilter}
+                      onChange={(event) => setUserFilter(event.target.value)}
+                      placeholder="Search by name or email"
+                      className="w-full mb-3"
+                    />
+                    {usersErrorMessage && (
+                      <p className="text-destructive text-sm mb-2">
+                        {usersErrorMessage}
+                      </p>
+                    )}
+                    <div className="max-h-[280px] overflow-auto border rounded-lg bg-white">
+                      <table className="w-full border-collapse min-w-[420px]">
+                        <thead>
+                          <tr className="bg-slate-50 text-left">
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Name
+                            </th>
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Email
+                            </th>
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Role
+                            </th>
+                            <th className="p-2 border-b font-medium text-xs text-slate-500">
+                              Actions
+                            </th>
                           </tr>
-                        )}
-                        {!usersLoading &&
-                          filteredAvailableUsers.map((user) => (
-                            <tr key={user.id}>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                {getUserName(user)}
-                              </td>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                {getUserContact(user)}
-                              </td>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                {user.role ?? "--"}
-                              </td>
-                              <td className="p-2 border-b border-slate-50 text-sm">
-                                <Button
-                                  onClick={() => handleAddMember(user.id)}
-                                  disabled={teamAction !== null}
-                                  loading={
-                                    teamAction === "add" &&
-                                    teamActionUserId === user.id
-                                  }
-                                  variant="ghost"
-                                  className="h-7 px-2 text-xs"
-                                  label="Add"
-                                />
-                              </td>
-                            </tr>
-                          ))}
-                        {!usersLoading &&
-                          filteredAvailableUsers.length === 0 && (
+                        </thead>
+                        <tbody>
+                          {usersLoading && (
                             <tr>
                               <td
                                 colSpan={4}
                                 className="p-3 text-center text-sm text-muted-foreground"
                               >
-                                No available users match the filter.
+                                Loading users...
                               </td>
                             </tr>
                           )}
-                      </tbody>
-                    </table>
+                          {!usersLoading &&
+                            filteredAvailableUsers.map((user) => (
+                              <tr key={user.id}>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  {getUserName(user)}
+                                </td>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  {getUserContact(user)}
+                                </td>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  {user.role ?? "--"}
+                                </td>
+                                <td className="p-2 border-b border-slate-50 text-sm">
+                                  <Button
+                                    onClick={() => handleAddMember(user.id)}
+                                    disabled={teamAction !== null}
+                                    loading={
+                                      teamAction === "add" &&
+                                      teamActionUserId === user.id
+                                    }
+                                    variant="ghost"
+                                    className="h-7 px-2 text-xs"
+                                    label="Add"
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                          {!usersLoading &&
+                            filteredAvailableUsers.length === 0 && (
+                              <tr>
+                                <td
+                                  colSpan={4}
+                                  className="p-3 text-center text-sm text-muted-foreground"
+                                >
+                                  No available users match the filter.
+                                </td>
+                              </tr>
+                            )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="border rounded-lg p-6 bg-white shadow-sm">
-                <h3 className="font-semibold text-lg m-0 mb-3">
-                  Invite & Add User
-                </h3>
-                <form onSubmit={handleInviteMember} className="grid gap-4">
-                  <div className="grid gap-2">
-                    <span className="text-sm font-medium">Email</span>
-                    <Input
-                      value={inviteEmail}
-                      onChange={(event) => setInviteEmail(event.target.value)}
-                      type="email"
-                      className="w-full"
-                      required
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <span className="text-sm font-medium">Name</span>
-                    <Input
-                      value={inviteName}
-                      onChange={(event) => setInviteName(event.target.value)}
-                      className="w-full"
-                      required
-                    />
-                  </div>
-                  <div className="flex gap-2 items-center mt-2">
-                    <Button
-                      type="submit"
-                      disabled={teamAction !== null}
-                      loading={teamAction === "invite"}
-                      label="Send invite & add"
-                    />
-                    {inviteErrorMessage && (
-                      <span className="text-destructive text-sm">
-                        {inviteErrorMessage}
-                      </span>
-                    )}
-                  </div>
-                </form>
+                <div className="border rounded-lg p-6 bg-white shadow-sm">
+                  <h3 className="font-semibold text-lg m-0 mb-3">
+                    Invite & Add User
+                  </h3>
+                  <form onSubmit={handleInviteMember} className="grid gap-4">
+                    <div className="grid gap-2">
+                      <span className="text-sm font-medium">Email</span>
+                      <Input
+                        value={inviteEmail}
+                        onChange={(event) => setInviteEmail(event.target.value)}
+                        type="email"
+                        className="w-full"
+                        required
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <span className="text-sm font-medium">Name</span>
+                      <Input
+                        value={inviteName}
+                        onChange={(event) => setInviteName(event.target.value)}
+                        className="w-full"
+                        required
+                      />
+                    </div>
+                    <div className="flex gap-2 items-center mt-2">
+                      <Button
+                        type="submit"
+                        disabled={teamAction !== null}
+                        loading={teamAction === "invite"}
+                        label="Send invite & add"
+                      />
+                      {inviteErrorMessage && (
+                        <span className="text-destructive text-sm">
+                          {inviteErrorMessage}
+                        </span>
+                      )}
+                    </div>
+                  </form>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+
+          <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-bold mt-0 mb-1">
+              Request to join an estate
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              Want to work on a specific estate? Let us know, even if they are
+              not here yet.
+            </p>
+            <form
+              onSubmit={handleSubmitEstateJoinRequest}
+              className="grid gap-4"
+            >
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Estate name *</span>
+                <Input
+                  value={estateJoinRequestForm.estateName}
+                  onChange={(event) =>
+                    setEstateJoinRequestForm((prev) => ({
+                      ...prev,
+                      estateName: event.target.value,
+                    }))
+                  }
+                  placeholder="Estate name"
+                  className="w-full"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">
+                  Estate location (suburb or region) *
+                </span>
+                <Input
+                  value={estateJoinRequestForm.estateLocation}
+                  onChange={(event) =>
+                    setEstateJoinRequestForm((prev) => ({
+                      ...prev,
+                      estateLocation: event.target.value,
+                    }))
+                  }
+                  placeholder="Suburb or region"
+                  className="w-full"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">
+                  Why you&apos;re a good fit (optional)
+                </span>
+                <textarea
+                  value={estateJoinRequestForm.fitReason}
+                  onChange={(event) =>
+                    setEstateJoinRequestForm((prev) => ({
+                      ...prev,
+                      fitReason: event.target.value,
+                    }))
+                  }
+                  rows={4}
+                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  placeholder="Why this builder would be a good fit for the estate"
+                />
+              </div>
+              <p className="m-0 text-xs text-slate-500">
+                This request includes your current dashboard user and builder
+                details.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="submit"
+                  disabled={estateJoinRequestSubmitting}
+                  loading={estateJoinRequestSubmitting}
+                  label="Submit Request"
+                />
+                {estateJoinRequestErrorMessage && (
+                  <span className="text-sm text-destructive">
+                    {estateJoinRequestErrorMessage}
+                  </span>
+                )}
+                {estateJoinRequestSuccessMessage && (
+                  <span className="text-sm text-emerald-600">
+                    {estateJoinRequestSuccessMessage}
+                  </span>
+                )}
+              </div>
+            </form>
+          </div>
         </div>
       </section>
 

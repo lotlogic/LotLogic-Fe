@@ -178,6 +178,8 @@ const builderApprovedEstatesPath = (builderId: AdminId) =>
   `${idPath("builders", builderId)}/approved-estates`;
 const builderLeadsPath = (builderId: AdminId) =>
   `${idPath("builders", builderId)}/leads`;
+const builderEstateJoinRequestPath = (builderId: AdminId) =>
+  `${idPath("builders", builderId)}/estate-join-request`;
 const builderPerformancePath = (builderId: AdminId) =>
   `${idPath("builders", builderId)}/performance`;
 const builderLeadsExportPath = (builderId: AdminId) =>
@@ -535,6 +537,12 @@ export const adminApi = {
   },
   async getBuilderUsers<T = unknown>(id: AdminId): Promise<T[]> {
     return data(adminApiClient.get<T[]>(builderUsersPath(id)));
+  },
+  async submitBuilderEstateJoinRequest<
+    T = { message: string },
+    B extends Record<string, unknown> = Record<string, unknown>
+  >(id: AdminId, payload: B): Promise<T> {
+    return data(adminApiClient.post<T>(builderEstateJoinRequestPath(id), payload));
   },
   async getBuilderApprovedEstates<T = unknown>(id: AdminId): Promise<T[]> {
     return data(adminApiClient.get<T[]>(builderApprovedEstatesPath(id)));
