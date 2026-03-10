@@ -267,6 +267,130 @@ const buildFrontAnchoredHouseBoundary = (
   ]) as GeoJSON.Feature<GeoJSON.Polygon>;
 };
 
+const buildRectangularHouseBoundary = ({
+  innerLL,
+  houseArea,
+  houseWidth,
+  houseDepth,
+  frontAnchored,
+}: {
+  innerLL: Pt[];
+  houseArea: number;
+  houseWidth?: number;
+  houseDepth?: number;
+  frontAnchored: boolean;
+}) => {
+  if (houseArea <= 0 || innerLL.length < 5) {
+    return null;
+  }
+
+  const projection = createLocalProjectionFromRing(innerLL);
+  const innerLocal = projectRingToLocal(innerLL, projection);
+  const frontLeft = innerLocal[0];
+  const frontRight = innerLocal[1];
+  const rearRight = innerLocal[2];
+  const rearLeft = innerLocal[3];
+
+  const frontMid: Pt = [
+    (frontLeft[0] + frontRight[0]) / 2,
+    (frontLeft[1] + frontRight[1]) / 2,
+  ];
+  const rearMid: Pt = [
+    (rearLeft[0] + rearRight[0]) / 2,
+    (rearLeft[1] + rearRight[1]) / 2,
+  ];
+
+  const alongFront = unit([
+    frontRight[0] - frontLeft[0],
+    frontRight[1] - frontLeft[1],
+  ]);
+  const inward = unit([rearMid[0] - frontMid[0], rearMid[1] - frontMid[1]]);
+
+  const availableFrontWidth = Math.hypot(
+    frontRight[0] - frontLeft[0],
+    frontRight[1] - frontLeft[1]
+  );
+  const availableRearWidth = Math.hypot(
+    rearRight[0] - rearLeft[0],
+    rearRight[1] - rearLeft[1]
+  );
+  const availableDepth = Math.hypot(
+    rearMid[0] - frontMid[0],
+    rearMid[1] - frontMid[1]
+  );
+  const widthCapacity = Math.min(availableFrontWidth, availableRearWidth);
+
+  if (widthCapacity <= 0 || availableDepth <= 0) {
+    return null;
+  }
+
+  const targetAspectRatio = houseWidth && houseDepth
+    ? houseWidth / houseDepth
+    : widthCapacity / availableDepth;
+  const safeAspectRatio =
+    Number.isFinite(targetAspectRatio) && targetAspectRatio > 0
+      ? targetAspectRatio
+      : 1;
+
+  const targetWidth =
+    houseWidth && houseWidth > 0
+      ? houseWidth
+      : Math.sqrt(houseArea * safeAspectRatio);
+  const targetDepth =
+    houseDepth && houseDepth > 0 ? houseDepth : houseArea / targetWidth;
+
+  const fitScale = Math.min(
+    1,
+    widthCapacity / targetWidth,
+    availableDepth / targetDepth
+  );
+
+  if (!Number.isFinite(fitScale) || fitScale <= 0) {
+    return null;
+  }
+
+  const actualWidth = targetWidth * fitScale;
+  const actualDepth = targetDepth * fitScale;
+  const frontInset = frontAnchored
+    ? Math.min(0.05, Math.max(availableDepth - actualDepth, 0))
+    : Math.max((availableDepth - actualDepth) / 2, 0);
+  const frontCenter: Pt = [
+    frontMid[0] + inward[0] * frontInset,
+    frontMid[1] + inward[1] * frontInset,
+  ];
+  const halfWidth = actualWidth / 2;
+
+  const placedFrontLeft: Pt = [
+    frontCenter[0] - alongFront[0] * halfWidth,
+    frontCenter[1] - alongFront[1] * halfWidth,
+  ];
+  const placedFrontRight: Pt = [
+    frontCenter[0] + alongFront[0] * halfWidth,
+    frontCenter[1] + alongFront[1] * halfWidth,
+  ];
+  const placedRearRight: Pt = [
+    placedFrontRight[0] + inward[0] * actualDepth,
+    placedFrontRight[1] + inward[1] * actualDepth,
+  ];
+  const placedRearLeft: Pt = [
+    placedFrontLeft[0] + inward[0] * actualDepth,
+    placedFrontLeft[1] + inward[1] * actualDepth,
+  ];
+
+  return turf.polygon([
+    unprojectRingFromLocal(
+      [
+        placedFrontLeft,
+        placedFrontRight,
+        placedRearRight,
+        placedRearLeft,
+        placedFrontLeft,
+      ],
+      projection
+    ),
+  ]) as GeoJSON.Feature<GeoJSON.Polygon>;
+};
+
 const matchRingOrientation = (
   referenceRing: [Pt, Pt, Pt, Pt, Pt],
   ring: [Pt, Pt, Pt, Pt, Pt]
@@ -1237,6 +1361,14 @@ export const MapLayers = ({
                 selectedFloorPlan.houseDepth
               )
             : null;
+        const areaOnlyRectangularBoundary =
+          !selectedFloorPlan.houseWidth || !selectedFloorPlan.houseDepth
+            ? buildRectangularHouseBoundary({
+                innerLL,
+                houseArea: houseDesired,
+                frontAnchored: Boolean(placementResult?.frontageAligned),
+              })
+            : null;
 
         let houseBoundary;
         if (frontageAnchoredBoundary) {
@@ -1280,11 +1412,18 @@ export const MapLayers = ({
           houseBoundary = turf.transformRotate(rect, boundaryData.angle, {
             pivot: setbackCenter.geometry.coordinates,
           });
+        } else if (areaOnlyRectangularBoundary) {
+          houseBoundary = areaOnlyRectangularBoundary;
         } else {
-          const scale = Math.sqrt(houseDesired / innerArea);
-          houseBoundary = turf.transformScale(innerPoly, scale, {
-            origin: innerCenter,
+          houseBoundary = buildRectangularHouseBoundary({
+            innerLL,
+            houseArea: houseDesired,
+            frontAnchored: false,
           });
+        }
+
+        if (!houseBoundary) {
+          return;
         }
 
         // Frontage-anchored placement should fit the actual setback envelope.
