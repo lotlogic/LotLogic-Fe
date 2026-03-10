@@ -11,7 +11,7 @@ export const initializeMixpanel = () => {
 
   try {
     mixpanel.init(mixpanelToken, {
-      debug: import.meta.env.DEV, // Enable debug in development
+      debug: false,
       track_pageview: false, // We'll handle page views manually
       persistence: "localStorage",
       api_host: "https://api.mixpanel.com", // Standard Mixpanel ingestion endpoint

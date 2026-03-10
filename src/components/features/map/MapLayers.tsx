@@ -358,6 +358,19 @@ const formatDimensionMeters = (distance: number) => {
   return Number.isInteger(rounded) ? `${rounded.toFixed(0)}m` : `${rounded.toFixed(1)}m`;
 };
 
+const getFloorPlanImageCoordinates = (
+  ring: [[number, number], [number, number], [number, number], [number, number]]
+): [[number, number], [number, number], [number, number], [number, number]] => {
+  // Floorplan assets are authored with the frontage along the bottom edge,
+  // but their handedness is mirrored relative to the lot ring.
+  return [
+    ring[2], // TL
+    ring[3], // TR
+    ring[0], // BR
+    ring[1], // BL
+  ];
+};
+
 type HouseDimensionMeasurement = {
   index: number;
   lotLengthMeters: number;
@@ -514,86 +527,6 @@ const buildHouseDimensionOverlay = (
   return features.length > 0
     ? turf.featureCollection(features)
     : null;
-};
-
-const logHouseDimensionDebug = ({
-  selectedLot,
-  selectedFloorPlan,
-  lotRing,
-  houseBoundary,
-}: {
-  selectedLot: mapboxgl.MapboxGeoJSONFeature & { properties: LotProperties };
-  selectedFloorPlan: FloorPlan;
-  lotRing: [Pt, Pt, Pt, Pt, Pt];
-  houseBoundary: GeoJSON.Feature<GeoJSON.Polygon>;
-}) => {
-  if (!import.meta.env.DEV) {
-    return;
-  }
-
-  const measurementData = getHouseDimensionMeasurements(lotRing, houseBoundary);
-  if (!measurementData) {
-    return;
-  }
-
-  const rawCoordinates = (selectedLot.geometry as GeoJSON.Polygon)
-    .coordinates[0] as Pt[];
-  const rawSideValues = [
-    selectedLot.properties.s1 ?? 0,
-    selectedLot.properties.s2 ?? 0,
-    selectedLot.properties.s3 ?? 0,
-    selectedLot.properties.s4 ?? 0,
-  ];
-  const displayedLotLabels = mapSValuesToSides(rawCoordinates, rawSideValues);
-  const rawLotGeometryLengths = rawCoordinates.slice(0, 4).map((_, index) =>
-    Number(
-      turf
-        .distance(rawCoordinates[index], rawCoordinates[index + 1], {
-          units: "meters",
-        })
-        .toFixed(2)
-    )
-  );
-  const measurementRows = measurementData.measurements.map((measurement) => ({
-    side: measurement.index,
-    lotLengthM: Number(measurement.lotLengthMeters.toFixed(2)),
-    houseLengthM: Number(measurement.houseLengthMeters.toFixed(2)),
-    gapM: Number(measurement.gapMeters.toFixed(2)),
-  }));
-
-  const side0 = measurementRows.find((row) => row.side === 0);
-  const side1 = measurementRows.find((row) => row.side === 1);
-  const side2 = measurementRows.find((row) => row.side === 2);
-  const side3 = measurementRows.find((row) => row.side === 3);
-
-  console.log("[LotLogic map debug]", {
-    lotId: String(selectedLot.properties.ID),
-    requestedFloorplanDimensions: {
-      houseWidth: selectedFloorPlan.houseWidth ?? null,
-      houseDepth: selectedFloorPlan.houseDepth ?? null,
-      houseArea: selectedFloorPlan.houseArea ?? null,
-    },
-    renderedMeasurements: measurementRows,
-    crossAxisChecks: {
-      lotEdge0MinusHouseEdge0:
-        side0 ? Number((side0.lotLengthM - side0.houseLengthM).toFixed(2)) : null,
-      gapsSide1PlusSide3:
-        side1 && side3 ? Number((side1.gapM + side3.gapM).toFixed(2)) : null,
-      lotEdge1MinusHouseEdge1:
-        side1 ? Number((side1.lotLengthM - side1.houseLengthM).toFixed(2)) : null,
-      gapsSide0PlusSide2:
-        side0 && side2 ? Number((side0.gapM + side2.gapM).toFixed(2)) : null,
-    },
-    lotLabelsShownOnMap: displayedLotLabels,
-    rawLotGeometryEdgeLengths: rawLotGeometryLengths,
-    rawLotMetadata: {
-      s1: selectedLot.properties.s1 ?? null,
-      s2: selectedLot.properties.s2 ?? null,
-      s3: selectedLot.properties.s3 ?? null,
-      s4: selectedLot.properties.s4 ?? null,
-      frontageCoordinate: selectedLot.properties.frontageCoordinate ?? null,
-    },
-  });
 };
 
 // -----------------------------
@@ -893,17 +826,12 @@ export const MapLayers = ({
         const rCoords = rCoordsFull.slice(0, 4);
 
         // Update coordinates for Mapbox
-        const floorPlanCoordinates: [
-          [number, number],
-          [number, number],
-          [number, number],
-          [number, number]
-        ] = [
-          rCoords[3], // TL
-          rCoords[2], // TR
-          rCoords[1], // BR
-          rCoords[0], // BL
-        ];
+        const floorPlanCoordinates = getFloorPlanImageCoordinates([
+          rCoords[0],
+          rCoords[1],
+          rCoords[2],
+          rCoords[3],
+        ]);
 
         // Update the existing source
         if (map.getSource(sourceId)) {
@@ -911,8 +839,6 @@ export const MapLayers = ({
           (map.getSource(sourceId) as mapboxgl.ImageSource).setCoordinates(
             floorPlanCoordinates
           );
-        } else {
-          console.log("❌ Floorplan source not found");
         }
 
         // Auto-rotation logic: Check if we should rotate 180° based on distance to lot frontage
@@ -945,10 +871,6 @@ export const MapLayers = ({
           if (distance01 > distance23) {
             // console.log("🔄 Auto-rotating to 180° because distance01 > distance23");
             setManualRotation(180);
-          } else {
-            console.log(
-              "🔄 Keeping 0° rotation because distance01 <= distance23"
-            );
           }
         }
 
@@ -1076,17 +998,12 @@ export const MapLayers = ({
 
               // Keep rectangle shape; only rotate. Original ring order is [BL, BR, TR, TL]
               // Map to Mapbox order [TL, TR, BR, BL]
-              const floorPlanCoordinates: [
-                [number, number],
-                [number, number],
-                [number, number],
-                [number, number]
-              ] = [
-                rCoords[3], // TL
-                rCoords[2], // TR
-                rCoords[1], // BR
-                rCoords[0], // BL
-              ];
+              const floorPlanCoordinates = getFloorPlanImageCoordinates([
+                rCoords[0],
+                rCoords[1],
+                rCoords[2],
+                rCoords[3],
+              ]);
 
               // Remove existing layer and source if they exist
               if (map.getLayer(layerId)) {
@@ -1427,12 +1344,6 @@ export const MapLayers = ({
           setbackRing,
           houseBoundary as GeoJSON.Feature<GeoJSON.Polygon>
         );
-        logHouseDimensionDebug({
-          selectedLot,
-          selectedFloorPlan,
-          lotRing: setbackRing,
-          houseBoundary: houseBoundary as GeoJSON.Feature<GeoJSON.Polygon>,
-        });
         if (houseDimensions) {
           map.addSource("house-dimension-source", {
             type: "geojson",
