@@ -7,6 +7,30 @@ import type { AdminWhoAmI } from "@/lib/admin/adminSession";
 
 type AuthStatus = "loading" | "authorized" | "unauthorized" | "error";
 
+const getAuditLoginKey = (userKey: string) => `lotlogic.admin.audit-login:${userKey}`;
+
+const recordAuditLoginOnce = async (whoAmI: AdminWhoAmI | null) => {
+  if (typeof window === "undefined" || !whoAmI || typeof whoAmI !== "object") {
+    return;
+  }
+  const userKey =
+    String((whoAmI as { id?: unknown }).id ?? "").trim() ||
+    String((whoAmI as { externalAuthId?: unknown }).externalAuthId ?? "").trim();
+  if (!userKey) {
+    return;
+  }
+  const storageKey = getAuditLoginKey(userKey);
+  if (window.sessionStorage.getItem(storageKey) === "1") {
+    return;
+  }
+  try {
+    await adminApi.trackAuditLogin();
+    window.sessionStorage.setItem(storageKey, "1");
+  } catch {
+    // Ignore audit logging failures in auth flow.
+  }
+};
+
 const extractRole = (value: AdminWhoAmI | null): string | null => {
   if (!value || typeof value !== "object") {
     return null;
@@ -52,7 +76,8 @@ export const RequireAdminAuth = ({
       try {
         await adminAuth.initialize();
         await adminAuth.ensureAccessToken();
-        await reloadWhoAmI();
+        const data = await reloadWhoAmI();
+        void recordAuditLoginOnce(data);
         if (!isActive) {
           return;
         }

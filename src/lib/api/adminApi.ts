@@ -9,6 +9,7 @@ import type {
   BuilderPerformanceSummary,
   EstatePerformanceSummary,
   BuilderLeadsResponse,
+  AuditLogResponse,
   CreateBuilderEstateApprovalPayload,
   CreateBuilderEstateApprovalResponse,
   CreateEstateRuleSetPayload,
@@ -186,6 +187,7 @@ const builderLeadsExportPath = (builderId: AdminId) =>
   `${builderLeadsPath(builderId)}/export`;
 const builderLeadPath = (builderId: AdminId, leadId: AdminId) =>
   `${builderLeadsPath(builderId)}/${encodeId(leadId)}`;
+const auditLogPath = () => `${basePath("audit-log")}`;
 
 const builderUserPath = (builderId: AdminId, userId: AdminId) =>
   `${builderUsersPath(builderId)}/${encodeId(userId)}`;
@@ -618,6 +620,12 @@ export const adminApi = {
   },
   async getWhoAmI<T = unknown>(): Promise<T> {
     return data(adminApiClient.get<T>(basePath("whoami")));
+  },
+  async getAuditLog<T = AuditLogResponse>(params?: AdminQuery): Promise<T> {
+    return data(adminApiClient.get<T>(auditLogPath(), { params }));
+  },
+  async trackAuditLogin<T = { message: string }>(): Promise<T> {
+    return data(adminApiClient.post<T>(`${auditLogPath()}/login`));
   },
   async getUserById<T = unknown>(id: AdminId): Promise<T> {
     return data(adminApiClient.get<T>(idPath("users", id)));

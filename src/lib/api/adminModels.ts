@@ -310,6 +310,70 @@ export type BuilderLeadsResponse = {
   [key: string]: unknown;
 };
 
+export type AuditLogActionType =
+  | "login"
+  | "create"
+  | "update"
+  | "delete"
+  | "approve"
+  | "recompute"
+  | "invite"
+  | "enable"
+  | "disable"
+  | "upload"
+  | "other";
+
+export type AuditLogItem = {
+  insertId: string;
+  event: string;
+  createdAt?: string | null;
+  actionType?: AuditLogActionType | null;
+  method?: string | null;
+  path?: string | null;
+  resourceType?: string | null;
+  entityId?: string | null;
+  entityLabel?: string | null;
+  actor?: {
+    id?: string | null;
+    email?: string | null;
+    displayName?: string | null;
+    role?: string | null;
+    [key: string]: unknown;
+  } | null;
+  request?: Record<string, unknown> | null;
+  response?: Record<string, unknown> | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  [key: string]: unknown;
+};
+
+export type AuditLogResponse = {
+  source?: {
+    provider?: string | null;
+    configured?: boolean | null;
+    available?: boolean | null;
+    message?: string | null;
+    [key: string]: unknown;
+  } | null;
+  filters?: {
+    from?: string | null;
+    to?: string | null;
+    actionType?: string | null;
+    resourceType?: string | null;
+    search?: string | null;
+    [key: string]: unknown;
+  } | null;
+  pagination?: {
+    page?: number | null;
+    pageSize?: number | null;
+    total?: number | null;
+    totalPages?: number | null;
+    [key: string]: unknown;
+  } | null;
+  items?: AuditLogItem[];
+  [key: string]: unknown;
+};
+
 export type DesignOnLotRecord = {
   id: string;
   lotId?: string | null;

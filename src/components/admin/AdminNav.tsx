@@ -12,6 +12,7 @@ const adminLinks: Array<{
   { to: "/admin/design-on-lots", label: "Plan-Lot Matches" },
   { to: "/admin/builders", label: "Builders" },
   { to: "/admin/brand-settings", label: "Embed Branding" },
+  { to: "/admin/audit-log", label: "Audit Log", requiresAdmin: true },
 ];
 
 export const AdminNav = () => {

@@ -28,6 +28,7 @@ import AdminBuilderPage from "./pages/admin/AdminBuilderPage";
 import AdminBrandSettingsPage from "./pages/admin/AdminBrandSettingsPage";
 import AdminBrandSettingPage from "./pages/admin/AdminBrandSettingPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import AdminAuditLogPage from "./pages/admin/AdminAuditLogPage";
 import DashboardPage from "./pages/dashboard/DashboardPage";
 import DashboardBuilderPage from "./pages/dashboard/DashboardBuilderPage";
 import DashboardEstatePage from "./pages/dashboard/DashboardEstatePage";
@@ -118,6 +119,14 @@ function App() {
           element={
             <AdminGate>
               <AdminUsersPage />
+            </AdminGate>
+          }
+        />
+        <Route
+          path="/admin/audit-log"
+          element={
+            <AdminGate>
+              <AdminAuditLogPage />
             </AdminGate>
           }
         />
