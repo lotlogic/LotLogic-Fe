@@ -633,12 +633,6 @@ const AdminEstatePage = () => {
           </h1>
         </div>
         <div className="flex gap-2">
-          <Button
-            onClick={loadEstate}
-            disabled={loading}
-            loading={loading}
-            label="Refresh"
-          />
           <Button onClick={handleLogout} variant="outline" label="Sign out" />
         </div>
       </div>

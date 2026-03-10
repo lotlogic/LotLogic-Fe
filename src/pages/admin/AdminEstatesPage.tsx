@@ -55,12 +55,6 @@ const AdminEstatesPage = () => {
       <h1 className="text-3xl font-bold mb-6">Estates</h1>
       <AdminNav />
       <div className="flex flex-wrap gap-3 mb-6 items-center">
-        <Button
-          onClick={loadEstates}
-          disabled={loading}
-          label="Refresh estates"
-          loading={loading}
-        />
         <Button onClick={handleLogout} variant="outline" label="Sign out" />
         <Button
           onClick={() => setShowAddForm((prev) => !prev)}

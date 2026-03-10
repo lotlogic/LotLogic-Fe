@@ -11,9 +11,15 @@ export type SetbackValues = {
   rear: number;
 };
 
+export type LocalProjection = {
+  origin: Pt;
+  metersPerLngDegree: number;
+  metersPerLatDegree: number;
+};
+
 // -----------------------------
 // Geometry helpers (per-side inset in meters)
-// Assumes quad ring order: S1(front)=p0->p1, S2=p1->p2, S3=p2->p3, S4(rear)=p3->p0
+// Assumes quad ring order: front=p0->p1, side=p1->p2, rear=p2->p3, side=p3->p0
 // -----------------------------
 
 export function polygonOrientation(points: Pt[]): number {
@@ -68,24 +74,75 @@ export function intersectLines(a1: Pt, a2: Pt, b1: Pt, b2: Pt): Pt {
   return [px, py];
 }
 
+export function createLocalProjectionFromRing(ringLL: Pt[]): LocalProjection {
+  const openRing = ringLL.length > 4 ? ringLL.slice(0, 4) : ringLL;
+  const originLng =
+    openRing.reduce((sum, point) => sum + point[0], 0) / openRing.length;
+  const originLat =
+    openRing.reduce((sum, point) => sum + point[1], 0) / openRing.length;
+  const origin: Pt = [originLng, originLat];
+  const originPoint = turf.point(origin);
+
+  return {
+    origin,
+    metersPerLngDegree:
+      turf.distance(originPoint, turf.point([originLng + 0.001, originLat]), {
+        units: "meters",
+      }) * 1000,
+    metersPerLatDegree:
+      turf.distance(originPoint, turf.point([originLng, originLat + 0.001]), {
+        units: "meters",
+      }) * 1000,
+  };
+}
+
+export function projectPointToLocal(
+  point: Pt,
+  projection: LocalProjection
+): Pt {
+  return [
+    (point[0] - projection.origin[0]) * projection.metersPerLngDegree,
+    (point[1] - projection.origin[1]) * projection.metersPerLatDegree,
+  ];
+}
+
+export function unprojectPointFromLocal(
+  point: Pt,
+  projection: LocalProjection
+): Pt {
+  return [
+    point[0] / projection.metersPerLngDegree + projection.origin[0],
+    point[1] / projection.metersPerLatDegree + projection.origin[1],
+  ];
+}
+
+export function projectRingToLocal(
+  ringLL: Pt[],
+  projection: LocalProjection
+): Pt[] {
+  return ringLL.map((point) => projectPointToLocal(point, projection));
+}
+
+export function unprojectRingFromLocal(
+  ring: Pt[],
+  projection: LocalProjection
+): Pt[] {
+  return ring.map((point) => unprojectPointFromLocal(point, projection));
+}
+
 export function insetQuadPerSideLL(
   ringLL: Pt[], // closed ring [p0,p1,p2,p3,p0]
   sides: SetbackValues
 ): Pt[] | null {
   if (!ringLL || ringLL.length < 5) return null;
 
-  /**
-  Latitude/Longitude (LL) to Mercator projection 
-  Why? Because distance calculations in lat/lng are inaccurate (especially at higher latitudes)
-  Mercator gives us accurate metric distances for setback calculations
- */
-  const ringMerc = (turf.toMercator(turf.polygon([ringLL])) as any).geometry
-    .coordinates[0] as Pt[];
+  const projection = createLocalProjectionFromRing(ringLL);
+  const ringLocal = projectRingToLocal(ringLL, projection);
 
-  const p0 = ringMerc[0],
-    p1 = ringMerc[1],
-    p2 = ringMerc[2],
-    p3 = ringMerc[3];
+  const p0 = ringLocal[0],
+    p1 = ringLocal[1],
+    p2 = ringLocal[2],
+    p3 = ringLocal[3];
 
   const ori = polygonOrientation([p0, p1, p2, p3, p0]); // >0 CCW, <0 CW
   const sign = ori > 0 ? -1 : 1; // inward normal direction
@@ -125,15 +182,15 @@ export function insetQuadPerSideLL(
   // v30 = unit([0-0, 0-2]) = unit([0,-2]) = [0,-1] (down direction)
   //-------------------------------------------------------------------------------------------------------------
 
-  const n01: Pt = [sign * -v01[1], sign * v01[0]]; // front (S1)
-  const n12: Pt = [sign * -v12[1], sign * v12[0]]; // side  (S2)
-  const n23: Pt = [sign * -v23[1], sign * v23[0]]; // side  (S3)
-  const n30: Pt = [sign * -v30[1], sign * v30[0]]; // rear  (S4)
+  const n01: Pt = [sign * -v01[1], sign * v01[0]]; // front
+  const n12: Pt = [sign * -v12[1], sign * v12[0]]; // side
+  const n23: Pt = [sign * -v23[1], sign * v23[0]]; // rear
+  const n30: Pt = [sign * -v30[1], sign * v30[0]]; // side
 
   const [a0, a1] = offsetEdge(p0, p1, n01, sides.front);
   const [b0, b1] = offsetEdge(p1, p2, n12, sides.side);
-  const [c0, c1] = offsetEdge(p2, p3, n23, sides.side);
-  const [d0, d1] = offsetEdge(p3, p0, n30, sides.rear);
+  const [c0, c1] = offsetEdge(p2, p3, n23, sides.rear);
+  const [d0, d1] = offsetEdge(p3, p0, n30, sides.side);
 
   //coordinates after setbacks
   const q0 = intersectLines(d0, d1, a0, a1);
@@ -141,9 +198,8 @@ export function insetQuadPerSideLL(
   const q2 = intersectLines(b0, b1, c0, c1);
   const q3 = intersectLines(c0, c1, d0, d1);
 
-  const innerMerc = [q0, q1, q2, q3, q0] as Pt[];
-  const innerLL = (turf.toWgs84(turf.polygon([innerMerc])) as any).geometry
-    .coordinates[0] as Pt[];
+  const innerLocal = [q0, q1, q2, q3, q0] as Pt[];
+  const innerLL = unprojectRingFromLocal(innerLocal, projection);
 
   return innerLL;
 }

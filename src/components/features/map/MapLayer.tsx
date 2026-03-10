@@ -214,6 +214,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
         OBJECTID: lotId,
         division: "",
         estateId: lotData.estateId || targetEstateId,
+        frontageCoordinate: lotData.frontageCoordinate ?? null,
         isRed: true,
       },
     } as unknown as MapboxGeoJSONFeature & { properties: LotProperties };
@@ -272,6 +273,14 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
           houseArea: property.houseDesign.area
             ? parseFloat(property.houseDesign.area)
             : 150,
+          houseWidth:
+            typeof property.houseDesign.width === "number"
+              ? property.houseDesign.width
+              : undefined,
+          houseDepth:
+            typeof property.houseDesign.depth === "number"
+              ? property.houseDesign.depth
+              : undefined,
         });
       }
     }

@@ -891,40 +891,9 @@ const DashboardBuilderPage = () => {
     }
   };
 
-  const handleRefresh = useCallback(async () => {
-    if (!hasAccess) {
-      return;
-    }
-    await Promise.all([
-      loadBuilder(),
-      loadTeamMembers(),
-      loadFloorPlans(),
-      loadEstateApprovals(),
-    ]);
-  }, [
-    hasAccess,
-    loadBuilder,
-    loadEstateApprovals,
-    loadFloorPlans,
-    loadTeamMembers,
-  ]);
-
-  const actions = (
-    <Button
-      onClick={handleRefresh}
-      disabled={loading || sessionLoading || !hasAccess}
-      loading={loading && !sessionLoading}
-      label="Refresh"
-    />
-  );
-
   if (sessionLoading) {
     return (
-      <DashboardLayout
-        title="Builder"
-        subtitle="Loading access..."
-        actions={actions}
-      >
+      <DashboardLayout title="Builder" subtitle="Loading access...">
         <p className="text-muted-foreground">Checking access...</p>
       </DashboardLayout>
     );
@@ -932,11 +901,7 @@ const DashboardBuilderPage = () => {
 
   if (!builderId) {
     return (
-      <DashboardLayout
-        title="Builder"
-        subtitle="Missing builder id."
-        actions={actions}
-      >
+      <DashboardLayout title="Builder" subtitle="Missing builder id.">
         <p className="text-muted-foreground">
           Return to <Link to="/dashboard">dashboard</Link>.
         </p>
@@ -946,11 +911,7 @@ const DashboardBuilderPage = () => {
 
   if (!hasAssignments) {
     return (
-      <DashboardLayout
-        title="Builder"
-        subtitle="Assignments are not available yet."
-        actions={actions}
-      >
+      <DashboardLayout title="Builder" subtitle="Assignments are not available yet.">
         <p className="text-muted-foreground">
           Ask an admin to enable builder assignments for your account.
         </p>
@@ -960,11 +921,7 @@ const DashboardBuilderPage = () => {
 
   if (!hasAccess) {
     return (
-      <DashboardLayout
-        title="Builder"
-        subtitle="You don't have access to this builder."
-        actions={actions}
-      >
+      <DashboardLayout title="Builder" subtitle="You don't have access to this builder.">
         <p className="text-muted-foreground">
           Return to <Link to="/dashboard">dashboard</Link>.
         </p>
@@ -976,7 +933,6 @@ const DashboardBuilderPage = () => {
     <DashboardLayout
       title={loading ? "Loading builder..." : getBuilderName(builder)}
       subtitle={`Builder ID: ${builderId}`}
-      actions={actions}
     >
       {errorMessage && (
         <div className="mb-4 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">

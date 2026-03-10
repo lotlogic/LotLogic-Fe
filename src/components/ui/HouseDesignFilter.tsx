@@ -281,10 +281,10 @@ export const FilterSectionWithSingleLineSliders = React.memo(
             onChange={handleChange}
           />
         </div>
-        {/* Sticky Footer with "Show House Design" button */}
+        {/* Sticky footer to return to the design list with filters applied */}
         <div className="sticky bottom-0 bg-white pt-4 border-t border-brand pb-6">
           <Button
-            label="Show House Design"
+            label="Filter Designs"
             className="w-full bg-brand-primary text-white text-lg py-3 rounded-lg font-medium hover:bg-[var(--color-primary-hover)]"
             onClick={() => {
               // Track filter application

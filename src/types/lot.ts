@@ -52,6 +52,7 @@ export type LotProperties = {
   s4?: number | null;
   hasExactS1S2S3S4?: boolean;
   isRed?: boolean;
+  frontageCoordinate?: string | null;
 };
 
 export type LotData = {

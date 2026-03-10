@@ -165,7 +165,6 @@ export const LotSidebar = ({
       : "--";
 
   const handleShowHouseDesign = () => {
-    // Remove validation - allow API call with just lot ID since backend supports optional parameters
     setShowHouseDesigns(true);
     setShowFilter(false);
     setSelectedHouseDesignForModals(null);
@@ -177,11 +176,11 @@ export const LotSidebar = ({
       setQuoteDesign(null);
 
       setShowHouseDesigns(true);
-    } else if (showHouseDesigns) {
-      setShowHouseDesigns(false);
-      setShowFilter(true);
     } else if (showFilter) {
       setShowFilter(false);
+      setShowHouseDesigns(true);
+    } else if (showHouseDesigns) {
+      setShowHouseDesigns(false);
     }
     setShowFloorPlanModal(false);
     setShowFacadeModal(false);
@@ -273,7 +272,7 @@ export const LotSidebar = ({
   const headerTitle = showHouseDesigns
     ? lotSidebar.houseDesigns
     : showFilter
-    ? "Build A House"
+    ? "Filter Designs"
     : lotSidebar.buildYourSite;
 
   const showBackArrow = showFilter || showHouseDesigns || showQuoteSidebar;
@@ -412,7 +411,10 @@ export const LotSidebar = ({
                   label={lotSidebar.showMeWhatICanBuild}
                   rightIcon={<ArrowRight className="h-6 w-8" />}
                   className="w-full text-base py-4 rounded-xl font-semibold animated-gradient-button transition-all duration-300 shadow-md cursor-pointer"
-                  onClick={() => setShowFilter(true)}
+                  onClick={() => {
+                    setShowHouseDesigns(true);
+                    setShowFilter(false);
+                  }}
                 />
               </div>
             </div>

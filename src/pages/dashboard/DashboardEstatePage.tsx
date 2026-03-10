@@ -615,22 +615,9 @@ const DashboardEstatePage = () => {
     }
   };
 
-  const actions = (
-    <Button
-      onClick={loadEstate}
-      disabled={loading || sessionLoading || !hasAccess}
-      loading={loading && !sessionLoading}
-      label="Refresh"
-    />
-  );
-
   if (sessionLoading) {
     return (
-      <DashboardLayout
-        title="Estate"
-        subtitle="Loading access..."
-        actions={actions}
-      >
+      <DashboardLayout title="Estate" subtitle="Loading access...">
         <p className="text-muted-foreground">Checking access...</p>
       </DashboardLayout>
     );
@@ -638,11 +625,7 @@ const DashboardEstatePage = () => {
 
   if (!estateId) {
     return (
-      <DashboardLayout
-        title="Estate"
-        subtitle="Missing estate id."
-        actions={actions}
-      >
+      <DashboardLayout title="Estate" subtitle="Missing estate id.">
         <p className="text-muted-foreground">
           Return to <Link to="/dashboard">dashboard</Link>.
         </p>
@@ -652,11 +635,7 @@ const DashboardEstatePage = () => {
 
   if (!hasAssignments) {
     return (
-      <DashboardLayout
-        title="Estate"
-        subtitle="Assignments are not available yet."
-        actions={actions}
-      >
+      <DashboardLayout title="Estate" subtitle="Assignments are not available yet.">
         <p className="text-muted-foreground">
           Ask an admin to enable estate assignments for your account.
         </p>
@@ -666,11 +645,7 @@ const DashboardEstatePage = () => {
 
   if (!hasAccess) {
     return (
-      <DashboardLayout
-        title="Estate"
-        subtitle="You don't have access to this estate."
-        actions={actions}
-      >
+      <DashboardLayout title="Estate" subtitle="You don't have access to this estate.">
         <p className="text-muted-foreground">
           Return to <Link to="/dashboard">dashboard</Link>.
         </p>
@@ -682,7 +657,6 @@ const DashboardEstatePage = () => {
     <DashboardLayout
       title={loading ? "Loading estate..." : getEstateName(estate)}
       subtitle={`Estate ID: ${estateId}`}
-      actions={actions}
     >
       {errorMessage && (
         <div className="mb-4 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">

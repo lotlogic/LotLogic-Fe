@@ -313,7 +313,6 @@ const AdminBrandSettingPage = () => {
           variant="outline"
           label="Back to list"
         />
-        <Button onClick={loadSettings} label="Refresh embed settings" />
         <Button onClick={handleLogout} variant="outline" label="Sign out" />
       </div>
 

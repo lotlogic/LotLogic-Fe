@@ -12,11 +12,9 @@ import { Button } from "@/components/ui/Button";
 
 const AdminFacadesPage = () => {
   const [floorPlans, setFloorPlans] = useState<FloorPlanRecord[]>([]);
-  const [floorPlansLoading, setFloorPlansLoading] = useState(false);
   const [floorPlansError, setFloorPlansError] = useState<string | null>(null);
 
   const loadFloorPlans = useCallback(async () => {
-    setFloorPlansLoading(true);
     setFloorPlansError(null);
     try {
       const data = await adminApi.getFloorPlans<FloorPlanRecord>();
@@ -25,8 +23,6 @@ const AdminFacadesPage = () => {
       setFloorPlansError(
         error instanceof Error ? error.message : "Failed to load floor plans."
       );
-    } finally {
-      setFloorPlansLoading(false);
     }
   }, []);
 
@@ -79,13 +75,6 @@ const AdminFacadesPage = () => {
       <AdminNav />
       <div className="flex flex-wrap gap-2 mb-6 mt-4">
         <Button onClick={handleLogout} variant="outline" label="Sign out" />
-        <Button
-          onClick={loadFloorPlans}
-          variant="ghost"
-          label="Refresh floor plans"
-          disabled={floorPlansLoading}
-          loading={floorPlansLoading}
-        />
       </div>
       {floorPlansError && (
         <div className="mb-4 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">

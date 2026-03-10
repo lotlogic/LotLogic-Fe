@@ -227,12 +227,6 @@ const AdminBrandSettingsPage = () => {
       </p>
       <AdminNav />
       <div className="flex flex-wrap gap-3 mb-6 items-center">
-        <Button
-          onClick={loadSettings}
-          disabled={loading}
-          label="Refresh embed settings"
-          loading={loading}
-        />
         <Button onClick={handleLogout} variant="outline" label="Sign out" />
         <Button
           onClick={() =>

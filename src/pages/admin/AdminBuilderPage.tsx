@@ -563,7 +563,6 @@ const AdminBuilderPage = () => {
           variant="outline"
           label="Back to builders"
         />
-        <Button onClick={loadBuilder} label="Refresh builder" />
         <Button onClick={handleLogout} variant="outline" label="Sign out" />
       </div>
 

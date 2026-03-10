@@ -153,21 +153,9 @@ const DashboardPage = () => {
     }
   }, [canCreateEstate, showEstateForm]);
 
-  const actions = (
-    <Button
-      onClick={reloadWhoAmI}
-      variant="outline"
-      label="Refresh access"
-    />
-  );
-
   if (sessionLoading) {
     return (
-      <DashboardLayout
-        title="Dashboard"
-        subtitle="Loading your access..."
-        actions={actions}
-      >
+      <DashboardLayout title="Dashboard" subtitle="Loading your access...">
         <p className="text-muted-foreground">Checking access...</p>
       </DashboardLayout>
     );
@@ -175,11 +163,7 @@ const DashboardPage = () => {
 
   if (sessionErrorMessage) {
     return (
-      <DashboardLayout
-        title="Dashboard"
-        subtitle="We couldn't load your session."
-        actions={actions}
-      >
+      <DashboardLayout title="Dashboard" subtitle="We couldn't load your session.">
         <p className="text-destructive">{sessionErrorMessage}</p>
       </DashboardLayout>
     );
@@ -189,7 +173,6 @@ const DashboardPage = () => {
     <DashboardLayout
       title="Dashboard"
       subtitle="Manage the builders and estates assigned to you."
-      actions={actions}
     >
       {accessHint && (
         <div className="mb-6 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
@@ -211,15 +194,6 @@ const DashboardPage = () => {
               <p className="text-sm text-muted-foreground">
                 Manage the builders you are assigned to.
               </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                onClick={() => loadBuilders()}
-                disabled={buildersLoading}
-                loading={buildersLoading}
-                variant="outline"
-                label="Refresh"
-              />
             </div>
           </div>
 
@@ -245,13 +219,6 @@ const DashboardPage = () => {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                onClick={() => loadEstates()}
-                disabled={estatesLoading}
-                loading={estatesLoading}
-                variant="outline"
-                label="Refresh"
-              />
               {canCreateEstate && (
                 <Button
                   onClick={() => setShowEstateForm((prev) => !prev)}

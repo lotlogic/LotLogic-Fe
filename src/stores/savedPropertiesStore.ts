@@ -16,6 +16,8 @@ interface SavedHouseData {
     image: string;
     builderId?: string;
     builderName?: string;
+    width?: number;
+    depth?: number;
     images?: { src: string; faced: string }[];
     floorPlanImage?: string;
     area?: string;
@@ -51,6 +53,8 @@ type SavedCookieDesign = {
   image: string;
   builderId?: string;
   builderName?: string;
+  width?: number;
+  depth?: number;
   floorPlanImage?: string;
   area?: string;
   bedrooms: number;
@@ -161,6 +165,8 @@ const sanitizeSavedProperty = (property: SavedHouseData): SavedHouseData => ({
     image: property.houseDesign.image,
     builderId: property.houseDesign.builderId,
     builderName: property.houseDesign.builderName,
+    width: property.houseDesign.width,
+    depth: property.houseDesign.depth,
     images: property.houseDesign.images,
     floorPlanImage: property.houseDesign.floorPlanImage,
     area: property.houseDesign.area,
@@ -212,6 +218,8 @@ const toCookiePayload = (savedProperties: SavedHouseData[]): SavedCookiePayload 
       image: normalized.houseDesign.image,
       builderId: normalized.houseDesign.builderId,
       builderName: normalized.houseDesign.builderName,
+      width: normalized.houseDesign.width,
+      depth: normalized.houseDesign.depth,
       floorPlanImage: normalized.houseDesign.floorPlanImage,
       area: normalized.houseDesign.area,
       bedrooms: normalized.houseDesign.bedrooms,
@@ -240,6 +248,8 @@ const fromCookiePayload = (payload: SavedCookiePayload): SavedHouseData[] => {
             image: "",
             builderId: "",
             builderName: "",
+            width: undefined,
+            depth: undefined,
             floorPlanImage: "",
             bedrooms: 0,
             bathrooms: 0,

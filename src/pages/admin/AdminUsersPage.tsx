@@ -74,24 +74,12 @@ const inviteRedirectUrl =
     : "/dashboard";
 
 const AdminUsersPage = () => {
-  const {
-    role,
-    whoAmI,
-    loading: sessionLoading,
-    errorMessage: sessionErrorMessage,
-    reloadWhoAmI,
-  } = useAdminSession();
+  const { role, loading: sessionLoading } = useAdminSession();
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [filterText, setFilterText] = useState("");
-
-  const [showWhoAmI, setShowWhoAmI] = useState(false);
-  const [whoAmIRefreshing, setWhoAmIRefreshing] = useState(false);
-  const [whoAmIErrorMessage, setWhoAmIErrorMessage] = useState<string | null>(
-    null,
-  );
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [addEmail, setAddEmail] = useState("");
@@ -219,19 +207,6 @@ const AdminUsersPage = () => {
   const selectedUserStatusLabel = selectedUser?.status ?? "(unknown)";
   const selectedUserStatus = selectedUserStatusLabel.toUpperCase();
   const isSelectedUserDisabled = selectedUserStatus === "DISABLED";
-
-  const handleRefreshWhoAmI = async () => {
-    setWhoAmIRefreshing(true);
-    setWhoAmIErrorMessage(null);
-    try {
-      const refreshed = await reloadWhoAmI();
-      if (!refreshed) {
-        setWhoAmIErrorMessage("whoami is unavailable.");
-      }
-    } finally {
-      setWhoAmIRefreshing(false);
-    }
-  };
 
   const handleInviteUser = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -435,45 +410,8 @@ const AdminUsersPage = () => {
       <h1 className="text-3xl font-bold mb-6">Admin Users</h1>
       <AdminNav />
       <div className="flex gap-3 mb-6 items-center">
-        <Button
-          onClick={loadUsers}
-          disabled={loading}
-          label="Refresh Users"
-          loading={loading}
-        />
         <Button onClick={handleLogout} variant="outline" label="Sign out" />
-        <Button
-          onClick={() => setShowWhoAmI((prev) => !prev)}
-          variant="ghost"
-          label={showWhoAmI ? "Hide whoami debug" : "Show whoami debug"}
-          className="ml-auto"
-        />
       </div>
-
-      {showWhoAmI && (
-        <section className="mb-6 p-4 border rounded-lg bg-slate-50 text-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <strong>/api/admin/whoami</strong>
-            <Button
-              onClick={handleRefreshWhoAmI}
-              disabled={whoAmIRefreshing}
-              loading={whoAmIRefreshing}
-              label="Refresh whoami"
-              variant="outline"
-              className="h-7 px-2 text-xs"
-            />
-          </div>
-          {sessionErrorMessage && (
-            <p className="text-destructive mb-2">{sessionErrorMessage}</p>
-          )}
-          {whoAmIErrorMessage && (
-            <p className="text-destructive mb-2">{whoAmIErrorMessage}</p>
-          )}
-          <pre className="whitespace-pre-wrap m-0 font-mono text-xs">
-            {JSON.stringify(whoAmI, null, 2)}
-          </pre>
-        </section>
-      )}
 
       <section className="grid gap-6 grid-cols-1 lg:grid-cols-[1fr_420px]">
         <div className="min-w-0">

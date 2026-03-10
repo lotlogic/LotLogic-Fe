@@ -57,6 +57,8 @@ export interface SavedProperty {
     image: string;
     builderId?: string;
     builderName?: string;
+    width?: number;
+    depth?: number;
     images?: { src: string; faced: string }[];
     floorPlanImage?: string;
     area?: string;
