@@ -11,6 +11,7 @@ import {
   type FacadePayload,
   type FacadeRecord,
 } from "@/components/admin/facades/FacadeCrud";
+import { BuilderBrandingFields } from "@/components/admin/builders/BuilderBrandingFields";
 import { BuilderPerformancePanel } from "@/components/admin/builders/BuilderPerformancePanel";
 import { BuilderLeadsPanel } from "@/components/admin/builders/BuilderLeadsPanel";
 import { RuleLayerSummary } from "@/components/admin/rules/RuleLayerSummary";
@@ -35,6 +36,9 @@ type BuilderForm = {
   name: string;
   email: string;
   phone: string;
+  logoUrl: string;
+  brandingBgColor: string;
+  brandingTextColor: string;
 };
 
 type BuilderEstateJoinRequestForm = {
@@ -205,6 +209,9 @@ const emptyForm: BuilderForm = {
   name: "",
   email: "",
   phone: "",
+  logoUrl: "",
+  brandingBgColor: "",
+  brandingTextColor: "",
 };
 
 const emptyEstateJoinRequestForm: BuilderEstateJoinRequestForm = {
@@ -327,6 +334,9 @@ const DashboardBuilderPage = () => {
       name: data.name ?? "",
       email: data.email ?? "",
       phone: data.phone ?? "",
+      logoUrl: data.logoUrl ?? "",
+      brandingBgColor: data.brandingBgColor ?? "",
+      brandingTextColor: data.brandingTextColor ?? "",
     });
   }, []);
 
@@ -713,6 +723,9 @@ const DashboardBuilderPage = () => {
         name: trimmedName,
         email: normalizeOptional(form.email),
         phone: normalizeOptional(form.phone),
+        logoUrl: normalizeOptional(form.logoUrl),
+        brandingBgColor: normalizeOptional(form.brandingBgColor),
+        brandingTextColor: normalizeOptional(form.brandingTextColor),
       });
       await loadBuilder();
       setSaveSuccessMessage("Builder updated.");
@@ -1019,6 +1032,22 @@ const DashboardBuilderPage = () => {
                   className="w-full"
                 />
               </div>
+              <BuilderBrandingFields
+                builderName={form.name}
+                logoUrl={form.logoUrl}
+                brandingBgColor={form.brandingBgColor}
+                brandingTextColor={form.brandingTextColor}
+                onLogoUrlChange={(value) =>
+                  setForm((prev) => ({ ...prev, logoUrl: value }))
+                }
+                onBrandingBgColorChange={(value) =>
+                  setForm((prev) => ({ ...prev, brandingBgColor: value }))
+                }
+                onBrandingTextColorChange={(value) =>
+                  setForm((prev) => ({ ...prev, brandingTextColor: value }))
+                }
+                disabled={saving || deleteAction}
+              />
 
               <div className="flex flex-wrap items-center gap-3">
                 <Button

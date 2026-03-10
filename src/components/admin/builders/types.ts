@@ -20,6 +20,9 @@ export type BuilderRecord = {
   name?: string | null;
   email?: string | null;
   phone?: string | null;
+  logoUrl?: string | null;
+  brandingBgColor?: string | null;
+  brandingTextColor?: string | null;
   builderUsers?: BuilderUser[];
   [key: string]: unknown;
 };
@@ -28,4 +31,7 @@ export type BuilderCreatePayload = {
   name: string;
   email?: string;
   phone?: string;
+  logoUrl?: string;
+  brandingBgColor?: string;
+  brandingTextColor?: string;
 };

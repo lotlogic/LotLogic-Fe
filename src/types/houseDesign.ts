@@ -15,6 +15,9 @@ export interface HouseDesignItem {
     | {
         id?: string;
         name?: string;
+        logoUrl?: string | null;
+        brandingBgColor?: string | null;
+        brandingTextColor?: string | null;
       }
     | string;
   width?: number;

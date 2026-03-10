@@ -1,4 +1,8 @@
 import Button from "@/components/ui/Button";
+import {
+  BuilderBrandingBanner,
+  hasBuilderBranding,
+} from "@/components/builders/BuilderBrandingBanner";
 import showToast from "@/components/ui/Toast";
 import {
   colors,
@@ -79,6 +83,36 @@ const buildDesignMedia = (house: HouseDesignItem): DesignMediaItem[] => {
 
 const stopInteractionPropagation = (event: React.SyntheticEvent) => {
   event.stopPropagation();
+};
+
+const normalizeText = (value: unknown): string => String(value ?? "").trim();
+
+const getBuilderCardBranding = (house: HouseDesignItem) => {
+  const builderRecord =
+    house.builder && typeof house.builder === "object" ? house.builder : null;
+  const name =
+    normalizeText(house.builderName) || normalizeText(builderRecord?.name);
+  const logoUrl = normalizeText(builderRecord?.logoUrl);
+  const backgroundColor = normalizeText(builderRecord?.brandingBgColor);
+  const textColor = normalizeText(builderRecord?.brandingTextColor);
+
+  if (
+    !name ||
+    !hasBuilderBranding({
+      logoUrl,
+      backgroundColor,
+      textColor,
+    })
+  ) {
+    return null;
+  }
+
+  return {
+    name,
+    logoUrl,
+    backgroundColor,
+    textColor,
+  };
 };
 
 export const HouseDesignList = ({
@@ -481,6 +515,7 @@ export const HouseDesignList = ({
           const isSelected = selectedDesignId === house.id;
           const mediaItems = buildDesignMedia(house);
           const mediaCount = mediaItems.length;
+          const builderCardBranding = getBuilderCardBranding(house);
           const rawMediaIndex = mediaIndexByDesignId[house.id] ?? 0;
           const activeMediaIndex =
             mediaCount === 0
@@ -595,6 +630,16 @@ export const HouseDesignList = ({
                     </button>
                   ))}
                 </div>
+              )}
+
+              {builderCardBranding && (
+                <BuilderBrandingBanner
+                  name={builderCardBranding.name}
+                  logoUrl={builderCardBranding.logoUrl}
+                  backgroundColor={builderCardBranding.backgroundColor}
+                  textColor={builderCardBranding.textColor}
+                  className="mt-4"
+                />
               )}
 
               <div className="mt-4 flex items-start justify-between gap-3">

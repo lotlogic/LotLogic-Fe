@@ -73,6 +73,9 @@ export interface HouseDesignItemResponse {
     | {
         id?: string | null;
         name?: string | null;
+        logoUrl?: string | null;
+        brandingBgColor?: string | null;
+        brandingTextColor?: string | null;
       }
     | string
     | null;
@@ -106,6 +109,9 @@ export interface Builder {
   name: string;
   email: string;
   phone: string;
+  logoUrl?: string | null;
+  brandingBgColor?: string | null;
+  brandingTextColor?: string | null;
   createdAt: string;
   updatedAt: string;
 }

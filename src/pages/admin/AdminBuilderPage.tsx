@@ -12,6 +12,7 @@ import {
   type FacadePayload,
   type FacadeRecord,
 } from "@/components/admin/facades/FacadeCrud";
+import { BuilderBrandingFields } from "@/components/admin/builders/BuilderBrandingFields";
 import { BuilderPerformancePanel } from "@/components/admin/builders/BuilderPerformancePanel";
 import { BuilderLeadsPanel } from "@/components/admin/builders/BuilderLeadsPanel";
 import { adminApi } from "@/lib/api/adminApi";
@@ -43,6 +44,9 @@ type AdminBuilder = {
   name?: string | null;
   email?: string | null;
   phone?: string | null;
+  logoUrl?: string | null;
+  brandingBgColor?: string | null;
+  brandingTextColor?: string | null;
   builderUsers?: BuilderUser[];
   [key: string]: unknown;
 };
@@ -161,6 +165,9 @@ const AdminBuilderPage = () => {
   const [editName, setEditName] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [editLogoUrl, setEditLogoUrl] = useState("");
+  const [editBrandingBgColor, setEditBrandingBgColor] = useState("");
+  const [editBrandingTextColor, setEditBrandingTextColor] = useState("");
   const [editAction, setEditAction] = useState<"save" | "delete" | null>(null);
   const [editErrorMessage, setEditErrorMessage] = useState<string | null>(null);
 
@@ -203,6 +210,9 @@ const AdminBuilderPage = () => {
       setEditName(data.name ?? "");
       setEditEmail(data.email ?? "");
       setEditPhone(data.phone ?? "");
+      setEditLogoUrl(data.logoUrl ?? "");
+      setEditBrandingBgColor(data.brandingBgColor ?? "");
+      setEditBrandingTextColor(data.brandingTextColor ?? "");
     } catch (error) {
       setBuilder(null);
       setErrorMessage(
@@ -374,6 +384,9 @@ const AdminBuilderPage = () => {
         name: trimmedName,
         email: normalizeOptional(editEmail),
         phone: normalizeOptional(editPhone),
+        logoUrl: normalizeOptional(editLogoUrl),
+        brandingBgColor: normalizeOptional(editBrandingBgColor),
+        brandingTextColor: normalizeOptional(editBrandingTextColor),
       });
       await loadBuilder();
     } catch (error) {
@@ -584,6 +597,16 @@ const AdminBuilderPage = () => {
                 className="w-full"
               />
             </div>
+            <BuilderBrandingFields
+              builderName={editName}
+              logoUrl={editLogoUrl}
+              brandingBgColor={editBrandingBgColor}
+              brandingTextColor={editBrandingTextColor}
+              onLogoUrlChange={setEditLogoUrl}
+              onBrandingBgColorChange={setEditBrandingBgColor}
+              onBrandingTextColorChange={setEditBrandingTextColor}
+              disabled={editAction !== null}
+            />
             <div className="flex gap-2 flex-wrap items-center mt-2">
               <Button
                 type="submit"
