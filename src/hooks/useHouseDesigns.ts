@@ -20,7 +20,13 @@ const resolveBuilderContext = (
   const rawBuilder = apiDesign.builder;
   const builderRecord =
     rawBuilder && typeof rawBuilder === "object"
-      ? (rawBuilder as { id?: string | null; name?: string | null })
+      ? (rawBuilder as {
+          id?: string | null;
+          name?: string | null;
+          logoUrl?: string | null;
+          brandingBgColor?: string | null;
+          brandingTextColor?: string | null;
+        })
       : undefined;
 
   const builderId =
@@ -38,6 +44,10 @@ const resolveBuilderContext = (
       ? {
           id: normalizeText(builderRecord.id),
           name: normalizeText(builderRecord.name),
+          logoUrl: normalizeText(builderRecord.logoUrl) ?? null,
+          brandingBgColor: normalizeText(builderRecord.brandingBgColor) ?? null,
+          brandingTextColor:
+            normalizeText(builderRecord.brandingTextColor) ?? null,
         }
       : typeof rawBuilder === "string"
       ? normalizeText(rawBuilder)
