@@ -7,6 +7,10 @@ import {
   EstateLotsCrud,
   type EstateLotRecord,
 } from "@/components/admin/estates/EstateLotsCrud";
+import {
+  ESTATE_ACCESS_STATUSES,
+  type EstateAccessStatus,
+} from "@/components/admin/estates/types";
 import { EstatePerformancePanel } from "@/components/admin/estates/EstatePerformancePanel";
 import { EstateRuleLayersCrud } from "@/components/admin/estates/EstateRuleLayersCrud";
 import { EstateEmbedPanel } from "@/components/embed/EstateEmbedPanel";
@@ -34,6 +38,8 @@ type AdminEstate = {
   phone?: string | null;
   logoUrl?: string | null;
   isPrototype?: boolean | null;
+  status?: EstateAccessStatus | null;
+  hasAccessPassword?: boolean | null;
   brandSetting?:
     | {
         guid?: string | null;
@@ -99,6 +105,8 @@ type EstateForm = {
   phone: string;
   logoUrl: string;
   isPrototype: boolean;
+  status: EstateAccessStatus;
+  accessPassword: string;
 };
 
 const emptyForm: EstateForm = {
@@ -109,6 +117,8 @@ const emptyForm: EstateForm = {
   phone: "",
   logoUrl: "",
   isPrototype: false,
+  status: "LIVE",
+  accessPassword: "",
 };
 
 const getEstateName = (estate: AdminEstate | null): string => {
@@ -156,6 +166,9 @@ const normalizeBoolean = (value: unknown): boolean =>
   value === 1 ||
   value === "1" ||
   (typeof value === "string" && value.toLowerCase() === "true");
+
+const normalizeAccessStatus = (value: unknown): EstateAccessStatus =>
+  value === "GATED" ? "GATED" : "LIVE";
 
 const inviteRedirectUrl =
   typeof window !== "undefined"
@@ -237,6 +250,8 @@ const AdminEstatePage = () => {
       phone: data.phone ?? "",
       logoUrl: data.logoUrl ?? "",
       isPrototype: normalizeBoolean(data.isPrototype),
+      status: normalizeAccessStatus(data.status),
+      accessPassword: "",
     };
     setForm(nextForm);
     setInitialForm(nextForm);
@@ -377,12 +392,25 @@ const AdminEstatePage = () => {
       setSaving(false);
       return;
     }
+    const nextAccessPassword = form.accessPassword.trim();
+    if (
+      form.status === "GATED" &&
+      !estate?.hasAccessPassword &&
+      !nextAccessPassword
+    ) {
+      setSaveErrorMessage("Password is required when status is Gated.");
+      setSaving(false);
+      return;
+    }
     const payload: Record<string, unknown> = {};
     if (trimmedName !== initialForm.name.trim()) {
       payload.name = trimmedName;
     }
     if (form.jurisdiction !== initialForm.jurisdiction) {
       payload.jurisdiction = form.jurisdiction;
+    }
+    if (form.status !== initialForm.status) {
+      payload.status = form.status;
     }
 
     const currentAddress = normalizeOptional(form.address);
@@ -411,6 +439,10 @@ const AdminEstatePage = () => {
 
     if (isAdmin && form.isPrototype !== initialForm.isPrototype) {
       payload.isPrototype = form.isPrototype;
+    }
+
+    if (nextAccessPassword) {
+      payload.accessPassword = nextAccessPassword;
     }
 
     const themeChanged = selectedThemeGuid !== initialThemeGuid;
@@ -667,6 +699,59 @@ const AdminEstatePage = () => {
                   ))}
                 </select>
               </div>
+
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Status *</span>
+                <select
+                  value={form.status}
+                  onChange={(event) => {
+                    const nextStatus = event.target.value as EstateAccessStatus;
+                    setForm((prev) => ({
+                      ...prev,
+                      status: nextStatus,
+                      accessPassword:
+                        nextStatus === "GATED" ? prev.accessPassword : "",
+                    }));
+                  }}
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  required
+                >
+                  {ESTATE_ACCESS_STATUSES.map((option) => (
+                    <option key={option} value={option}>
+                      {option === "LIVE" ? "Live" : "Gated"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {form.status === "GATED" && (
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">
+                    Password{estate?.hasAccessPassword ? "" : " *"}
+                  </span>
+                  <Input
+                    value={form.accessPassword}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        accessPassword: event.target.value,
+                      }))
+                    }
+                    placeholder={
+                      estate?.hasAccessPassword
+                        ? "Leave blank to keep the current password"
+                        : "Enter embed password"
+                    }
+                    type="password"
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground m-0">
+                    {estate?.hasAccessPassword
+                      ? "Leave blank to keep the current embed password."
+                      : "This password will be required before the embed renders."}
+                  </p>
+                </div>
+              )}
 
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Address</span>

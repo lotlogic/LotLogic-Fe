@@ -9,7 +9,11 @@ import {
 } from "@/components/admin/estates/EstateLotsCrud";
 import { EstatePerformancePanel } from "@/components/admin/estates/EstatePerformancePanel";
 import { EstateRuleLayersCrud } from "@/components/admin/estates/EstateRuleLayersCrud";
-import type { EstateRecord } from "@/components/admin/estates/types";
+import {
+  ESTATE_ACCESS_STATUSES,
+  type EstateAccessStatus,
+  type EstateRecord,
+} from "@/components/admin/estates/types";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { EstateEmbedPanel } from "@/components/embed/EstateEmbedPanel";
 import { Button } from "@/components/ui/Button";
@@ -35,6 +39,8 @@ type EstateForm = {
   email: string;
   phone: string;
   logoUrl: string;
+  status: EstateAccessStatus;
+  accessPassword: string;
 };
 
 type AdminEstateSummary = {
@@ -79,6 +85,8 @@ const emptyForm: EstateForm = {
   email: "",
   phone: "",
   logoUrl: "",
+  status: "LIVE",
+  accessPassword: "",
 };
 
 const normalizeOptional = (value: string) => {
@@ -91,6 +99,9 @@ const normalizeJurisdiction = (value: unknown): Jurisdiction =>
   JURISDICTIONS.includes(value as Jurisdiction)
     ? (value as Jurisdiction)
     : "NSW";
+
+const normalizeAccessStatus = (value: unknown): EstateAccessStatus =>
+  value === "GATED" ? "GATED" : "LIVE";
 
 const getEstateName = (estate: EstateRecord | null): string => {
   if (!estate) {
@@ -201,6 +212,8 @@ const DashboardEstatePage = () => {
       email: data.email ?? "",
       phone: data.phone ?? "",
       logoUrl: data.logoUrl ?? "",
+      status: normalizeAccessStatus(data.status),
+      accessPassword: "",
     };
     setForm(nextForm);
     setInitialForm(nextForm);
@@ -319,12 +332,25 @@ const DashboardEstatePage = () => {
       setSaving(false);
       return;
     }
+    const nextAccessPassword = form.accessPassword.trim();
+    if (
+      form.status === "GATED" &&
+      !estate?.hasAccessPassword &&
+      !nextAccessPassword
+    ) {
+      setSaveErrorMessage("Password is required when status is Gated.");
+      setSaving(false);
+      return;
+    }
     const payload: Record<string, unknown> = {};
     if (trimmedName !== initialForm.name.trim()) {
       payload.name = trimmedName;
     }
     if (form.jurisdiction !== initialForm.jurisdiction) {
       payload.jurisdiction = form.jurisdiction;
+    }
+    if (form.status !== initialForm.status) {
+      payload.status = form.status;
     }
 
     const currentAddress = normalizeOptional(form.address);
@@ -349,6 +375,10 @@ const DashboardEstatePage = () => {
     const initialLogoUrl = normalizeOptional(initialForm.logoUrl);
     if (currentLogoUrl !== initialLogoUrl) {
       payload.logoUrl = currentLogoUrl;
+    }
+
+    if (nextAccessPassword) {
+      payload.accessPassword = nextAccessPassword;
     }
 
     if (Object.keys(payload).length === 0) {
@@ -711,6 +741,59 @@ const DashboardEstatePage = () => {
                   ))}
                 </select>
               </div>
+
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Status *</span>
+                <select
+                  value={form.status}
+                  onChange={(event) => {
+                    const nextStatus = event.target.value as EstateAccessStatus;
+                    setForm((prev) => ({
+                      ...prev,
+                      status: nextStatus,
+                      accessPassword:
+                        nextStatus === "GATED" ? prev.accessPassword : "",
+                    }));
+                  }}
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  required
+                >
+                  {ESTATE_ACCESS_STATUSES.map((option) => (
+                    <option key={option} value={option}>
+                      {option === "LIVE" ? "Live" : "Gated"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {form.status === "GATED" && (
+                <div className="grid gap-2">
+                  <span className="text-sm font-medium">
+                    Password{estate?.hasAccessPassword ? "" : " *"}
+                  </span>
+                  <Input
+                    value={form.accessPassword}
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        accessPassword: event.target.value,
+                      }))
+                    }
+                    placeholder={
+                      estate?.hasAccessPassword
+                        ? "Leave blank to keep the current password"
+                        : "Enter embed password"
+                    }
+                    type="password"
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground m-0">
+                    {estate?.hasAccessPassword
+                      ? "Leave blank to keep the current embed password."
+                      : "This password will be required before the embed renders."}
+                  </p>
+                </div>
+              )}
 
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Address</span>

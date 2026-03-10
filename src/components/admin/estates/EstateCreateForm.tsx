@@ -7,7 +7,11 @@ import {
   JURISDICTIONS,
   type Jurisdiction,
 } from "@/lib/api/adminModels";
-import type { EstateCreatePayload } from "./types";
+import {
+  ESTATE_ACCESS_STATUSES,
+  type EstateAccessStatus,
+  type EstateCreatePayload,
+} from "./types";
 
 type EstateCreateFormProps = {
   onCreate: (payload: EstateCreatePayload) => Promise<{ id?: string } | void>;
@@ -30,6 +34,8 @@ export const EstateCreateForm = ({
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [status, setStatus] = useState<EstateAccessStatus>("LIVE");
+  const [accessPassword, setAccessPassword] = useState("");
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -48,6 +54,7 @@ export const EstateCreateForm = ({
     const trimmedEmail = email.trim();
     const trimmedPhone = phone.trim();
     const trimmedLogoUrl = logoUrl.trim();
+    const trimmedAccessPassword = accessPassword.trim();
 
     resetMessages();
 
@@ -55,10 +62,15 @@ export const EstateCreateForm = ({
       setErrorMessage("Name is required.");
       return;
     }
+    if (status === "GATED" && !trimmedAccessPassword) {
+      setErrorMessage("Password is required when status is Gated.");
+      return;
+    }
 
     const payload: EstateCreatePayload = {
       name: trimmedName,
       jurisdiction,
+      status,
     };
     if (trimmedAddress) {
       payload.address = trimmedAddress;
@@ -72,6 +84,9 @@ export const EstateCreateForm = ({
     if (trimmedLogoUrl) {
       payload.logoUrl = trimmedLogoUrl;
     }
+    if (trimmedAccessPassword) {
+      payload.accessPassword = trimmedAccessPassword;
+    }
 
     setSaving(true);
     try {
@@ -82,6 +97,8 @@ export const EstateCreateForm = ({
       setEmail("");
       setPhone("");
       setLogoUrl("");
+      setStatus("LIVE");
+      setAccessPassword("");
       setSuccessMessage("Estate created.");
       if (created && typeof created === "object" && "id" in created) {
         const createdId = created?.id;
@@ -131,6 +148,42 @@ export const EstateCreateForm = ({
           ))}
         </select>
       </div>
+      <div className="grid gap-2">
+        <span className="text-sm font-medium">Status *</span>
+        <select
+          value={status}
+          onChange={(event) => {
+            const nextStatus = event.target.value as EstateAccessStatus;
+            setStatus(nextStatus);
+            if (nextStatus !== "GATED") {
+              setAccessPassword("");
+            }
+          }}
+          className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          required
+        >
+          {ESTATE_ACCESS_STATUSES.map((option) => (
+            <option key={option} value={option}>
+              {option === "LIVE" ? "Live" : "Gated"}
+            </option>
+          ))}
+        </select>
+      </div>
+      {status === "GATED" && (
+        <div className="grid gap-2">
+          <span className="text-sm font-medium">Password *</span>
+          <Input
+            className="w-full"
+            value={accessPassword}
+            onChange={(event) => setAccessPassword(event.target.value)}
+            placeholder="Enter embed password"
+            type="password"
+          />
+          <p className="m-0 text-xs text-muted-foreground">
+            This password will be required before the embed renders.
+          </p>
+        </div>
+      )}
       <div className="grid gap-2">
         <span className="text-sm font-medium">Address</span>
         <Input

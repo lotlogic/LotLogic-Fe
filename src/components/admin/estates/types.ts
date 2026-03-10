@@ -1,5 +1,9 @@
 import type { Jurisdiction } from "@/lib/api/adminModels";
 
+export const ESTATE_ACCESS_STATUSES = ["LIVE", "GATED"] as const;
+
+export type EstateAccessStatus = (typeof ESTATE_ACCESS_STATUSES)[number];
+
 export type EstateRecord = {
   id: string;
   name?: string | null;
@@ -9,7 +13,8 @@ export type EstateRecord = {
   phone?: string | null;
   logoUrl?: string | null;
   isPrototype?: boolean | null;
-  status?: string | null;
+  status?: EstateAccessStatus | null;
+  hasAccessPassword?: boolean | null;
   brandSetting?:
     | {
         guid?: string | null;
@@ -27,4 +32,6 @@ export type EstateCreatePayload = {
   email?: string;
   phone?: string;
   logoUrl?: string;
+  status?: EstateAccessStatus;
+  accessPassword?: string;
 };

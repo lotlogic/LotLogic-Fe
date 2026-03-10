@@ -113,6 +113,7 @@ export interface Builder {
 export interface PublicEstate {
   id: string;
   name?: string | null;
+  status?: "LIVE" | "GATED" | null;
   isPrototype?: boolean | null;
   prototype?: boolean | null;
   isPrototypeEstate?: boolean | null;
@@ -254,6 +255,13 @@ export type BrandQueryParams = {
   estateId?: string;
 };
 
+export type EstateAccessState = {
+  id: string;
+  name?: string | null;
+  status: "LIVE" | "GATED";
+  requiresPassword: boolean;
+};
+
 const PROTOTYPE_ESTATE_KEYS = [
   "isPrototype",
   "prototype",
@@ -309,6 +317,24 @@ export const lotApi = {
     } catch (error) {
       throw error;
     }
+  },
+
+  async getEstateAccess(estateId: string): Promise<EstateAccessState> {
+    const response = await axios.get(
+      `${getApiBaseUrl()}/estate/${encodeURIComponent(estateId)}/access`
+    );
+    return response.data;
+  },
+
+  async validateEstateAccess(
+    estateId: string,
+    password: string
+  ): Promise<{ valid: boolean }> {
+    const response = await axios.post(
+      `${getApiBaseUrl()}/estate/${encodeURIComponent(estateId)}/access/validate`,
+      { password }
+    );
+    return response.data;
   },
 
   // Fetch a single lot by ID
