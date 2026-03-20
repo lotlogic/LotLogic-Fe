@@ -15,6 +15,11 @@ import {
   getLotLifecycleLabel,
   normalizeLotLifecycle,
 } from "@/constants/lotLifecycle";
+import {
+  LOT_SALES_MODE_OPTIONS,
+  getLotSalesModeLabel,
+  normalizeLotSalesMode,
+} from "@/constants/lotSalesMode";
 import type {
   CreateLotConstraintResponse,
   EstateRuleSetRecord,
@@ -33,11 +38,14 @@ export type EstateLotRecord = {
   division?: string | null;
   zoning?: string | null;
   areaSqm?: number | null;
+  salesMode?: string | null;
+  price?: number | null;
   lifecycleStage?: string | null;
   lotNumber?: number | null;
   status?: string | null;
   overlays?: string[] | null;
   geojson?: Record<string, unknown> | null;
+  geometry?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
   frontageM?: number | null;
   lotType?: string | null;
   roadFacing?: string | null;
@@ -51,6 +59,8 @@ type LotForm = {
   blockNumber: string;
   sectionNumber: string;
   areaSqm: string;
+  salesMode: string;
+  price: string;
   zoning: string;
   address: string;
   district: string;
@@ -142,6 +152,8 @@ const createEmptyLotForm = (estateIdValue: string): LotForm => ({
   blockNumber: "",
   sectionNumber: "",
   areaSqm: "",
+  salesMode: "land_sale",
+  price: "",
   zoning: "",
   address: "",
   district: "",
@@ -228,6 +240,7 @@ const LOT_TYPE_OPTIONS = [
 ] as const;
 
 const LIFECYCLE_STAGE_OPTIONS = LOT_LIFECYCLE_OPTIONS;
+const SALES_MODE_OPTIONS = LOT_SALES_MODE_OPTIONS;
 
 const sanitizeBlockKeyToken = (value: string) =>
   value
@@ -586,6 +599,9 @@ const buildLotForm = (lot: EstateLotRecord, estateIdValue: string): LotForm => {
     blockNumber: stringifyValue(lot.blockNumber),
     sectionNumber: stringifyValue(lot.sectionNumber),
     areaSqm: stringifyValue(lot.areaSqm),
+    salesMode:
+      normalizeLotSalesMode(lot.salesMode) ?? createEmptyLotForm("").salesMode,
+    price: stringifyValue(lot.price),
     zoning: stringifyValue(lot.zoning),
     address: stringifyValue(lot.address),
     district: stringifyValue(lot.district),
@@ -683,6 +699,25 @@ const getLotArea = (lot: EstateLotRecord) =>
       (lot as { area?: number | string }).area ??
       (lot as { BLOCK_DERIVED_AREA?: string }).BLOCK_DERIVED_AREA
   );
+
+const getLotSalesMode = (lot: EstateLotRecord) => {
+  const normalized = normalizeLotSalesMode(lot.salesMode);
+  if (normalized) {
+    return getLotSalesModeLabel(normalized);
+  }
+  return "--";
+};
+
+const getLotPrice = (lot: EstateLotRecord) => {
+  if (typeof lot.price === "number" && Number.isFinite(lot.price)) {
+    return new Intl.NumberFormat("en-AU", {
+      style: "currency",
+      currency: "AUD",
+      maximumFractionDigits: 0,
+    }).format(lot.price);
+  }
+  return "--";
+};
 
 const getLotBlockKey = (lot: EstateLotRecord) =>
   formatLotValue(lot.blockKey ?? (lot as { BLOCK_KEY?: string }).BLOCK_KEY);
@@ -1378,10 +1413,22 @@ export const EstateLotsCrud = ({
       setLotSaving(false);
       return;
     }
+    const normalizedSalesMode = normalizeLotSalesMode(lotForm.salesMode.trim());
+    if (!normalizedSalesMode) {
+      setLotFormError("Sales mode must be either Land Sale or House & Land.");
+      setLotSaving(false);
+      return;
+    }
 
     const areaValueRaw = normalizeOptionalNumber(lotForm.areaSqm);
     if (areaValueRaw === undefined) {
       setLotFormError("Area (sqm) must be a number.");
+      setLotSaving(false);
+      return;
+    }
+    const priceValue = normalizeOptionalNumber(lotForm.price);
+    if (priceValue === undefined || (priceValue !== null && !Number.isInteger(priceValue))) {
+      setLotFormError("Price must be a whole-dollar amount.");
       setLotSaving(false);
       return;
     }
@@ -1511,6 +1558,8 @@ export const EstateLotsCrud = ({
     const payload: Record<string, unknown> = {
       blockKey: trimmedBlockKey,
       areaSqm: areaValue,
+      salesMode: normalizedSalesMode,
+      price: priceValue,
       zoning: trimmedZoning,
       estateId: estateIdValue,
       blockNumber: blockNumberValue,
@@ -2189,6 +2238,20 @@ export const EstateLotsCrud = ({
                 />
               </div>
               <div className="grid gap-2">
+                <span className="text-sm font-medium">Address</span>
+                <Input
+                  value={lotForm.address}
+                  onChange={(event) =>
+                    setLotForm((prev) => ({
+                      ...prev,
+                      address: event.target.value,
+                    }))
+                  }
+                  placeholder="Lot 1, Main St"
+                  className="w-full"
+                />
+              </div>
+              <div className="grid gap-2">
                 <span className="text-sm font-medium">Lot type *</span>
                 <select
                   value={lotForm.lotType}
@@ -2237,8 +2300,41 @@ export const EstateLotsCrud = ({
                       <option value={lotForm.lifecycleStage}>
                         {lotForm.lifecycleStage}
                       </option>
-                    )}
+                  )}
                 </select>
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Sales mode *</span>
+                <select
+                  value={lotForm.salesMode}
+                  onChange={(event) =>
+                    setLotForm((prev) => ({
+                      ...prev,
+                      salesMode: event.target.value,
+                    }))
+                  }
+                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  {SALES_MODE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Price</span>
+                <Input
+                  value={lotForm.price}
+                  onChange={(event) =>
+                    setLotForm((prev) => ({
+                      ...prev,
+                      price: event.target.value,
+                    }))
+                  }
+                  placeholder="650000"
+                  className="w-full"
+                />
               </div>
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Road facing</span>
@@ -2308,20 +2404,6 @@ export const EstateLotsCrud = ({
                     }))
                   }
                   placeholder="5"
-                  className="w-full"
-                />
-              </div>
-              <div className="grid gap-2">
-                <span className="text-sm font-medium">Address</span>
-                <Input
-                  value={lotForm.address}
-                  onChange={(event) =>
-                    setLotForm((prev) => ({
-                      ...prev,
-                      address: event.target.value,
-                    }))
-                  }
-                  placeholder="Lot 1, Main St"
                   className="w-full"
                 />
               </div>
@@ -3079,6 +3161,12 @@ export const EstateLotsCrud = ({
                 Stage
               </th>
               <th className="p-3 border-b font-medium text-sm text-slate-700">
+                Sales Mode
+              </th>
+              <th className="p-3 border-b font-medium text-sm text-slate-700">
+                Price
+              </th>
+              <th className="p-3 border-b font-medium text-sm text-slate-700">
                 Zoning
               </th>
               <th className="p-3 border-b font-medium text-sm text-slate-700">
@@ -3103,6 +3191,12 @@ export const EstateLotsCrud = ({
                 </td>
                 <td className="p-3 border-b border-slate-100 text-sm">
                   {getLotStage(lot)}
+                </td>
+                <td className="p-3 border-b border-slate-100 text-sm">
+                  {getLotSalesMode(lot)}
+                </td>
+                <td className="p-3 border-b border-slate-100 text-sm">
+                  {getLotPrice(lot)}
                 </td>
                 <td className="p-3 border-b border-slate-100 text-sm">
                   {formatLotValue(lot.zoning)}
@@ -3137,7 +3231,7 @@ export const EstateLotsCrud = ({
             {!lotsLoading && filteredLots.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={9}
                   className="p-4 text-center text-muted-foreground"
                 >
                   No lots match the current filter.

@@ -31,9 +31,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Funnel,
-  MailQuestionMark,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
+import { normalizeLotSalesMode } from "@/constants/lotSalesMode";
+import { getDesignCardPriceText } from "@/lib/utils/lotPricing";
+import { normalizeFloorPlanTitle } from "@/utils/text";
 
 type DesignMediaItem = {
   kind: "floorplan" | "facade";
@@ -495,12 +497,12 @@ export const HouseDesignList = ({
     <div className="p-6 overflow-y-auto h-full">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <span className="text-xl font-bold">
-            <span className="text-brand-primary">
-              {filteredHouses.length}
-            </span>{" "}
-            {houseDesign.title}
-          </span>
+          <div className="text-xl font-bold text-brand">Design Matches</div>
+          <div className="text-sm text-brand-muted">
+            {`${filteredHouses.length} design${
+              filteredHouses.length === 1 ? "" : "s"
+            } work on this block`}
+          </div>
         </div>
         <Button
           label={filterContent.title}
@@ -512,6 +514,7 @@ export const HouseDesignList = ({
       </div>
       <div className="space-y-6">
         {filteredHouses.map((house) => {
+          const normalizedTitle = normalizeFloorPlanTitle(house.title);
           const isSelected = selectedDesignId === house.id;
           const mediaItems = buildDesignMedia(house);
           const mediaCount = mediaItems.length;
@@ -528,6 +531,11 @@ export const HouseDesignList = ({
           const areaLabel = `${lotSidebar.singleStorey} ${houseDesign.area}: ${
             house.area
           } ${houseDesign.m2}`;
+          const pricingText = getDesignCardPriceText({
+            lotSalesMode: normalizeLotSalesMode(lot.salesMode),
+            lotPrice: lot.price,
+            designArea: house.area,
+          });
 
           return (
             <div
@@ -645,9 +653,12 @@ export const HouseDesignList = ({
               <div className="mt-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="truncate text-lg font-bold text-brand">
-                    {house.title}
+                    {normalizedTitle}
                   </div>
                   <div className="mt-1 text-sm text-brand-muted">{areaLabel}</div>
+                  <div className="mt-2 text-sm font-semibold text-brand-primary">
+                    {pricingText}
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -744,39 +755,38 @@ export const HouseDesignList = ({
                 />
               </div>
 
-              <div className="mt-3">
-                <Button
-                  label="Get Cost Estimates"
-                  leftIcon={<MailQuestionMark className="h-4 w-4" />}
-                  variant="outline"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    if (onEnquireNow) {
+              {onEnquireNow && (
+                <div className="mt-3">
+                  <Button
+                    label="Get a detailed quote"
+                    variant="outline"
+                    onClick={(event) => {
+                      event.stopPropagation();
                       onEnquireNow(house);
-                    }
 
-                    trackHouseDesignInteraction("Enquiry Initiated", {
-                      id: house.id,
-                      title: house.title,
-                      estateId: lot.estateId,
-                      bedrooms: house.bedrooms,
-                      bathrooms: house.bathrooms,
-                      area: house.area,
-                      lotId: lot.lotId,
-                      lotDbId: lot.lotDbId,
-                      builderId: house.builderId,
-                      builderName: house.builderName,
-                      builder: house.builder,
-                    });
-                  }}
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-brand bg-brand py-3 px-4 font-medium text-brand transition-colors hover:border-brand-primary hover:bg-brand-primary hover:text-white"
-                />
-              </div>
+                      trackHouseDesignInteraction("Enquiry Initiated", {
+                        id: house.id,
+                        title: house.title,
+                        estateId: lot.estateId,
+                        bedrooms: house.bedrooms,
+                        bathrooms: house.bathrooms,
+                        area: house.area,
+                        lotId: lot.lotId,
+                        lotDbId: lot.lotDbId,
+                        builderId: house.builderId,
+                        builderName: house.builderName,
+                        builder: house.builder,
+                      });
+                    }}
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-brand bg-brand py-3 px-4 font-medium text-brand transition-colors hover:border-primary hover:bg-primary hover:text-white"
+                  />
+                </div>
+              )}
 
               <div className="mt-3 text-xs text-brand-muted">
                 {isSelected
                   ? "Selected for lot preview."
-                  : "Click the card to preview this design on the lot."}
+                  : "Tap to preview on your block"}
               </div>
             </div>
           );

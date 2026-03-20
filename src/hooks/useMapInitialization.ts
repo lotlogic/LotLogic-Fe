@@ -2,6 +2,11 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef, useState } from "react";
 
+const EMPTY_FEATURE_COLLECTION: GeoJSON.FeatureCollection = {
+  type: "FeatureCollection",
+  features: [],
+};
+
 // -----------------------------
 // Hook
 // -----------------------------
@@ -38,11 +43,20 @@ export const useMapInitialization = (
     mapRef.current = map;
 
     map.on("load", () => {
+      const brandPrimary =
+        getComputedStyle(document.documentElement)
+          .getPropertyValue("--color-primary")
+          .trim() || "#EF7B6C";
+
       //set the source for the map
       map.addSource("demo-lot-source", {
         type: "geojson",
         data: dataRef.current,
         promoteId: "BLOCK_KEY",
+      });
+      map.addSource("hovered-lot-source", {
+        type: "geojson",
+        data: EMPTY_FEATURE_COLLECTION,
       });
 
       // Add pond source
@@ -115,6 +129,12 @@ export const useMapInitialization = (
             "case",
             ["boolean", ["feature-state", "selected"], false],
             "#2B3D48",
+            [
+              "all",
+              ["boolean", ["feature-state", "hovered"], false],
+              ["!=", ["get", "lifecycleStage"], "sold"],
+            ],
+            brandPrimary,
             ["==", ["get", "lifecycleStage"], "sold"],
             "#7f1d1d",
             ["==", ["get", "lifecycleStage"], "reserved"],
@@ -128,7 +148,86 @@ export const useMapInitialization = (
         id: "demo-lot-outline",
         type: "line",
         source: "demo-lot-source",
-        paint: { "line-color": "#2B3D48", "line-width": 1.5 },
+        layout: {
+          "line-join": "round",
+          "line-cap": "round",
+        },
+        paint: {
+          "line-color": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            "#2B3D48",
+            [
+              "all",
+              ["boolean", ["feature-state", "hovered"], false],
+              ["!=", ["get", "lifecycleStage"], "sold"],
+            ],
+            brandPrimary,
+            ["==", ["get", "lifecycleStage"], "sold"],
+            "#7f1d1d",
+            "#2B3D48",
+          ],
+          "line-opacity": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            1,
+            [
+              "all",
+              ["boolean", ["feature-state", "hovered"], false],
+              ["!=", ["get", "lifecycleStage"], "sold"],
+            ],
+            0.92,
+            ["==", ["get", "lifecycleStage"], "sold"],
+            0.9,
+            0.72,
+          ],
+          "line-width": [
+            "case",
+            ["boolean", ["feature-state", "selected"], false],
+            2.75,
+            [
+              "all",
+              ["boolean", ["feature-state", "hovered"], false],
+              ["!=", ["get", "lifecycleStage"], "sold"],
+            ],
+            3.75,
+            1.6,
+          ],
+          "line-color-transition": { duration: 220, delay: 0 },
+          "line-opacity-transition": { duration: 220, delay: 0 },
+          "line-width-transition": { duration: 220, delay: 0 },
+        },
+      });
+
+      map.addLayer({
+        id: "demo-lot-hover-glow",
+        type: "line",
+        source: "hovered-lot-source",
+        layout: {
+          "line-join": "round",
+          "line-cap": "round",
+        },
+        paint: {
+          "line-color": brandPrimary,
+          "line-width": 9,
+          "line-opacity": 0.18,
+          "line-blur": 1.2,
+        },
+      });
+
+      map.addLayer({
+        id: "demo-lot-hover-outline",
+        type: "line",
+        source: "hovered-lot-source",
+        layout: {
+          "line-join": "round",
+          "line-cap": "round",
+        },
+        paint: {
+          "line-color": brandPrimary,
+          "line-width": 4.5,
+          "line-opacity": 0.96,
+        },
       });
 
       map.addLayer({
@@ -136,9 +235,24 @@ export const useMapInitialization = (
         type: "symbol",
         source: "demo-lot-source",
         layout: {
-          "text-field": ["to-string", ["get", "LOT_NUMBER"]],
+          "text-field": [
+            "step",
+            ["zoom"],
+            ["get", "lotLabel"],
+            17.4,
+            ["get", "lotLabelDetailed"],
+          ],
           "text-font": ["Open Sans Bold"],
-          "text-size": 14,
+          "text-size": [
+            "step",
+            ["zoom"],
+            15,
+            17.4,
+            13.75,
+            18.6,
+            14.5,
+          ],
+          "text-line-height": 1.05,
           "text-offset": [0, 0],
           "text-anchor": "center",
         },

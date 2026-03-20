@@ -7,6 +7,7 @@ import {
   EstateLotsCrud,
   type EstateLotRecord,
 } from "@/components/admin/estates/EstateLotsCrud";
+import { EstateBackgroundPlacementCard } from "@/components/admin/estates/EstateBackgroundPlacementCard";
 import {
   ESTATE_ACCESS_STATUSES,
   type EstateAccessStatus,
@@ -37,6 +38,11 @@ type AdminEstate = {
   email?: string | null;
   phone?: string | null;
   logoUrl?: string | null;
+  backgroundImageUrl?: string | null;
+  backgroundImageNorth?: number | null;
+  backgroundImageSouth?: number | null;
+  backgroundImageEast?: number | null;
+  backgroundImageWest?: number | null;
   isPrototype?: boolean | null;
   status?: EstateAccessStatus | null;
   hasAccessPassword?: boolean | null;
@@ -598,6 +604,19 @@ const AdminEstatePage = () => {
   };
 
   const previewThemeGuid = selectedThemeGuid || initialThemeGuid || null;
+
+  const handleBackgroundUpdated = useCallback(
+    (updated: {
+      backgroundImageUrl?: string | null;
+      backgroundImageNorth?: number | null;
+      backgroundImageSouth?: number | null;
+      backgroundImageEast?: number | null;
+      backgroundImageWest?: number | null;
+    }) => {
+      setEstate((prev) => (prev ? { ...prev, ...updated } : prev));
+    },
+    []
+  );
 
   const themeOptions = useMemo(
     () =>
@@ -1176,6 +1195,20 @@ const AdminEstatePage = () => {
             )}
           </div>
         </div>
+
+        {estateId && (
+          <EstateBackgroundPlacementCard
+            estateId={estateId}
+            initialValue={{
+              backgroundImageUrl: estate?.backgroundImageUrl ?? null,
+              backgroundImageNorth: estate?.backgroundImageNorth ?? null,
+              backgroundImageSouth: estate?.backgroundImageSouth ?? null,
+              backgroundImageEast: estate?.backgroundImageEast ?? null,
+              backgroundImageWest: estate?.backgroundImageWest ?? null,
+            }}
+            onUpdated={handleBackgroundUpdated}
+          />
+        )}
 
         {estateId && (
           <EstateRuleLayersCrud

@@ -153,7 +153,7 @@ const HouseSizeInputRow = React.memo(
         <div className="flex items-center mb-4">
           <Building2 />
           <span className="ml-2 text-base font-semibold text-brand">
-            Enter House Size
+            House Size
           </span>
         </div>
 
@@ -282,9 +282,9 @@ export const FilterSectionWithSingleLineSliders = React.memo(
           />
         </div>
         {/* Sticky footer to return to the design list with filters applied */}
-        <div className="sticky bottom-0 bg-white pt-4 border-t border-brand pb-6">
+        <div className="sticky bottom-0 bg-white pt-1 pb-6">
           <Button
-            label="Filter Designs"
+            label="Show me the designs"
             className="w-full bg-brand-primary text-white text-lg py-3 rounded-lg font-medium hover:bg-[var(--color-primary-hover)]"
             onClick={() => {
               // Track filter application

@@ -164,7 +164,7 @@ export const MobilePropertyCard = ({
             className="w-full mt-2 bg-gray-800 text-white text-xs font-medium py-2 px-3 rounded-lg hover:bg-gray-900 transition-colors flex items-center justify-center gap-2"
           >
             <Eye className="h-3 w-3" />
-            Get Cost Estimates
+            Get a detailed quote
           </button>
         </div>
       )}

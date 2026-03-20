@@ -5,6 +5,7 @@ import {
   lazy,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -30,8 +31,10 @@ const SavedPropertiesSidebar = lazy(() =>
 import { useLotDetails } from "@/hooks/useLotDetails";
 import { convertLotsToGeoJSON, useLots } from "@/hooks/useLots";
 import { useMapInitialization } from "@/hooks/useMapInitialization";
+import useEstate from "@/hooks/useEstate";
 import { useMobile } from "@/hooks/useMobile";
 import { getImageUrl } from "@/lib/api/lotApi";
+import { syncEstateBackgroundOverlay } from "@/lib/map/estateBackgroundOverlay";
 import type { SetbackValues } from "@/lib/utils/geometry";
 import { useMobileNavigationStore } from "@/stores/mobileNavigationStore";
 import { useModalStore } from "@/stores/modalStore";
@@ -40,6 +43,7 @@ import type { FloorPlan } from "@/types/houseDesign";
 import type { LotProperties } from "@/types/lot";
 import type { SavedProperty } from "@/types/ui";
 import "../map/MapControls.css";
+import { focusMapOnLot, setSelectedLotFeatureState } from "./lotMapUtils";
 import { MapControls } from "./MapControls";
 import { MapLayers, MapLoader } from "./MapLayers";
 
@@ -83,11 +87,29 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
     isLoading: isLoadingLots,
     error: lotsError,
   } = useLots(estateId);
+  const { data: estateData } = useEstate(estateId ?? null);
 
   //convert lotsData to geojson format for mapbox
   const estateLots = lotsData
     ? convertLotsToGeoJSON(lotsData)
     : { type: "FeatureCollection" as const, features: [] };
+  const lotFeatureLookup = useMemo(() => {
+    const entries = estateLots.features
+      .map((feature) => {
+        const blockKey = String(
+          ((feature.properties as GeoJSON.GeoJsonProperties | null)?.BLOCK_KEY ??
+            "") as string | number
+        );
+
+        return [
+          blockKey,
+          feature as MapboxGeoJSONFeature & { properties: LotProperties },
+        ] as const;
+      })
+      .filter(([blockKey]) => blockKey);
+
+    return new Map(entries);
+  }, [estateLots]);
 
   // Keep sidebar open ref in sync
   useEffect(() => {
@@ -168,7 +190,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
     setIsSavedSidebarOpen(false);
     // Close mobile navigation panels when viewing lot details
     closeAllPanels();
-    const lotId = String(property.lotId);
+    const savedLotId = String(property.lotId);
     const targetEstateId =
       property.estateId !== undefined && property.estateId !== null
         ? String(property.estateId) === "default"
@@ -177,7 +199,8 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
         : estateId || "";
 
     const lotData = lotsData?.find((lot) => {
-      const lotMatches = lot.id?.toString() === lotId || lot.blockKey === lotId;
+      const lotMatches =
+        lot.id?.toString() === savedLotId || lot.blockKey === savedLotId;
       if (!lotMatches) {
         return false;
       }
@@ -189,25 +212,30 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
       return String(lot.estateId || "") === targetEstateId;
     });
     if (!lotData) return;
+    const mapFeatureId = String(lotData.blockKey);
+    const databaseLotId = String(lotData.id);
 
     const lotFeature = {
       type: "Feature" as const,
       geometry: lotData.geometry,
       properties: {
-        BLOCK_KEY: lotId,
-        ID: lotId,
+        BLOCK_KEY: mapFeatureId,
+        ID: databaseLotId,
         LOT_NUMBER:
           lotData.blockNumber !== null && lotData.blockNumber !== undefined
             ? String(lotData.blockNumber)
-            : lotId,
-        databaseId: lotId,
+            : databaseLotId,
+        databaseId: databaseLotId,
         areaSqm: property.size,
-        lifecycleStage: "available",
+        lifecycleStage: lotData.lifecycleStage,
+        salesMode: lotData.salesMode,
+        price: lotData.price,
+        selectable: lotData.lifecycleStage !== "sold",
         ADDRESSES: property.address,
         DISTRICT_NAME: property.suburb,
         LAND_USE_POLICY_ZONES: property.zoning,
         BLOCK_DERIVED_AREA: property.size?.toString() || "0",
-        STAGE: "available",
+        STAGE: lotData.lifecycleStage,
         BLOCK_NUMBER: lotData.blockNumber ?? null,
         SECTION_NUMBER: null,
         DISTRICT_CODE: 1,
@@ -221,17 +249,8 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
 
     setSelectedLot(lotFeature);
     if (!mapRef) return;
-    if (selectedIdRef.current) {
-      mapRef.setFeatureState(
-        { source: "demo-lot-source", id: selectedIdRef.current },
-        { selected: false }
-      );
-    }
-    mapRef.setFeatureState(
-      { source: "demo-lot-source", id: lotId },
-      { selected: true }
-    );
-    selectedIdRef.current = lotId;
+    setSelectedLotFeatureState(mapRef, selectedIdRef, mapFeatureId);
+    focusMapOnLot(mapRef, lotData.geometry);
 
     if (property.houseDesign.floorPlanImage) {
       const coordinates = lotData.geometry.coordinates[0] as [number, number][];
@@ -297,16 +316,48 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
     setInitialView,
   } = useMapInitialization(mapContainer, estateLots);
 
+  useEffect(() => {
+    if (!mapRef) {
+      return;
+    }
+
+    let syncCompleted = false;
+
+    const syncOverlay = () => {
+      if (syncCompleted) {
+        return;
+      }
+
+      if (!mapRef.isStyleLoaded()) {
+        return;
+      }
+
+      syncEstateBackgroundOverlay(mapRef, estateData, "demo-lot-layer");
+      syncCompleted = true;
+    };
+
+    syncOverlay();
+    const handleLoad = () => syncOverlay();
+    const handleStyleData = () => syncOverlay();
+    const handleIdle = () => syncOverlay();
+
+    mapRef.on("load", handleLoad);
+    mapRef.on("styledata", handleStyleData);
+    mapRef.on("idle", handleIdle);
+
+    return () => {
+      mapRef.off("load", handleLoad);
+      mapRef.off("styledata", handleStyleData);
+      mapRef.off("idle", handleIdle);
+    };
+  }, [estateData, estateId, mapRef]);
+
   // Register callback to clear selected lot when mobile navigation tabs are clicked
   useEffect(() => {
     const clearSelectedLot = () => {
       setSelectedLot(null);
       if (selectedIdRef.current && mapRef) {
-        mapRef.setFeatureState(
-          { source: "demo-lot-source", id: selectedIdRef.current },
-          { selected: false }
-        );
-        selectedIdRef.current = null;
+        setSelectedLotFeatureState(mapRef, selectedIdRef, null);
       }
     };
 
@@ -339,11 +390,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
   // CLOSE
   const handleCloseSidebar = useCallback(() => {
     if (mapRef && selectedIdRef.current) {
-      mapRef.setFeatureState(
-        { source: "demo-lot-source", id: selectedIdRef.current },
-        { selected: false }
-      );
-      selectedIdRef.current = null;
+      setSelectedLotFeatureState(mapRef, selectedIdRef, null);
     }
     setSelectedLot(null);
     setSelectedFloorPlan(null);
@@ -485,6 +532,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
       {/* Map Controls Component - only zoom controls, no duplicate functionality */}
       <MapControls
         map={mapRef}
+        lotFeatureLookup={lotFeatureLookup}
         setSelectedLot={setSelectedLot}
         selectedIdRef={selectedIdRef}
         sidebarOpenRef={sidebarOpenRef}
@@ -524,30 +572,43 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
             suburb: selectedLot.properties.DISTRICT_NAME || "",
             address: selectedLot.properties.ADDRESSES || "",
             size: selectedLot.properties.BLOCK_DERIVED_AREA,
-            type: selectedLot.properties.TYPE,
-            zoning: selectedLot.properties.LAND_USE_POLICY_ZONES,
-            overlays: selectedLot.properties.OVERLAY_PROVISION_ZONES,
-            width: selectedLot.properties.width,
-            depth: selectedLot.properties.depth,
-            frontageType: selectedLot.properties.frontageType,
-            planningId: selectedLot.properties.planningId,
-            maxHeight: selectedLot.properties.maxHeight,
-            maxSize: selectedLot.properties.maxSize,
-            maxFSR: selectedLot.properties.maxFSR,
-            maxStories: selectedLot.properties.maxStories,
-            minArea: selectedLot.properties.minArea,
-            minDepth: selectedLot.properties.minDepth,
-            frontYardSetback: selectedLot.properties.frontYardSetback,
-            sideYardMinSetback: selectedLot.properties.sideYardMinSetback,
-            rearYardMinSetback: selectedLot.properties.rearYardMinSetback,
-            exampleArea: selectedLot.properties.exampleArea,
-            exampleLotSize: selectedLot.properties.exampleLotSize,
-            maxFSRUpper: selectedLot.properties.maxFSRUpper,
+            salesMode: selectedLot.properties.salesMode ?? undefined,
+            price: selectedLot.properties.price ?? undefined,
+            lifecycleStage: selectedLot.properties.lifecycleStage ?? undefined,
+            type: selectedLot.properties.TYPE ?? undefined,
+            zoning: selectedLot.properties.LAND_USE_POLICY_ZONES ?? undefined,
+            overlays:
+              selectedLot.properties.OVERLAY_PROVISION_ZONES ?? undefined,
+            width: selectedLot.properties.width ?? undefined,
+            depth: selectedLot.properties.depth ?? undefined,
+            frontageType: selectedLot.properties.frontageType ?? undefined,
+            planningId: selectedLot.properties.planningId ?? undefined,
+            maxHeight: selectedLot.properties.maxHeight ?? undefined,
+            maxSize: selectedLot.properties.maxSize ?? undefined,
+            maxFSR: selectedLot.properties.maxFSR ?? undefined,
+            maxStories: selectedLot.properties.maxStories ?? undefined,
+            minArea: selectedLot.properties.minArea ?? undefined,
+            minDepth: selectedLot.properties.minDepth ?? undefined,
+            frontYardSetback:
+              selectedLot.properties.frontYardSetback ?? undefined,
+            sideYardMinSetback:
+              selectedLot.properties.sideYardMinSetback ?? undefined,
+            rearYardMinSetback:
+              selectedLot.properties.rearYardMinSetback ?? undefined,
+            exampleArea: selectedLot.properties.exampleArea ?? undefined,
+            exampleLotSize: selectedLot.properties.exampleLotSize ?? undefined,
+            maxFSRUpper: selectedLot.properties.maxFSRUpper ?? undefined,
             apiDimensions: {
-              width: selectedLot.properties.width || 0,
-              depth: selectedLot.properties.depth || 0,
+              width:
+                typeof selectedLot.properties.width === "number"
+                  ? selectedLot.properties.width
+                  : 0,
+              depth:
+                typeof selectedLot.properties.depth === "number"
+                  ? selectedLot.properties.depth
+                  : 0,
             },
-            apiZoning: selectedLot.properties.apiZoning,
+            apiZoning: selectedLot.properties.apiZoning ?? undefined,
             apiMatches: selectedLot.properties.apiMatches || [],
           }}
           geometry={selectedLot.geometry}

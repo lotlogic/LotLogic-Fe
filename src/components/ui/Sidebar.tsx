@@ -2,10 +2,11 @@ import { sidebar } from "@/constants/content";
 import { useMobile } from "@/hooks/useMobile";
 import { Box, Drawer, IconButton } from "@mui/material";
 import clsx from "clsx";
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft, Maximize2, Minimize2, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 
 const MOBILE_DRAWER_Z_INDEX = 1400;
+const MOBILE_COLLAPSED_HEIGHT = "92px";
 
 export const Sidebar = ({
   open,
@@ -16,6 +17,8 @@ export const Sidebar = ({
   children,
   widthClass = "w-[496px] max-w-full",
   className,
+  minimizable = false,
+  minimizedLabel,
 }: {
   open: boolean;
   onClose: () => void;
@@ -25,13 +28,21 @@ export const Sidebar = ({
   children: React.ReactNode;
   widthClass?: string;
   className?: string;
+  minimizable?: boolean;
+  minimizedLabel?: React.ReactNode;
 }) => {
   const isMobile = useMobile();
-  const [drawerHeight, setDrawerHeight] = useState<"50vh" | "100vh">("100vh");
+  const [drawerHeight, setDrawerHeight] = useState<
+    "collapsed" | "50vh" | "100vh"
+  >("100vh");
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
-  const [startHeight, setStartHeight] = useState<"50vh" | "100vh">("100vh");
+  const [startHeight, setStartHeight] = useState<
+    "collapsed" | "50vh" | "100vh"
+  >("100vh");
+  const [desktopMinimized, setDesktopMinimized] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const isMinimized = minimizable && (isMobile ? drawerHeight === "collapsed" : desktopMinimized);
 
   if (!open) return null;
 
@@ -50,10 +61,14 @@ export const Sidebar = ({
     const deltaY = startY - currentY;
     const threshold = 80; // pixels to trigger height change
 
-    if (deltaY > threshold && startHeight === "50vh") {
+    if (deltaY > threshold && startHeight === "collapsed") {
+      setDrawerHeight("50vh");
+    } else if (deltaY > threshold && startHeight === "50vh") {
       setDrawerHeight("100vh");
     } else if (deltaY < -threshold && startHeight === "100vh") {
       setDrawerHeight("50vh");
+    } else if (deltaY < -threshold && startHeight === "collapsed") {
+      onClose();
     } else if (deltaY < -threshold && startHeight === "50vh") {
       // From half height, dragging down beyond threshold closes the drawer
       onClose();
@@ -70,7 +85,25 @@ export const Sidebar = ({
     if (open && isMobile) {
       setDrawerHeight("100vh");
     }
+    if (open && !isMobile) {
+      setDesktopMinimized(false);
+    }
   }, [open, isMobile]);
+
+  const handleToggleMinimize = () => {
+    if (!minimizable) {
+      return;
+    }
+
+    if (isMobile) {
+      setDrawerHeight((current) =>
+        current === "collapsed" ? "50vh" : "collapsed"
+      );
+      return;
+    }
+
+    setDesktopMinimized((current) => !current);
+  };
 
   // Mobile: Use MUI Drawer
   if (isMobile) {
@@ -83,7 +116,10 @@ export const Sidebar = ({
         sx={{ zIndex: MOBILE_DRAWER_Z_INDEX }}
         PaperProps={{
           sx: {
-            height: drawerHeight,
+            height:
+              drawerHeight === "collapsed"
+                ? MOBILE_COLLAPSED_HEIGHT
+                : drawerHeight,
             borderTopLeftRadius: "16px",
             borderTopRightRadius: "16px",
             transition: "height 0.3s ease-in-out",
@@ -119,14 +155,24 @@ export const Sidebar = ({
           <Box
             className="flex justify-center pt-2 pb-1 cursor-pointer"
             onClick={() =>
-              setDrawerHeight(drawerHeight === "50vh" ? "100vh" : "50vh")
+              setDrawerHeight((current) => {
+                if (current === "collapsed") {
+                  return "50vh";
+                }
+                return current === "50vh" ? "100vh" : "50vh";
+              })
             }
           >
             <Box className="w-12 h-1 bg-brand-muted rounded-full" />
           </Box>
 
           {/* Header */}
-          <Box className="flex items-start border-b border-brand bg-brand rounded-t-2xl p-4 pb-3">
+          <Box
+            className={clsx(
+              "flex border-b border-brand bg-brand rounded-t-2xl",
+              isMinimized ? "items-center p-3" : "items-start p-4 pb-3"
+            )}
+          >
             {showBackButton && onBack && (
               <IconButton
                 onClick={onBack}
@@ -136,7 +182,28 @@ export const Sidebar = ({
                 <ChevronLeft className="h-6 w-6" />
               </IconButton>
             )}
-            <Box className="flex-grow">{headerContent}</Box>
+            <Box className="flex-grow min-w-0">
+              {isMinimized ? (
+                <div className="truncate text-sm font-semibold text-brand">
+                  {minimizedLabel ?? "Panel"}
+                </div>
+              ) : (
+                headerContent
+              )}
+            </Box>
+            {minimizable && (
+              <IconButton
+                onClick={handleToggleMinimize}
+                className="p-2 rounded-full hover:bg-brand-muted text-brand hover:text-brand"
+                aria-label={isMinimized ? "Expand sidebar" : "Minimize sidebar"}
+              >
+                {isMinimized ? (
+                  <Maximize2 className="h-5 w-5" />
+                ) : (
+                  <Minimize2 className="h-5 w-5" />
+                )}
+              </IconButton>
+            )}
             <IconButton
               onClick={onClose}
               className="p-2 rounded-full hover:bg-brand-muted text-brand hover:text-brand"
@@ -147,7 +214,9 @@ export const Sidebar = ({
           </Box>
 
           {/* Content */}
-          <Box className="flex-grow overflow-y-auto min-h-0">{children}</Box>
+          {!isMinimized && (
+            <Box className="flex-grow overflow-y-auto min-h-0">{children}</Box>
+          )}
         </Box>
       </Drawer>
     );
@@ -157,13 +226,18 @@ export const Sidebar = ({
   return (
     <aside
       className={clsx(
-        "fixed top-[80px] left-[20px] max-h-[calc(100vh-100px)] z-50 shadow-2xl rounded-2xl border border-brand bg-white flex flex-col transition-transform duration-300",
-        widthClass,
+        "fixed top-[80px] left-[20px] max-h-[calc(100vh-100px)] z-50 shadow-2xl rounded-2xl border border-brand bg-white flex flex-col transition-all duration-300",
+        isMinimized ? "w-[220px] max-w-[calc(100vw-40px)]" : widthClass,
         className
       )}
     >
-      <div className="flex items-start p-6 pb-4 border-b border-brand sticky top-0 z-10 bg-white rounded-t-2xl">
-        {showBackButton && onBack && (
+      <div
+        className={clsx(
+          "border-b border-brand sticky top-0 z-10 bg-white rounded-t-2xl flex",
+          isMinimized ? "items-center p-3 gap-1" : "items-start p-6 pb-4"
+        )}
+      >
+        {!isMinimized && showBackButton && onBack && (
           <button
             onClick={onBack}
             className="p-1 rounded-full hover:bg-brand-muted text-brand-muted hover:text-brand mr-3"
@@ -172,16 +246,42 @@ export const Sidebar = ({
             <ChevronLeft className="h-6 w-6" />
           </button>
         )}
-        <div className="flex-grow">{headerContent}</div>
+        <div className="flex-grow min-w-0">
+          {isMinimized ? (
+            <div className="truncate text-sm font-semibold text-brand">
+              {minimizedLabel ?? "Panel"}
+            </div>
+          ) : (
+            headerContent
+          )}
+        </div>
+        {minimizable && (
+          <button
+            onClick={handleToggleMinimize}
+            className={clsx(
+              "p-2 rounded-full hover:bg-brand-muted text-brand hover:text-brand",
+              isMinimized ? "" : "ml-auto"
+            )}
+            aria-label={isMinimized ? "Expand sidebar" : "Minimize sidebar"}
+          >
+            {isMinimized ? (
+              <Maximize2 className="h-5 w-5" />
+            ) : (
+              <Minimize2 className="h-5 w-5" />
+            )}
+          </button>
+        )}
         <button
           onClick={onClose}
-          className="p-2 rounded-full hover:bg-brand-muted text-brand hover:text-brand ml-auto"
+          className="p-2 rounded-full hover:bg-brand-muted text-brand hover:text-brand"
           aria-label={sidebar.close}
         >
           <X className="h-6 w-6" />
         </button>
       </div>
-      <div className="flex-grow overflow-y-auto min-h-0">{children}</div>
+      {!isMinimized && (
+        <div className="flex-grow overflow-y-auto min-h-0">{children}</div>
+      )}
     </aside>
   );
 };

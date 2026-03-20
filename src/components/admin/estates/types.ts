@@ -12,6 +12,11 @@ export type EstateRecord = {
   email?: string | null;
   phone?: string | null;
   logoUrl?: string | null;
+  backgroundImageUrl?: string | null;
+  backgroundImageNorth?: number | null;
+  backgroundImageSouth?: number | null;
+  backgroundImageEast?: number | null;
+  backgroundImageWest?: number | null;
   isPrototype?: boolean | null;
   status?: EstateAccessStatus | null;
   hasAccessPassword?: boolean | null;

@@ -16,3 +16,12 @@ export const toTitleCase = (str?: string | null) => {
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
 };
+
+export const normalizeFloorPlanTitle = (str?: string | null) => {
+  if (!str) return "";
+
+  return str.replace(
+    /\b(floor plan)(\s+\1)+\b/gi,
+    (_, term: string) => term
+  );
+};

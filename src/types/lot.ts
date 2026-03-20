@@ -41,11 +41,46 @@ export type LotProperties = {
   WATER_FLAG?: string;
   STAGE?: string;
   LOT_NUMBER?: number;
+  salesMode?: string | null;
+  price?: number | null;
+  selectable?: boolean;
   databaseId?: string;
   areaSqm?: number;
   division?: string;
   estateId?: string;
   lifecycleStage?: string;
+  width?: number | string | null;
+  depth?: number | string | null;
+  frontageType?: string | null;
+  planningId?: string | null;
+  maxHeight?: number | string | null;
+  maxSize?: number | string | null;
+  maxFSR?: string | null;
+  maxStories?: number | string | null;
+  minArea?: number | string | null;
+  minDepth?: number | string | null;
+  frontYardSetback?: string | null;
+  sideYardMinSetback?: string | null;
+  rearYardMinSetback?: string | null;
+  exampleArea?: string | null;
+  exampleLotSize?: string | null;
+  maxFSRUpper?: string | null;
+  apiZoning?: string | null;
+  apiMatches?: Array<{
+    houseDesignId: string;
+    floorplanUrl: string;
+    spacing: {
+      front: number;
+      rear: number;
+      side: number;
+    };
+    maxCoverageArea: number;
+    houseArea: number;
+    lotDimensions: {
+      width: number;
+      depth: number;
+    };
+  }>;
   s1?: number | null;
   s2?: number | null;
   s3?: number | null;
@@ -64,6 +99,9 @@ export type LotData = {
   address?: string;
   zoning?: string;
   size?: string | number;
+  salesMode?: string | null;
+  price?: number | null;
+  lifecycleStage?: string | null;
   type?: string;
   overlays?: string;
   width?: string | number;

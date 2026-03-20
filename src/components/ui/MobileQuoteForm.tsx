@@ -78,7 +78,7 @@ export const MobileQuoteForm = ({
             </button>
           )}
           <h1 className="text-xl font-bold text-gray-900">
-            Get Building Cost Estimate
+            Almost there
           </h1>
         </div>
         <button
@@ -95,7 +95,7 @@ export const MobileQuoteForm = ({
         <div className="space-y-6">
           {/* Description */}
           <p className="text-gray-600 text-sm">
-            Select builders and get cost estimates for your dream home
+            Choose what you would like to do next.
           </p>
 
           {/* Estimated Cost Banner (static example) */}

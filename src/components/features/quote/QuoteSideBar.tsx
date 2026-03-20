@@ -5,7 +5,11 @@ import Input from "@/components/ui/Input";
 import PrivacyPolicyContent from "@/components/ui/PrivacyPolicyContent";
 import Sidebar from "@/components/ui/Sidebar";
 import showToast from "@/components/ui/Toast";
-import { formatContent, quote } from "@/constants/content";
+import {
+  ENQUIRY_FINISHES_OPTIONS,
+  type EnquiryFinishesValue,
+  type EnquiryJourneyValue,
+} from "@/constants/enquiry";
 import {
   trackEnquirySubmitted,
   trackQuoteFormInteraction,
@@ -13,12 +17,12 @@ import {
 import { getImageUrl, submitEnquiry } from "@/lib/api/lotApi";
 import { useUIStore } from "@/stores/uiStore";
 import type {
-  HouseDesignItem,
   GetYourQuoteSidebarProps,
+  HouseDesignItem,
   QuoteFormData,
 } from "@/types/houseDesign";
 import { quoteFormSchema } from "@/types/houseDesign";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 
 const normalizeText = (value: unknown) => {
   if (typeof value !== "string") {
@@ -38,8 +42,8 @@ const resolveBuilderForDesign = (selectedHouseDesign: HouseDesignItem | null) =>
 
   let builderId = normalizeText(selectedHouseDesign.builderId);
   let builderName = normalizeText(selectedHouseDesign.builderName);
-  const designRecord = selectedHouseDesign as unknown as Record<string, unknown>;
-  const rawBuilder = designRecord.builder;
+  const rawBuilder = (selectedHouseDesign as unknown as Record<string, unknown>)
+    .builder;
 
   if (typeof rawBuilder === "string") {
     builderId = builderId || normalizeText(rawBuilder);
@@ -56,28 +60,54 @@ const resolveBuilderForDesign = (selectedHouseDesign: HouseDesignItem | null) =>
   };
 };
 
+const JOURNEY_OPTIONS: Array<{
+  value: EnquiryJourneyValue;
+  title: string;
+  description: string;
+}> = [
+  {
+    value: "secure_block",
+    title: "I want to secure this block",
+    description: "Send this straight to the estate sales agent.",
+  },
+  {
+    value: "pricing_enquiry",
+    title: "I just want pricing for now",
+    description: "Send a qualified pricing request to the builder.",
+  },
+];
+
 export const GetYourQuoteSidebar = ({
   open,
   onClose,
   onBack,
   selectedHouseDesign,
+  selectedFacade,
   lotDetails,
 }: GetYourQuoteSidebarProps) => {
   const [showThankYou, setShowThankYou] = useState(false);
-  const [lotSecured, setLotSecured] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [journeyType, setJourneyType] = useState<EnquiryJourneyValue | null>(
+    null
+  );
+  const [finishesLevel, setFinishesLevel] =
+    useState<EnquiryFinishesValue | null>(null);
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof QuoteFormData | "journeyType" | "finishesLevel", string>>
+  >({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { setHideRotationControls } = useUIStore();
 
-  // Hide rotation controls when thank-you or lot-secured screens are visible
-  React.useEffect(() => {
-    setHideRotationControls(showThankYou || lotSecured);
-    return () => setHideRotationControls(false);
-  }, [showThankYou, lotSecured, setHideRotationControls]);
-  const [showTerms, setShowTerms] = useState(false);
-  const inferredBuilder = resolveBuilderForDesign(selectedHouseDesign);
-  const builderDescription =
-    inferredBuilder.builderLabel ||
-    "Quote requests are sent to the builder linked to this house design.";
+  const inferredBuilder = useMemo(
+    () => resolveBuilderForDesign(selectedHouseDesign),
+    [selectedHouseDesign]
+  );
+
+  const selectedFacadeLabel =
+    selectedFacade?.label || selectedHouseDesign?.images?.[0]?.faced || "N/A";
+  const selectedFacadeId =
+    selectedFacade?.facadeId || selectedHouseDesign?.images?.[0]?.facadeId || "";
   const lotDisplayId =
     lotDetails.displayId !== undefined && lotDetails.displayId !== null
       ? String(lotDetails.displayId)
@@ -87,7 +117,6 @@ export const GetYourQuoteSidebar = ({
       ? String(lotDetails.blockKey)
       : lotDisplayId;
 
-  // Form state
   const [formData, setFormData] = useState<QuoteFormData>({
     yourName: "",
     emailAddress: "",
@@ -96,59 +125,48 @@ export const GetYourQuoteSidebar = ({
     additionalComments: "",
   });
 
-  // Validation errors
-  const [errors, setErrors] = useState<
-    Partial<Record<keyof QuoteFormData, string>>
-  >({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Reset form when sidebar opens
   React.useEffect(() => {
-    if (open) {
-      setFormData({
-        yourName: "",
-        emailAddress: "",
-        phoneNumber: "",
-        selectedBuilders: [],
-        additionalComments: "",
-      });
-      setErrors({});
-      setShowThankYou(false);
-      setLotSecured(false);
+    setHideRotationControls(showThankYou);
+    return () => setHideRotationControls(false);
+  }, [setHideRotationControls, showThankYou]);
+
+  React.useEffect(() => {
+    if (!open) {
+      return;
     }
+
+    setFormData({
+      yourName: "",
+      emailAddress: "",
+      phoneNumber: "",
+      selectedBuilders: [],
+      additionalComments: "",
+    });
+    setErrors({});
+    setShowThankYou(false);
+    setAgreeToTerms(false);
+    setJourneyType(null);
+    setFinishesLevel(null);
   }, [open]);
 
   if (!open) return null;
 
-  const facedOption = selectedHouseDesign?.images[0]?.faced || "N/A";
+  const builderDescription =
+    inferredBuilder.builderLabel ||
+    "No builder is linked to this design yet. Pricing requests will need a linked builder.";
 
-  // Simple cost estimate based on area and a per-sqft range
-  const parseAreaSqFt = (areaStr?: string): number | null => {
-    if (!areaStr) return null;
-    const digits = areaStr.toString().replace(/[^0-9.]/g, "");
-    const value = parseFloat(digits);
-    return Number.isFinite(value) ? value : null;
-  };
+  const isPricingJourney = journeyType === "pricing_enquiry";
+  const submitLabel =
+    journeyType === "secure_block"
+      ? "Secure this block"
+      : "Request detailed quote";
 
-  const areaSqMeter = parseAreaSqFt(selectedHouseDesign?.area);
-  const COST_MIN_PER_SQFT = 2800;
-  const COST_MAX_PER_SQFT = 5500;
-  const formatCurrency = (n: number) =>
-    new Intl.NumberFormat("en-AU", {
-      style: "currency",
-      currency: "AUD",
-      maximumFractionDigits: 0,
-    }).format(n);
-
-  // Handle form field changes
   const handleInputChange = (field: keyof QuoteFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
 
-    // Track form field interaction
     trackQuoteFormInteraction("Field Updated", {
       field,
       hasValue: !!value.trim(),
@@ -163,18 +181,46 @@ export const GetYourQuoteSidebar = ({
     });
   };
 
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // Validate form data
       quoteFormSchema.parse(formData);
-      const builderIds = inferredBuilder.builderIds;
 
-      // Prepare enquiry data for API
-      const enquiryData = {
+      if (!journeyType) {
+        setErrors((prev) => ({
+          ...prev,
+          journeyType: "Select what you would like to do.",
+        }));
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (journeyType === "pricing_enquiry") {
+        if (!finishesLevel) {
+          setErrors((prev) => ({
+            ...prev,
+            finishesLevel: "Select a level of finishes.",
+          }));
+          setIsSubmitting(false);
+          return;
+        }
+        if (inferredBuilder.builderIds.length === 0) {
+          setErrors((prev) => ({
+            ...prev,
+            additionalComments:
+              "This design is not linked to a builder yet, so pricing requests cannot be sent.",
+          }));
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      const builderIds =
+        journeyType === "pricing_enquiry" ? inferredBuilder.builderIds : [];
+
+      await submitEnquiry({
         name: formData.yourName,
         email: formData.emailAddress,
         number: formData.phoneNumber,
@@ -182,13 +228,11 @@ export const GetYourQuoteSidebar = ({
         comments: formData.additionalComments || "",
         lot_id: lotDetails.id.toString(),
         house_design_id: selectedHouseDesign?.id || "",
-        facade_id: "",
-      };
+        facade_id: selectedFacadeId,
+        journey_type: journeyType,
+        finishes_level: finishesLevel || undefined,
+      });
 
-      // Submit enquiry to API
-      await submitEnquiry(enquiryData);
-
-      // Track successful enquiry submission
       trackEnquirySubmitted({
         estateId: lotDetails.estateId,
         lotId: analyticsLotId,
@@ -196,16 +240,16 @@ export const GetYourQuoteSidebar = ({
         houseDesignId: selectedHouseDesign?.id || "",
         houseDesignName: selectedHouseDesign?.title,
         builderName: inferredBuilder.builderLabel,
-        facadeId: null,
+        facadeId: selectedFacadeId || null,
         builder: builderIds,
         builderIds,
         builderId: builderIds[0],
+        journeyType,
       });
 
       setShowThankYou(true);
       setErrors({});
     } catch (error: unknown) {
-      // Handle Zod validation errors
       if (
         error &&
         typeof error === "object" &&
@@ -215,35 +259,33 @@ export const GetYourQuoteSidebar = ({
         const fieldErrors: Partial<Record<keyof QuoteFormData, string>> = {};
         const errorMessage = (error as Record<string, unknown>)
           .message as string;
-        const errors = JSON.parse(errorMessage);
-        if (errors.length) {
-          errors.forEach((err: unknown) => {
+        const parsedErrors = JSON.parse(errorMessage);
+        if (Array.isArray(parsedErrors)) {
+          parsedErrors.forEach((item: unknown) => {
             if (
-              err &&
-              typeof err === "object" &&
-              "path" in err &&
-              Array.isArray(err.path)
+              item &&
+              typeof item === "object" &&
+              "path" in item &&
+              Array.isArray(item.path)
             ) {
-              const field = err.path[0] as keyof QuoteFormData;
-              if ("message" in err && typeof err.message === "string") {
-                fieldErrors[field] = err.message;
+              const field = item.path[0] as keyof QuoteFormData;
+              if ("message" in item && typeof item.message === "string") {
+                fieldErrors[field] = item.message;
               }
             }
           });
         }
-
         setErrors(fieldErrors);
       } else {
-        console.error("Form submission error:", error);
         showToast({
           message: "Failed to submit enquiry. Please try again.",
           type: "error",
           options: { autoClose: 5000 },
         });
-        // Show user-friendly error message
-        setErrors({
+        setErrors((prev) => ({
+          ...prev,
           additionalComments: "Failed to submit enquiry. Please try again.",
-        });
+        }));
       }
     } finally {
       setIsSubmitting(false);
@@ -252,58 +294,11 @@ export const GetYourQuoteSidebar = ({
 
   const headerContent = (
     <>
-      {showThankYou || lotSecured ? (
-        // Show lot info in header for thank you screens
-        <>
-          <h2
-            className="text-2xl font-medium text-brand"
-          >
-            {lotSecured ? "" : ""}
-          </h2>
-          {selectedHouseDesign && (
-            <div>
-              <div className="p-1 flex gap-4 items-center">
-                <img
-                  src={
-                    selectedHouseDesign.floorPlanImage
-                      ? getImageUrl(selectedHouseDesign.floorPlanImage)
-                      : selectedHouseDesign.image
-                  }
-                  alt="Floor Plan"
-                  width={56}
-                  height={56}
-                  className="rounded-lg object-cover"
-                />
-                <div className="flex-1">
-                  <div className="font-bold text-lg">
-                    {selectedHouseDesign.title}
-                  </div>
-                  <div className="text-brand-muted text-sm">
-                    Lot {lotDisplayId}, {lotDetails.suburb} ({lotDetails.size}
-                    m²)
-                  </div>
-                  <div className="text-brand-muted text-sm">
-                    Floor Plan: {selectedHouseDesign.title}
-                  </div>
-                  <div className="text-brand-muted text-sm">
-                    Faced: {facedOption}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          <h2
-            className="text-2xl font-medium text-brand"
-          >
-            {quote.title}
-          </h2>
-          <div className="text-brand-muted mt-1 text-base font-normal">
-            {quote.subtitle}
-          </div>
-        </>
+      <h2 className="text-2xl font-medium text-brand">Almost there</h2>
+      {!showThankYou && (
+        <div className="text-brand-muted mt-1 text-base font-normal">
+          What would you like to do?
+        </div>
       )}
     </>
   );
@@ -317,38 +312,35 @@ export const GetYourQuoteSidebar = ({
         showBackButton={true}
         headerContent={headerContent}
       >
-        {lotSecured ? (
+        {showThankYou ? (
           <div className="p-6 space-y-6">
-            <div className="text-center space-y-4">
-              <div
-                className="w-16 h-16 bg-brand-primary rounded-full flex items-center justify-center mx-auto"
-              >
-                <svg
-                  className="w-8 h-8 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+            <div className="rounded-2xl border border-brand bg-brand-accent p-4 flex gap-4 items-center">
+              <img
+                src={
+                  selectedHouseDesign?.floorPlanImage
+                    ? getImageUrl(selectedHouseDesign.floorPlanImage)
+                    : selectedHouseDesign?.image
+                }
+                alt="Selected design"
+                width={56}
+                height={56}
+                className="rounded-lg object-cover"
+              />
+              <div className="flex-1">
+                <div className="font-bold text-brand">
+                  {selectedHouseDesign?.title || "Selected design"}
+                </div>
+                <div className="text-sm text-brand-muted">{`Lot ${lotDisplayId}`}</div>
+                <div className="text-sm text-brand-muted">
+                  {selectedFacadeLabel !== "N/A"
+                    ? `Facade: ${selectedFacadeLabel}`
+                    : "Facade not selected"}
+                </div>
               </div>
-              <h3 className="text-2xl font-semibold text-brand">
-                {quote.thankYou}
-              </h3>
-              <p className="text-brand-muted">{quote.lotSecured}</p>
             </div>
-          </div>
-        ) : showThankYou ? (
-          <div className="p-6 space-y-6">
+
             <div className="text-center space-y-3">
-              <div
-                className="w-9 h-9 bg-brand-primary rounded-full flex items-center justify-center mx-auto"
-              >
+              <div className="w-9 h-9 bg-brand-primary rounded-full flex items-center justify-center mx-auto">
                 <svg
                   className="w-7 h-7 text-white"
                   fill="none"
@@ -363,260 +355,289 @@ export const GetYourQuoteSidebar = ({
                   />
                 </svg>
               </div>
-              <h4 className="text-2xl font-bold text-brand">
-                {quote.thankYou}
-              </h4>
-              <p className="text-brand-muted">{quote.enquirySubmitted}</p>
-            </div>
-
-            {/* Reserve Your Lot Section */}
-            <div
-              className="border border-brand bg-brand-accent rounded-lg p-6 space-y-4 text-center"
-            >
-              <div className="flex items-center justify-center gap-2">
-                <h1 className="text-lg font-semibold text-brand">
-                  {quote.reserveYourLot}
-                </h1>
-              </div>
-              <p className="text-brand-muted text-sm">
-                {formatContent(quote.secureLotDescription, {
-                  lotId: lotDisplayId,
-                })}
+              <h4 className="text-2xl font-bold text-brand">Thanks</h4>
+              <p className="text-brand-muted">
+                Thanks - you&apos;ll hear from us within 2 business days.
               </p>
-              <div className="text-3xl font-bold text-brand-primary">
-                {quote.deposit}
-              </div>
-              <div className="flex flex-col gap-3 pt-2">
-                <Button
-                  label={quote.secureThisLot}
-                  onClick={async () => {
-                    // Mark lot as secured in UI
-                    setLotSecured(true);
-
-                    // Resend enquiry as HOT LEAD to builders
-                    try {
-                      const enquiryData = {
-                        name: formData.yourName,
-                        email: formData.emailAddress,
-                        number: formData.phoneNumber,
-                        builders: inferredBuilder.builderIds,
-                        comments: `[HOT LEAD] User secured this lot. ${
-                          formData.additionalComments || ""
-                        }`.trim(),
-                        lot_id: lotDetails.id.toString(),
-                        house_design_id: selectedHouseDesign?.id || "",
-                        facade_id: "",
-                        hot_lead: true,
-                      };
-                      await submitEnquiry(enquiryData);
-                    } catch (err) {
-                      // Silently fail to avoid blocking UI; optionally we could surface a toast
-                    }
-                  }}
-                  className="bg-brand-primary text-white py-3 px-6 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
-                />
-                <Button
-                  label={quote.mayBeLater}
-                  variant="outline"
-                  onClick={onClose}
-                  className="border border-brand bg-brand text-brand py-3 px-6 rounded-lg font-medium hover:bg-brand-muted transition-colors"
-                />
-              </div>
             </div>
           </div>
         ) : (
-          // Initial form screen
           <form onSubmit={handleSubmit}>
-            <div className="space-y-4 p-6">
-              {areaSqMeter && (
-                <div className="rounded-2xl p-5 bg-brand-accent">
-                  <div className="text-brand font-semibold text-lg">
-                    Estimated Building Cost
+            <div className="space-y-5 p-6">
+              <div className="rounded-2xl border border-brand bg-brand-accent p-4 flex gap-4 items-center">
+                <img
+                  src={
+                    selectedHouseDesign?.floorPlanImage
+                      ? getImageUrl(selectedHouseDesign.floorPlanImage)
+                      : selectedHouseDesign?.image
+                  }
+                  alt="Selected design"
+                  width={56}
+                  height={56}
+                  className="rounded-lg object-cover"
+                />
+                <div className="flex-1">
+                  <div className="font-bold text-brand">
+                    {selectedHouseDesign?.title || "Selected design"}
                   </div>
-                  <div className="mt-1 text-2xl sm:text-3xl font-extrabold text-brand-primary">
-                    {`${formatCurrency(
-                      areaSqMeter * COST_MIN_PER_SQFT
-                    )} – ${formatCurrency(areaSqMeter * COST_MAX_PER_SQFT)}`}
+                  <div className="text-sm text-brand-muted">
+                    {`Lot ${lotDisplayId}, ${lotDetails.suburb || lotDetails.address || ""}`}
+                  </div>
+                  <div className="text-sm text-brand-muted">
+                    {selectedFacadeLabel !== "N/A"
+                      ? `Facade: ${selectedFacadeLabel}`
+                      : "Facade not selected"}
                   </div>
                 </div>
-              )}
-              <div>
-                <label
-                  htmlFor="yourName"
-                  className="block text-sm font-medium text-brand mb-1"
-                >
-                  {quote.yourName}
-                </label>
-                <Input
-                  type="text"
-                  id="yourName"
-                  value={formData.yourName}
-                  onChange={(e) =>
-                    handleInputChange("yourName", e.target.value)
-                  }
-                  className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
-                    errors.yourName ? "border-red-500" : "border-brand"
-                  }`}
-                  placeholder="Your name"
-                />
-                {errors.yourName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.yourName}</p>
-                )}
               </div>
+
               <div>
-                <label
-                  htmlFor="emailAddress"
-                  className="block text-sm font-medium text-brand mb-1"
-                >
-                  {quote.emailAddress}
-                </label>
-                <Input
-                  type="email"
-                  id="emailAddress"
-                  value={formData.emailAddress}
-                  onChange={(e) =>
-                    handleInputChange("emailAddress", e.target.value)
-                  }
-                  className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
-                    errors.emailAddress ? "border-red-500" : "border-brand"
-                  }`}
-                  placeholder="your.email@company.com"
-                />
-                {errors.emailAddress && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.emailAddress}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label
-                  htmlFor="phoneNumber"
-                  className="block text-sm font-medium text-brand mb-1"
-                >
-                  {quote.phoneNumber}
-                </label>
-                <Input
-                  type="tel"
-                  id="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={(e) =>
-                    handleInputChange("phoneNumber", e.target.value)
-                  }
-                  className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
-                    errors.phoneNumber ? "border-red-500" : "border-brand"
-                  }`}
-                  placeholder="0412 *** ***"
-                />
-                {errors.phoneNumber && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.phoneNumber}
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-brand mb-1">
-                  Builder
-                </label>
-                <div className="rounded-lg border border-brand bg-brand-accent px-3 py-3 text-sm text-brand">
-                  {builderDescription}
+                <div className="text-sm font-medium text-brand mb-2">
+                  What would you like to do?
                 </div>
-              </div>
-              <div>
-                <label
-                  htmlFor="additionalComments"
-                  className="block text-sm font-medium text-brand mb-1"
-                >
-                  {quote.additionalComments}
-                </label>
-                <textarea
-                  id="additionalComments"
-                  rows={3}
-                  value={formData.additionalComments}
-                  onChange={(e) =>
-                    handleInputChange("additionalComments", e.target.value)
-                  }
-                  className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
-                    errors.additionalComments ? "border-red-500" : "border-brand"
-                  }`}
-                  placeholder="Any specific requirements or questions?"
-                ></textarea>
-                {errors.additionalComments && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.additionalComments}
+                <div className="grid gap-3">
+                  {JOURNEY_OPTIONS.map((option) => {
+                    const isActive = journeyType === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`rounded-xl border p-4 text-left transition ${
+                          isActive
+                            ? "border-brand-primary bg-brand-accent"
+                            : "border-brand bg-white hover:border-primary"
+                        }`}
+                        onClick={() => {
+                          setJourneyType(option.value);
+                          setErrors((prev) => ({
+                            ...prev,
+                            journeyType: "",
+                          }));
+                          if (option.value !== "pricing_enquiry") {
+                            setFinishesLevel(null);
+                            setErrors((prev) => ({
+                              ...prev,
+                              finishesLevel: "",
+                            }));
+                          }
+                        }}
+                      >
+                        <div className="font-semibold text-brand">
+                          {option.title}
+                        </div>
+                        <div className="mt-1 text-sm text-brand-muted">
+                          {option.description}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {errors.journeyType && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {errors.journeyType}
                   </p>
                 )}
               </div>
 
-              {selectedHouseDesign && (
-                <div className="mt-6">
-                  <h3 className="text-lg font-semibold text-brand mb-2">
-                    Your Selection
-                  </h3>
-                  <div className="border-t border-brand pt-2">
-                    <div
-                      className="rounded-2xl border border-brand bg-brand-accent p-4 flex gap-4 items-center"
-                    >
-                      <img
-                        src={
-                          getImageUrl(selectedHouseDesign.floorPlanImage) ||
-                          selectedHouseDesign.image
-                        }
-                        alt="Floor Plan"
-                        width={56}
-                        height={56}
-                        className="rounded-lg object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="text-brand text-sm">
-                          Lot {lotDisplayId}, {lotDetails.suburb}
+              {journeyType && (
+                <>
+                  {isPricingJourney && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-brand mb-2">
+                          Level of finishes
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {ENQUIRY_FINISHES_OPTIONS.map((option) => (
+                            <button
+                              key={option.value}
+                              type="button"
+                              className={`rounded-lg border px-3 py-3 text-sm font-medium transition ${
+                                finishesLevel === option.value
+                                  ? "border-brand-primary bg-brand-accent text-brand"
+                                  : "border-brand bg-white text-brand hover:border-primary"
+                              }`}
+                              onClick={() => {
+                                setFinishesLevel(option.value);
+                                setErrors((prev) => ({
+                                  ...prev,
+                                  finishesLevel: "",
+                                }));
+                              }}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
                         </div>
-                        <div className="text-brand text-sm">
-                          Floor Plan: {selectedHouseDesign.title} (
-                          {selectedHouseDesign.area} m²)
-                        </div>
-                        <div className="text-brand text-sm">
-                          Faced: {facedOption}
+                        {errors.finishesLevel && (
+                          <p className="mt-2 text-sm text-red-600">
+                            {errors.finishesLevel}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-brand mb-1">
+                          Builder
+                        </label>
+                        <div className="rounded-lg border border-brand bg-brand-accent px-3 py-3 text-sm text-brand">
+                          {builderDescription}
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+                    </>
+                  )}
 
-              {/* Terms & Conditions Checkbox */}
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id="agreeToTerms"
-                  checked={agreeToTerms}
-                  onCheckedChange={() => setAgreeToTerms(!agreeToTerms)}
-                />
-                <label htmlFor="agreeToTerms" className="text-sm text-brand">
-                  I agree to the{" "}
-                  <a
-                    href="#"
-                    className="text-brand-primary underline hover:text-[var(--color-primary-hover)] transition-colors"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setShowTerms(true);
-                    }}
-                  >
-                    Terms & Conditions
-                  </a>
-                </label>
-              </div>
+                  <div>
+                    <label
+                      htmlFor="yourName"
+                      className="block text-sm font-medium text-brand mb-1"
+                    >
+                      Your Name
+                    </label>
+                    <Input
+                      id="yourName"
+                      value={formData.yourName}
+                      onChange={(event) =>
+                        handleInputChange("yourName", event.target.value)
+                      }
+                      className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
+                        errors.yourName ? "border-red-500" : "border-brand"
+                      }`}
+                      placeholder="Your name"
+                    />
+                    {errors.yourName && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.yourName}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="emailAddress"
+                      className="block text-sm font-medium text-brand mb-1"
+                    >
+                      Email Address
+                    </label>
+                    <Input
+                      type="email"
+                      id="emailAddress"
+                      value={formData.emailAddress}
+                      onChange={(event) =>
+                        handleInputChange("emailAddress", event.target.value)
+                      }
+                      className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
+                        errors.emailAddress ? "border-red-500" : "border-brand"
+                      }`}
+                      placeholder="your.email@company.com"
+                    />
+                    {errors.emailAddress && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.emailAddress}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="phoneNumber"
+                      className="block text-sm font-medium text-brand mb-1"
+                    >
+                      Phone Number
+                    </label>
+                    <Input
+                      type="tel"
+                      id="phoneNumber"
+                      value={formData.phoneNumber}
+                      onChange={(event) =>
+                        handleInputChange("phoneNumber", event.target.value)
+                      }
+                      className={`block w-full h-12 p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
+                        errors.phoneNumber ? "border-red-500" : "border-brand"
+                      }`}
+                      placeholder="0412 *** ***"
+                    />
+                    {errors.phoneNumber && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.phoneNumber}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="additionalComments"
+                      className="block text-sm font-medium text-brand mb-1"
+                    >
+                      Additional Comments
+                    </label>
+                    <textarea
+                      id="additionalComments"
+                      rows={3}
+                      value={formData.additionalComments}
+                      onChange={(event) =>
+                        handleInputChange(
+                          "additionalComments",
+                          event.target.value
+                        )
+                      }
+                      className={`block w-full p-3 border rounded-lg shadow-sm focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent ${
+                        errors.additionalComments
+                          ? "border-red-500"
+                          : "border-brand"
+                      }`}
+                      placeholder="Any specific requirements or questions?"
+                    />
+                    {errors.additionalComments && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {errors.additionalComments}
+                      </p>
+                    )}
+                  </div>
+
+                  {isPricingJourney && (
+                    <p className="text-sm text-brand-muted">
+                      Build cost estimates are indicative only. Final pricing is
+                      subject to detailed assessment by your chosen builder.
+                    </p>
+                  )}
+
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="agreeToTerms"
+                      checked={agreeToTerms}
+                      onCheckedChange={() => setAgreeToTerms(!agreeToTerms)}
+                    />
+                    <label htmlFor="agreeToTerms" className="text-sm text-brand">
+                      I agree to the{" "}
+                      <a
+                        href="#"
+                        className="text-brand-primary underline hover:text-[var(--color-primary-hover)] transition-colors"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setShowTerms(true);
+                        }}
+                      >
+                        Terms & Conditions
+                      </a>
+                    </label>
+                  </div>
+                </>
+              )}
             </div>
-            {/* Submit Button */}
+
             <div className="sticky bottom-0 bg-brand border-t border-brand p-6">
               <Button
-                label={isSubmitting ? quote.submitting : "Enquire Now"}
+                label={isSubmitting ? "Submitting..." : submitLabel}
                 type="submit"
                 className="w-full text-lg py-3 rounded-lg bg-brand-primary text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSubmitting || !agreeToTerms}
+                disabled={isSubmitting || !agreeToTerms || !journeyType}
               />
             </div>
           </form>
         )}
       </Sidebar>
+
       <TextModal
         open={showTerms}
         onClose={() => setShowTerms(false)}

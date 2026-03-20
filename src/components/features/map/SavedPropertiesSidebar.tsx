@@ -281,14 +281,14 @@ const SavedPropertyCard = ({
       </div>
 
       <Button
-        label="Get Cost Estimates"
+        label="Get a detailed quote"
         leftIcon={<MailQuestionMark className="h-4 w-4" />}
         variant="outline"
         onClick={(event) => {
           event.stopPropagation();
           onGetCostEstimate(property);
         }}
-        className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-brand bg-brand py-3 px-4 font-medium text-brand transition-colors hover:border-brand-primary hover:bg-brand-primary hover:text-white"
+        className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-brand bg-brand py-3 px-4 font-medium text-brand transition-colors hover:border-primary hover:bg-primary hover:text-white"
       />
     </div>
   );
@@ -519,8 +519,18 @@ export const SavedPropertiesSidebar = ({
               setIsQuoteSidebarOpen(false);
             }}
             selectedHouseDesign={toHouseDesignItem(quoteProperty.houseDesign)}
+            selectedFacade={
+              quoteProperty.houseDesign.images?.[0]
+                ? {
+                    facadeId: quoteProperty.houseDesign.images[0].facadeId,
+                    label:
+                      quoteProperty.houseDesign.images[0].faced || "Facade 1",
+                  }
+                : null
+            }
             lotDetails={{
               id: quoteProperty.lotId,
+              estateId: quoteProperty.estateId,
               displayId: quoteProperty.lotDisplayId ?? quoteProperty.lotId,
               suburb: quoteProperty.suburb || "",
               address: quoteProperty.address || "",
@@ -600,8 +610,18 @@ export const SavedPropertiesSidebar = ({
             setIsQuoteSidebarOpen(false);
           }}
           selectedHouseDesign={toHouseDesignItem(quoteProperty.houseDesign)}
+          selectedFacade={
+            quoteProperty.houseDesign.images?.[0]
+              ? {
+                  facadeId: quoteProperty.houseDesign.images[0].facadeId,
+                  label:
+                    quoteProperty.houseDesign.images[0].faced || "Facade 1",
+                }
+              : null
+          }
           lotDetails={{
             id: quoteProperty.lotId,
+            estateId: quoteProperty.estateId,
             displayId: quoteProperty.lotDisplayId ?? quoteProperty.lotId,
             suburb: quoteProperty.suburb || "",
             address: quoteProperty.address || "",

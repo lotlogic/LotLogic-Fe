@@ -7,6 +7,8 @@ export interface DatabaseLot {
   blockNumber: number | null;
   sectionNumber: number | null;
   areaSqm: number;
+  salesMode: string | null;
+  price: number | null;
   zoning: string;
   address: string | null;
   district: string | null;
@@ -124,6 +126,11 @@ export interface PublicEstate {
   prototype?: boolean | null;
   isPrototypeEstate?: boolean | null;
   isPrototypeEnabled?: boolean | null;
+  backgroundImageUrl?: string | null;
+  backgroundImageNorth?: number | null;
+  backgroundImageSouth?: number | null;
+  backgroundImageEast?: number | null;
+  backgroundImageWest?: number | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   [key: string]: unknown;
@@ -207,6 +214,8 @@ export interface EnquiryRequest {
   lot_id: string;
   house_design_id: string;
   facade_id: string;
+  journey_type?: string;
+  finishes_level?: string;
   // Optional flags/metadata
   hot_lead?: boolean;
 }
@@ -323,6 +332,13 @@ export const lotApi = {
     } catch (error) {
       throw error;
     }
+  },
+
+  async getEstateById(estateId: string): Promise<PublicEstate> {
+    const response = await axios.get(
+      `${getApiBaseUrl()}/estate/${encodeURIComponent(estateId)}`
+    );
+    return response.data;
   },
 
   async getEstateAccess(estateId: string): Promise<EstateAccessState> {

@@ -141,7 +141,7 @@ type CsvImportResult = {
 };
 
 const CSV_IMPORT_TEMPLATE = `id,name,floorplanUrl,bedrooms,bathrooms,garages,areaSqm,width,depth,rumpus,alfresco,pergola,storeys,buildingHeight_m,roofPitch_deg,architecturalStyle,hasFrontFacingServiceAreas,facades
-,Acacia 21,https://cdn.example.com/floorplans/acacia-21.pdf,4,2,2,210,12.5,18.2,true,true,false,1,8.9,22.5,"Contemporary,Coastal",false,"https://cdn.example.com/facades/acacia-modern.jpg,https://cdn.example.com/facades/acacia-classic.jpg"`;
+,Acacia 21,https://cdn.example.com/floorplans/acacia-21.jpg,4,2,2,210,12.5,18.2,true,true,false,1,8.9,22.5,"Contemporary,Coastal",false,"https://cdn.example.com/facades/acacia-modern.jpg,https://cdn.example.com/facades/acacia-classic.jpg"`;
 
 const parseCsvRecords = (text: string): Record<string, string>[] => {
   const rows: string[][] = [];
@@ -1369,8 +1369,8 @@ export const FloorPlanCrud = ({
                 }
                 required
                 folder="floorplans"
-                accept="application/pdf,image/*"
-                helperText="PDF or image files are supported."
+                accept="image/*"
+                helperText="Upload marketing-ready image files only. PDFs, sketches, and architectural drawings are not allowed."
               />
             </div>
             <div className="grid gap-4 md:grid-cols-3">

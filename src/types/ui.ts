@@ -59,7 +59,7 @@ export interface SavedProperty {
     builderName?: string;
     width?: number;
     depth?: number;
-    images?: { src: string; faced: string }[];
+    images?: { src: string; faced: string; facadeId?: string }[];
     floorPlanImage?: string;
     area?: string;
     bedrooms: number;

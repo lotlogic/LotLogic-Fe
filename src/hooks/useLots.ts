@@ -2,6 +2,50 @@ import { useQuery } from "@tanstack/react-query";
 import { lotApi, type DatabaseLot } from "../lib/api/lotApi";
 import { normalizeLotLifecycle } from "@/constants/lotLifecycle";
 
+const compactCurrencyFormatter = new Intl.NumberFormat("en-AU", {
+  style: "currency",
+  currency: "AUD",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+const formatLotLabelPrice = (value: number | null | undefined) => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return compactCurrencyFormatter
+    .format(value)
+    .replace(".0K", "K")
+    .replace(".0M", "M");
+};
+
+const formatLotLabelSize = (value: number | null | undefined) => {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  return `${Math.round(value)}m²`;
+};
+
+const buildDetailedLotLabel = ({
+  lotNumber,
+  areaSqm,
+  price,
+}: {
+  lotNumber: string;
+  areaSqm?: number | null;
+  price?: number | null;
+}) => {
+  const sizeLabel = formatLotLabelSize(areaSqm);
+  const priceLabel = formatLotLabelPrice(price);
+  const metadataLines = [sizeLabel, priceLabel].filter(Boolean);
+
+  return metadataLines.length > 0
+    ? `${lotNumber}\n${metadataLines.join("\n")}`
+    : lotNumber;
+};
+
 export const useLots = (estateId?: string) => {
   return useQuery({
     queryKey: ["lots", estateId ?? "all"],
@@ -16,12 +60,13 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
     type: "FeatureCollection" as const,
     features: lots.reduce<GeoJSON.Feature[]>((acc, lot) => {
       const lifecycleStage = normalizeLotLifecycle(lot.lifecycleStage);
-      if (lifecycleStage !== "available") {
-        return acc;
-      }
-
       const lotId = String(lot.id);
       const lotNumber = lot.blockNumber != null ? String(lot.blockNumber) : lotId;
+      const detailedLotLabel = buildDetailedLotLabel({
+        lotNumber,
+        areaSqm: lot.areaSqm,
+        price: lot.price,
+      });
 
       // ---- Extract s1..s4 and check exact match ----
       const propsArr = lot?.geojson?.properties || [];
@@ -41,6 +86,7 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
       const s4 = propsArr.find((o) => "s4" in o)?.s4 ?? null;
 
       const isRed = hasExactS1S2S3S4;
+      const selectable = lifecycleStage !== "sold";
 
       acc.push({
         type: "Feature" as const,
@@ -52,11 +98,16 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
           DISTRICT_NAME: lot.district ?? "",
           LAND_USE_POLICY_ZONES: lot.zoning ?? "unknown",
           OVERLAY_PROVISION_ZONES: lot.overlays?.join(", ") ?? "",
+          lotLabel: lotNumber,
+          lotLabelDetailed: detailedLotLabel,
           LOT_NUMBER: lotNumber,
           STAGE: lifecycleStage,
           ID: lotId,
           BLOCK_NUMBER: lot.blockNumber ?? null,
           SECTION_NUMBER: lot.sectionNumber ?? null,
+          salesMode: lot.salesMode,
+          price: lot.price,
+          selectable,
           DISTRICT_CODE: 1,
           OBJECTID: lotId,
           databaseId: lotId,

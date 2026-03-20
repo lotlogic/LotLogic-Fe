@@ -5,6 +5,11 @@ export interface HouseDesignImage {
   faced: string;
 }
 
+export interface SelectedFacadeOption {
+  facadeId?: string;
+  label: string;
+}
+
 export interface HouseDesignItem {
   id: string;
   title: string;
@@ -53,6 +58,9 @@ export interface HouseDesignListProps {
     size: string | number;
     zoning: string;
     overlays: string;
+    lifecycleStage?: string | null;
+    salesMode?: string | null;
+    price?: number | null;
   };
   onShowFilter: () => void;
   onDesignClick: (design: HouseDesignItem | null) => void;
@@ -66,6 +74,7 @@ export interface GetYourQuoteSidebarProps {
   onClose: () => void;
   onBack?: () => void;
   selectedHouseDesign: HouseDesignItem | null;
+  selectedFacade?: SelectedFacadeOption | null;
   lotDetails: {
     id: string | number;
     estateId?: string | number;
@@ -74,6 +83,9 @@ export interface GetYourQuoteSidebarProps {
     suburb: string;
     address: string;
     size?: number;
+    lifecycleStage?: string | null;
+    salesMode?: string | null;
+    price?: number | null;
   };
 }
 

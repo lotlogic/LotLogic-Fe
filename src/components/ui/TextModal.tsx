@@ -67,7 +67,7 @@ export const TextModal: React.FC<TextModalProps> = ({
             {title && (
               <Typography
                 variant="h6"
-                component="h2"
+                component="span"
                 sx={{
                   fontSize: "18px",
                   fontWeight: 600,

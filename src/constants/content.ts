@@ -31,10 +31,10 @@ export const APP_CONTENT = {
 
   // Lot sidebar content
   lotSidebar: {
-    buildYourSite: "Build Your Site",
-    houseDesigns: "House Designs",
+    buildYourSite: "What can I build here?",
+    houseDesigns: "Design Matches",
     planningRules: "Planning Rules",
-    showMeWhatICanBuild: "Show Me What I Can Build Here",
+    showMeWhatICanBuild: "What can I build here?",
     lotId: "Lot ID",
     area: "Area",
     type: "Type",
@@ -47,11 +47,11 @@ export const APP_CONTENT = {
 
   // House design content
   houseDesign: {
-    title: "House Designs",
+    title: "Design Matches",
     filter: "Filter",
     reset: "Reset",
-    showHouseDesign: "Show House Design",
-    enquireNow: "Get Cost Estimates",
+    showHouseDesign: "Show me the designs",
+    enquireNow: "Get a detailed quote",
     bedrooms: "Bedrooms",
     bathrooms: "Bathrooms",
     cars: "Cars",
@@ -65,8 +65,8 @@ export const APP_CONTENT = {
 
   // Quote sidebar content
   quote: {
-    title: "Get Building Cost Estimate",
-    subtitle: "Get a quote for this builder's house design",
+    title: "Almost there",
+    subtitle: "What would you like to do?",
     yourName: "Your Name",
     emailAddress: "Email Address",
     phoneNumber: "Phone Number",
@@ -76,7 +76,7 @@ export const APP_CONTENT = {
     submit: "Submit",
     submitting: "Submitting...",
     thankYou: "Thank You!",
-    enquirySubmitted: "Your enquiry has been successfully submitted.",
+    enquirySubmitted: "Thanks - you'll hear from us within 2 business days.",
     lotSecured:
       "Your lot has been successfully secured and is now reserved for your review.",
     reserveYourLot: "Reserve Your Lot Today",
