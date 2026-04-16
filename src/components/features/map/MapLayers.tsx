@@ -1327,7 +1327,7 @@ export const MapLayers = ({
         !showFacadeModal
       ) {
         const fsrAreaLabel = new mapboxgl.Marker({
-          element: createSValueLabel(`${Math.round(desired)} m² FSR`, "center"),
+          element: createSValueLabel(`${Math.round(desired)} m²`, "center"),
           anchor: "center",
         })
           .setLngLat(innerCenter.geometry.coordinates as [number, number])

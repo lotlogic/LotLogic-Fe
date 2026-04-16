@@ -121,10 +121,13 @@ export const HouseDesignList = ({
   filter,
   lot,
   onShowFilter,
+  onShowAllDesigns,
   onDesignClick,
   onEnquireNow,
   onViewFloorPlan,
   onViewFacades,
+  hasActiveFilters = false,
+  showingAllDesigns = false,
 }: HouseDesignListProps) => {
   const [selectedDesignId, setSelectedDesignId] = useState<string | null>(null);
   const [mediaIndexByDesignId, setMediaIndexByDesignId] = useState<
@@ -170,7 +173,7 @@ export const HouseDesignList = ({
     error,
   } = useHouseDesigns(
     lot.lotDbId?.toString() || lot.lotId?.toString() || null,
-    apiFilters,
+    showingAllDesigns ? null : apiFilters,
     true
   );
 
@@ -443,6 +446,9 @@ export const HouseDesignList = ({
 
   // Show no results state - simplified condition
   if (!isLoading && filteredHouses.length === 0) {
+    const canShowAllDesigns =
+      hasActiveFilters && !showingAllDesigns && !!onShowAllDesigns;
+
     return (
       <div className="p-6 overflow-y-auto h-full">
         <div className="flex items-center justify-center h-full">
@@ -464,18 +470,33 @@ export const HouseDesignList = ({
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-brand mb-2">
-                No House Designs Found
+                {canShowAllDesigns
+                  ? "No Exact Design Matches"
+                  : "No House Designs Found"}
               </h3>
               <p className="text-brand-muted mb-4">
-                We couldn't find any house designs matching your current
-                criteria. Try adjusting your filters to see more options.
+                {canShowAllDesigns
+                  ? "Nothing matched the preferences you selected for this block. You can adjust them or view all compatible designs instead."
+                  : "We couldn't find any house designs matching your current criteria. Try adjusting your filters to see more options."}
               </p>
             </div>
             <div className="space-y-3">
+              {canShowAllDesigns && (
+                <Button
+                  label="Show all designs"
+                  onClick={onShowAllDesigns}
+                  className="w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
+                />
+              )}
               <Button
-                label="Adjust Filters"
+                label={canShowAllDesigns ? "Adjust preferences" : "Adjust Filters"}
                 onClick={onShowFilter}
-                className="w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
+                variant={canShowAllDesigns ? "outline" : undefined}
+                className={
+                  canShowAllDesigns
+                    ? "w-full border border-brand text-brand py-2 px-4 rounded-lg font-medium hover:bg-brand-muted transition-colors"
+                    : "w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
+                }
               />
               <div className="text-sm text-brand-muted">
                 <p className="mb-2">Try these suggestions:</p>
@@ -497,11 +518,17 @@ export const HouseDesignList = ({
     <div className="p-6 overflow-y-auto h-full">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="text-xl font-bold text-brand">Design Matches</div>
+          <div className="text-xl font-bold text-brand">
+            {showingAllDesigns ? "All Compatible Designs" : "Design Matches"}
+          </div>
           <div className="text-sm text-brand-muted">
-            {`${filteredHouses.length} design${
-              filteredHouses.length === 1 ? "" : "s"
-            } work on this block`}
+            {showingAllDesigns
+              ? `${filteredHouses.length} design${
+                  filteredHouses.length === 1 ? "" : "s"
+                } available on this block`
+              : `${filteredHouses.length} design${
+                  filteredHouses.length === 1 ? "" : "s"
+                } match your preferences`}
           </div>
         </div>
         <Button
@@ -512,6 +539,12 @@ export const HouseDesignList = ({
           onClick={onShowFilter}
         />
       </div>
+      {showingAllDesigns && hasActiveFilters && (
+        <div className="mb-4 rounded-xl border border-brand bg-brand-accent px-4 py-3 text-sm text-brand">
+          Your selected preferences returned no exact matches, so you&apos;re
+          viewing every compatible design for this block.
+        </div>
+      )}
       <div className="space-y-6">
         {filteredHouses.map((house) => {
           const normalizedTitle = normalizeFloorPlanTitle(house.title);

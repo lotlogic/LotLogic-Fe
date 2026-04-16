@@ -59,8 +59,9 @@ export const LotSidebar = ({
     setShowFacadeModal,
   } = useModalStore();
 
-  const [showFilter, setShowFilter] = React.useState(false);
+  const [showFilter, setShowFilter] = React.useState(true);
   const [showHouseDesigns, setShowHouseDesigns] = React.useState(false);
+  const [showAllDesigns, setShowAllDesigns] = React.useState(false);
   const [selectedHouseDesignForModals, setSelectedHouseDesignForModals] =
     React.useState<HouseDesignItem | null>(null);
   const [selectedFacadeByDesignId, setSelectedFacadeByDesignId] =
@@ -131,16 +132,18 @@ export const LotSidebar = ({
     max_size,
     min_size,
   ]);
+  const activeHouseDesignFilters = showAllDesigns ? null : filtersToPass;
 
   const { data: houseDesignsData } = useHouseDesigns(
     lotId,
-    filtersToPass,
+    activeHouseDesignFilters,
     showHouseDesigns
   );
 
   useEffect(() => {
-    setShowFilter(false);
+    setShowFilter(true);
     setShowHouseDesigns(false);
+    setShowAllDesigns(false);
     setSelectedHouseDesignForModals(null);
     setSelectedFacadeByDesignId({});
     setQuoteDesign(null);
@@ -192,7 +195,28 @@ export const LotSidebar = ({
   });
   const isSold = lot.lifecycleStage === "sold";
 
+  const openSummaryView = () => {
+    setShowFilter(false);
+    setShowHouseDesigns(false);
+    setShowAllDesigns(false);
+    setSelectedHouseDesignForModals(null);
+  };
+
+  const openPreferencesView = () => {
+    setShowFilter(true);
+    setShowHouseDesigns(false);
+    setSelectedHouseDesignForModals(null);
+  };
+
   const handleShowHouseDesign = () => {
+    setShowAllDesigns(false);
+    setShowHouseDesigns(true);
+    setShowFilter(false);
+    setSelectedHouseDesignForModals(null);
+  };
+
+  const handleShowAllDesigns = () => {
+    setShowAllDesigns(true);
     setShowHouseDesigns(true);
     setShowFilter(false);
     setSelectedHouseDesignForModals(null);
@@ -204,11 +228,10 @@ export const LotSidebar = ({
       setQuoteDesign(null);
       setQuoteSelectedFacade(null);
       setShowHouseDesigns(true);
-    } else if (showFilter) {
-      setShowFilter(false);
-      setShowHouseDesigns(true);
     } else if (showHouseDesigns) {
-      setShowHouseDesigns(false);
+      openPreferencesView();
+    } else if (showFilter) {
+      openSummaryView();
     }
     setShowFloorPlanModal(false);
     setShowFacadeModal(false);
@@ -307,9 +330,11 @@ export const LotSidebar = ({
   const showBackArrow = showFilter || showHouseDesigns || showQuoteSidebar;
   const designMatchCount = houseDesignsData?.houseDesigns?.length ?? 0;
   const minimizedLabel = showFilter
-    ? "Design Filters"
+    ? "Set Preferences"
     : showHouseDesigns
-    ? "Design Matches"
+    ? showAllDesigns
+      ? "All Designs"
+      : "Design Matches"
     : `Lot ${displayLotId}`;
 
   const headerContent = (
@@ -317,19 +342,26 @@ export const LotSidebar = ({
       {showFilter ? (
         <>
           <h2 className="text-2xl font-medium text-brand">
-            What are you looking for?
+            Set your preferences
           </h2>
           <div className="text-brand-muted mt-1 text-base font-normal">
-            We&apos;ll show you every design that works on this block.
+            Choose what matters for Lot {displayLotId}, then we&apos;ll show
+            matching designs.
           </div>
         </>
       ) : showHouseDesigns ? (
         <>
-          <h2 className="text-2xl font-medium text-brand">Design Matches</h2>
+          <h2 className="text-2xl font-medium text-brand">
+            {showAllDesigns ? "All Compatible Designs" : "Design Matches"}
+          </h2>
           <div className="text-brand-muted mt-1 text-base font-normal">
-            {`${designMatchCount} design${
-              designMatchCount === 1 ? "" : "s"
-            } work on this block`}
+            {showAllDesigns
+              ? `Showing ${designMatchCount} design${
+                  designMatchCount === 1 ? "" : "s"
+                } that work on this block`
+              : `${designMatchCount} design${
+                  designMatchCount === 1 ? "" : "s"
+                } match your preferences`}
           </div>
           <div className="mt-3 flex flex-nowrap items-center gap-2 overflow-x-auto text-xs font-normal">
             {lot.size && (
@@ -406,13 +438,19 @@ export const LotSidebar = ({
                 price: lot.price,
               }}
               onShowFilter={() => {
+                setShowAllDesigns(false);
                 setShowHouseDesigns(false);
                 setShowFilter(true);
               }}
+              onShowAllDesigns={
+                hasAnyFilters ? handleShowAllDesigns : undefined
+              }
               onDesignClick={handleDesignSelectedInList}
               onEnquireNow={handleEnquireNow}
               onViewFloorPlan={handleViewFloorPlanClick}
               onViewFacades={handleViewFacadesClick}
+              hasActiveFilters={hasAnyFilters}
+              showingAllDesigns={showAllDesigns}
             />
           ) : showFilter ? (
             <FilterSectionWithSingleLineSliders
@@ -443,18 +481,15 @@ export const LotSidebar = ({
               <div className="bg-white rounded-xl shadow border border-brand p-6">
                 <div className="text-left mb-4">
                   <p className="text-brand-muted text-base font-medium">
-                    Match house designs to this block
+                    Choose your preferences before viewing matching designs
                   </p>
                 </div>
 
                 <Button
-                  label="What can I build here?"
+                  label="Set preferences"
                   rightIcon={<ArrowRight className="h-6 w-8" />}
                   className="w-full text-base py-4 rounded-xl font-semibold animated-gradient-button transition-all duration-300 shadow-md cursor-pointer"
-                  onClick={() => {
-                    setShowHouseDesigns(true);
-                    setShowFilter(false);
-                  }}
+                  onClick={openPreferencesView}
                   disabled={isSold}
                 />
               </div>

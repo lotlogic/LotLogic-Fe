@@ -63,10 +63,13 @@ export interface HouseDesignListProps {
     price?: number | null;
   };
   onShowFilter: () => void;
+  onShowAllDesigns?: () => void;
   onDesignClick: (design: HouseDesignItem | null) => void;
   onEnquireNow?: (design: HouseDesignItem) => void;
   onViewFloorPlan?: (design: HouseDesignItem) => void;
   onViewFacades?: (design: HouseDesignItem, initialIndex?: number) => void;
+  hasActiveFilters?: boolean;
+  showingAllDesigns?: boolean;
 }
 
 export interface GetYourQuoteSidebarProps {

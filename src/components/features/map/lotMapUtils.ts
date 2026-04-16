@@ -80,18 +80,19 @@ export const focusMapOnLot = (
     ] as [[number, number], [number, number]];
 
     map.fitBounds(bounds, {
-      padding: 50,
-      maxZoom: 25,
-      duration: 1000,
+      padding: 110,
+      maxZoom: 17.6,
+      duration: 1400,
     });
     return;
   }
 
   if (fallbackCenter) {
+    const currentZoom = map.getZoom() || 15.5;
     map.flyTo({
       center: fallbackCenter,
-      zoom: Math.max(map.getZoom() || 16, 16),
-      duration: 1000,
+      zoom: Math.min(Math.max(currentZoom + 0.35, 15.5), 17.25),
+      duration: 1400,
     });
   }
 };
