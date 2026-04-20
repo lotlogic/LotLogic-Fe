@@ -42,6 +42,43 @@ const addFrontageMidpointMarker = (map: Map, coordinates: [number, number]) => {
   new mapboxgl.Marker(markerEl).setLngLat(coordinates).addTo(map);
 };
 
+const parseFrontageLineCoordinates = (frontageData: unknown) => {
+  if (!frontageData) {
+    return null;
+  }
+
+  try {
+    const parsed =
+      typeof frontageData === "string" ? JSON.parse(frontageData) : frontageData;
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      (parsed as { type?: unknown }).type !== "LineString" ||
+      !Array.isArray((parsed as { coordinates?: unknown }).coordinates)
+    ) {
+      return null;
+    }
+
+    const coordinates = (parsed as { coordinates: unknown[] }).coordinates
+      .map((coordinate) =>
+        Array.isArray(coordinate) &&
+        coordinate.length >= 2 &&
+        Number.isFinite(Number(coordinate[0])) &&
+        Number.isFinite(Number(coordinate[1]))
+          ? ([Number(coordinate[0]), Number(coordinate[1])] as [
+              number,
+              number,
+            ])
+          : null
+      )
+      .filter(Boolean) as [number, number][];
+
+    return coordinates.length >= 2 ? coordinates : null;
+  } catch {
+    return null;
+  }
+};
+
 // -----------------------------
 // Props
 // -----------------------------
@@ -282,46 +319,26 @@ export const MapControls = ({
         ?.frontageCoordinate;
       // console.log("🔍 Raw frontage data:", frontageData);
 
-      if (frontageData && typeof frontageData === "string") {
-        try {
-          // Parse GeoJSON format: "{\"type\":\"LineString\",\"coordinates\":[[148.9246407,-34.8503355],[148.924815,-34.8504019]]}"
-          const parsedFrontage = JSON.parse(frontageData);
-          if (
-            parsedFrontage.type === "LineString" &&
-            parsedFrontage.coordinates &&
-            parsedFrontage.coordinates.length >= 2
-          ) {
-            const coords = parsedFrontage.coordinates as [number, number][];
-            const line = turf.lineString(coords);
-            const totalLength = turf.length(line, { units: "meters" });
-            const frontageMidpoint =
-              totalLength > 0
-                ? (turf.along(line, totalLength / 2, { units: "meters" })
-                    .geometry.coordinates as [number, number])
-                : (coords[0] as [number, number]);
-            // console.log("🏘️ Lot Frontage Midpoint (from API):", frontageMidpoint);
+      const frontageCoordinates = parseFrontageLineCoordinates(frontageData);
 
-            // Add marker to map to show frontage midpoint
-            addFrontageMidpointMarker(map, frontageMidpoint);
+      if (frontageCoordinates) {
+        const line = turf.lineString(frontageCoordinates);
+        const totalLength = turf.length(line, { units: "meters" });
+        const frontageMidpoint =
+          totalLength > 0
+            ? (turf.along(line, totalLength / 2, { units: "meters" }).geometry
+                .coordinates as [number, number])
+            : frontageCoordinates[0];
 
-            // Set global lot frontage midpoint for distance calculations
-            setGlobalLotFrontageMidpoint(frontageMidpoint);
-          } else {
-            console.log("❌ Invalid LineString format in frontage data");
-            showToast({
-              message: "Invalid LineString format in frontage data",
-              type: "error",
-              options: { autoClose: 4000 },
-            });
-          }
-        } catch (error) {
-          console.log("❌ Error parsing frontage JSON:", error);
-          showToast({
-            message: "Error parsing frontage JSON",
-            type: "error",
-            options: { autoClose: 4000 },
-          });
-        }
+        addFrontageMidpointMarker(map, frontageMidpoint);
+        setGlobalLotFrontageMidpoint(frontageMidpoint);
+      } else if (frontageData) {
+        console.log("❌ Invalid LineString format in frontage data");
+        showToast({
+          message: "Invalid LineString format in frontage data",
+          type: "error",
+          options: { autoClose: 4000 },
+        });
       } else {
         // Fallback: Calculate lot frontage midpoint (midpoint of the longest side)
         const geometry = f.geometry as GeoJSON.Polygon;

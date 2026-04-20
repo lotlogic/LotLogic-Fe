@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import type { FloorPlan } from "./houseDesign";
 
+export type LotFrontageCoordinate = GeoJSON.LineString | string | null;
+
 export interface LotSidebarProps {
   open: boolean;
   onClose: () => void;
@@ -87,7 +89,7 @@ export type LotProperties = {
   s4?: number | null;
   hasExactS1S2S3S4?: boolean;
   isRed?: boolean;
-  frontageCoordinate?: string | null;
+  frontageCoordinate?: LotFrontageCoordinate;
 };
 
 export type LotData = {

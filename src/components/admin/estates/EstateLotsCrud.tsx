@@ -46,6 +46,7 @@ export type EstateLotRecord = {
   overlays?: string[] | null;
   geojson?: Record<string, unknown> | null;
   geometry?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
+  frontageCoordinate?: GeoJSON.LineString | string | null;
   frontageM?: number | null;
   lotType?: string | null;
   roadFacing?: string | null;
@@ -1521,6 +1522,16 @@ export const EstateLotsCrud = ({
       setLotSaving(false);
       return;
     }
+    const normalizedFrontageCoordinate = normalizeOptional(
+      lotForm.frontageCoordinate
+    );
+    if (normalizedFrontageCoordinate && !frontageLine) {
+      setLotFormError(
+        "Frontage coordinate must be a valid GeoJSON LineString."
+      );
+      setLotSaving(false);
+      return;
+    }
     const lotMetadata = {
       type: trimmedLotType,
       frontageType: normalizeOptional(lotForm.frontageType),
@@ -1537,12 +1548,17 @@ export const EstateLotsCrud = ({
       rearYardMinSetback: normalizeOptional(lotForm.rearYardMinSetback),
       exampleArea: normalizeOptional(lotForm.exampleArea),
       exampleLotSize: normalizeOptional(lotForm.exampleLotSize),
-      frontageCoordinate: normalizeOptional(lotForm.frontageCoordinate),
+      frontageCoordinate: normalizedFrontageCoordinate,
       highFall: lotForm.highFall,
     };
 
     const hasMetadataValue = Object.entries(lotMetadata)
-      .filter(([key]) => key !== "highFall" && key !== "type")
+      .filter(
+        ([key]) =>
+          key !== "highFall" &&
+          key !== "type" &&
+          key !== "frontageCoordinate"
+      )
       .some(([, value]) => value !== null && value !== undefined && value !== "");
     const sValues = [
       s1Result.value,
@@ -1573,6 +1589,12 @@ export const EstateLotsCrud = ({
       lotType: trimmedLotType,
       roadFacing: normalizeOptional(lotForm.roadFacing),
       precinct: normalizeOptional(lotForm.precinct),
+      frontageCoordinate: normalizedFrontageCoordinate
+        ? {
+            type: "LineString",
+            coordinates: frontageLine,
+          }
+        : null,
     };
 
     if (geojsonValue.data === null) {

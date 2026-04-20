@@ -1,5 +1,6 @@
 // API service for lot-related operations
 import axios from "axios";
+import type { LotFrontageCoordinate } from "@/types/lot";
 
 export interface DatabaseLot {
   id: string;
@@ -26,7 +27,7 @@ export interface DatabaseLot {
   createdAt: string;
   updatedAt: string;
   geometry: GeoJSON.Polygon; // This will be extracted from geojson
-  frontageCoordinate?: string | null; // Frontage coordinate as GeoJSON LineString
+  frontageCoordinate?: LotFrontageCoordinate;
   zoningSetbacks?: {
     frontSetback: number;
     rearSetback: number;
