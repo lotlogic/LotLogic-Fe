@@ -3,9 +3,10 @@ import { getImageUrlWithCorsProxy } from "@/lib/api/lotApi";
 import {
   createLocalProjectionFromRing,
   createSValueLabel,
-  insetQuadPerSideLL,
+  intersectLines,
   mapSValuesToSides,
   polygonOrientation,
+  projectPointToLocal,
   projectRingToLocal,
   unprojectPointFromLocal,
   unprojectRingFromLocal,
@@ -32,8 +33,21 @@ interface HouseBoundaryData {
 }
 
 type PlacementRingResult = {
-  ring: [Pt, Pt, Pt, Pt, Pt];
+  ring: Pt[];
   frontageAligned: boolean;
+};
+
+type PlacementBasis = {
+  basisRing: Pt[];
+  toLngLat: (point: Pt) => Pt;
+};
+
+const toClosedQuadRing = (ring: Pt[]): [Pt, Pt, Pt, Pt, Pt] | null => {
+  if (ring.length !== 5) {
+    return null;
+  }
+
+  return [ring[0], ring[1], ring[2], ring[3], ring[0]];
 };
 
 const normalizeClosedQuadRing = (
@@ -49,6 +63,34 @@ const normalizeClosedQuadRing = (
   }
 
   return [openRing[0], openRing[1], openRing[2], openRing[3], openRing[0]];
+};
+
+const normalizeClosedRing = (ring: [number, number][]): Pt[] | null => {
+  if (!Array.isArray(ring) || ring.length < 4) {
+    return null;
+  }
+
+  const openRing = ring
+    .map((point) => [Number(point[0]), Number(point[1])] as Pt)
+    .filter(
+      (point) => Number.isFinite(point[0]) && Number.isFinite(point[1])
+    );
+
+  if (openRing.length < 3) {
+    return null;
+  }
+
+  const first = openRing[0];
+  const last = openRing[openRing.length - 1];
+  const isClosed =
+    Math.abs(first[0] - last[0]) < 1e-9 && Math.abs(first[1] - last[1]) < 1e-9;
+  const normalizedOpenRing = isClosed ? openRing.slice(0, -1) : openRing;
+
+  if (normalizedOpenRing.length < 3) {
+    return null;
+  }
+
+  return [...normalizedOpenRing, normalizedOpenRing[0]];
 };
 
 const parseFrontageLineCoordinates = (frontageCoordinate: unknown): Pt[] | null => {
@@ -105,6 +147,20 @@ const rotateRingToStartAtEdge = (
   ];
 };
 
+const rotateClosedRingToStartAtEdge = (
+  ring: Pt[],
+  edgeIndex: number
+): Pt[] => {
+  const openRing = ring.slice(0, -1);
+  const totalEdges = openRing.length;
+  const start = ((edgeIndex % totalEdges) + totalEdges) % totalEdges;
+  const rotated = Array.from(
+    { length: totalEdges },
+    (_, index) => openRing[(start + index) % totalEdges]
+  );
+  return [...rotated, rotated[0]];
+};
+
 const getFrontageMidpoint = (frontageLine: Pt[]): Pt => {
   const line = turf.lineString(frontageLine);
   const totalLength = turf.length(line, { units: "meters" });
@@ -120,11 +176,19 @@ const getParallelBearingDifference = (bearingA: number, bearingB: number) => {
   return Math.min(rawDiff, Math.abs(rawDiff - 180));
 };
 
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
+
+const dot = (a: Pt, b: Pt) => a[0] * b[0] + a[1] * b[1];
+
+const roundPlacementValue = (value: number) =>
+  Number.isFinite(value) ? Number(value.toFixed(4)) : value;
+
 const getPlacementRing = (
   selectedLot: mapboxgl.MapboxGeoJSONFeature & { properties: LotProperties }
 ): PlacementRingResult | null => {
   const geometry = selectedLot.geometry as GeoJSON.Polygon;
-  const normalizedRing = normalizeClosedQuadRing(
+  const normalizedRing = normalizeClosedRing(
     geometry.coordinates[0] as [number, number][]
   );
   if (!normalizedRing) {
@@ -147,7 +211,7 @@ const getPlacementRing = (
   let bestEdgeIndex = 0;
   let bestScore = Number.POSITIVE_INFINITY;
 
-  for (let index = 0; index < 4; index += 1) {
+  for (let index = 0; index < normalizedRing.length - 1; index += 1) {
     const edgeStart = normalizedRing[index];
     const edgeEnd = normalizedRing[index + 1];
     const edgeMidpoint = turf.midpoint(
@@ -173,99 +237,325 @@ const getPlacementRing = (
   }
 
   return {
-    ring: rotateRingToStartAtEdge(normalizedRing, bestEdgeIndex),
+    ring: rotateClosedRingToStartAtEdge(normalizedRing, bestEdgeIndex),
     frontageAligned: true,
   };
+};
+
+const getPlacementInsetRing = (
+  ring: Pt[],
+  setbacks: SetbackValues
+): Pt[] | null => {
+  if (!ring || ring.length < 4) {
+    return null;
+  }
+
+  const openRing = ring.slice(0, -1);
+  const projection = createLocalProjectionFromRing(ring);
+  const localRing = openRing.map((point) => projectPointToLocal(point, projection));
+
+  if (localRing.length < 3) {
+    return null;
+  }
+
+  const frontStart = localRing[0];
+  const frontEnd = localRing[1];
+  const frontMid = midpoint(frontStart, frontEnd);
+  const alongFront = unit([
+    frontEnd[0] - frontStart[0],
+    frontEnd[1] - frontStart[1],
+  ]);
+
+  let inward: Pt = [-alongFront[1], alongFront[0]];
+  const centroid: Pt = [
+    localRing.reduce((sum, point) => sum + point[0], 0) / localRing.length,
+    localRing.reduce((sum, point) => sum + point[1], 0) / localRing.length,
+  ];
+  const centroidVector: Pt = [
+    centroid[0] - frontMid[0],
+    centroid[1] - frontMid[1],
+  ];
+  if (dot(inward, centroidVector) < 0) {
+    inward = [-inward[0], -inward[1]];
+  }
+
+  const edgeDepths = localRing.map((point, index) => {
+    const next = localRing[(index + 1) % localRing.length];
+    const edgeMid = midpoint(point, next);
+    return dot(
+      [edgeMid[0] - frontMid[0], edgeMid[1] - frontMid[1]],
+      inward
+    );
+  });
+  const rearEdgeIndex = edgeDepths.reduce(
+    (bestIndex, depth, index) => (depth > edgeDepths[bestIndex] ? index : bestIndex),
+    1
+  );
+
+  const orientation = polygonOrientation([...localRing, localRing[0]]);
+  const normalSign = orientation > 0 ? -1 : 1;
+  const offsetEdges: Array<[Pt, Pt]> = [];
+
+  for (let index = 0; index < localRing.length; index += 1) {
+    const start = localRing[index];
+    const end = localRing[(index + 1) % localRing.length];
+    const edgeUnit = unit([end[0] - start[0], end[1] - start[1]]);
+    const inwardNormal: Pt = [
+      normalSign * -edgeUnit[1],
+      normalSign * edgeUnit[0],
+    ];
+    const setbackDistance =
+      index === 0
+        ? setbacks.front
+        : index === rearEdgeIndex
+          ? setbacks.rear
+          : setbacks.side;
+    offsetEdges.push([
+      [
+        start[0] + inwardNormal[0] * setbackDistance,
+        start[1] + inwardNormal[1] * setbackDistance,
+      ],
+      [
+        end[0] + inwardNormal[0] * setbackDistance,
+        end[1] + inwardNormal[1] * setbackDistance,
+      ],
+    ]);
+  }
+
+  const innerLocal: Pt[] = [];
+  for (let index = 0; index < offsetEdges.length; index += 1) {
+    const previousEdge = offsetEdges[(index - 1 + offsetEdges.length) % offsetEdges.length];
+    const currentEdge = offsetEdges[index];
+    innerLocal.push(
+      intersectLines(
+        previousEdge[0],
+        previousEdge[1],
+        currentEdge[0],
+        currentEdge[1]
+      )
+    );
+  }
+
+  if (innerLocal.length < 3) {
+    return null;
+  }
+
+  return unprojectRingFromLocal([...innerLocal, innerLocal[0]], projection);
+};
+
+const createPlacementBasis = (ringLL: Pt[]): PlacementBasis | null => {
+  if (!ringLL || ringLL.length < 4) {
+    return null;
+  }
+
+  const openRing = ringLL.slice(0, -1);
+  const projection = createLocalProjectionFromRing(ringLL);
+  const localRing = openRing.map((point) => projectPointToLocal(point, projection));
+
+  if (localRing.length < 3) {
+    return null;
+  }
+
+  const frontStart = localRing[0];
+  const frontEnd = localRing[1];
+  const frontMid = midpoint(frontStart, frontEnd);
+  const alongFront = unit([
+    frontEnd[0] - frontStart[0],
+    frontEnd[1] - frontStart[1],
+  ]);
+  let inward: Pt = [-alongFront[1], alongFront[0]];
+  const centroid: Pt = [
+    localRing.reduce((sum, point) => sum + point[0], 0) / localRing.length,
+    localRing.reduce((sum, point) => sum + point[1], 0) / localRing.length,
+  ];
+  const centroidVector: Pt = [
+    centroid[0] - frontMid[0],
+    centroid[1] - frontMid[1],
+  ];
+
+  if (dot(inward, centroidVector) < 0) {
+    inward = [-inward[0], -inward[1]];
+  }
+
+  const basisRing = localRing.map((point) => {
+    const relativePoint: Pt = [
+      point[0] - frontMid[0],
+      point[1] - frontMid[1],
+    ];
+    return [
+      dot(relativePoint, alongFront),
+      dot(relativePoint, inward),
+    ] as Pt;
+  });
+
+  return {
+    basisRing,
+    toLngLat: (point: Pt) =>
+      unprojectPointFromLocal(
+        [
+          frontMid[0] + alongFront[0] * point[0] + inward[0] * point[1],
+          frontMid[1] + alongFront[1] * point[0] + inward[1] * point[1],
+        ],
+        projection
+      ),
+  };
+};
+
+const getScanlineInterval = (
+  ring: Pt[],
+  yValue: number
+): [number, number] | null => {
+  const intersections: number[] = [];
+  const epsilon = 1e-6;
+
+  for (let index = 0; index < ring.length; index += 1) {
+    const start = ring[index];
+    const end = ring[(index + 1) % ring.length];
+
+    if (Math.abs(start[1] - end[1]) < epsilon) {
+      if (Math.abs(yValue - start[1]) < epsilon) {
+        intersections.push(start[0], end[0]);
+      }
+      continue;
+    }
+
+    const t = (yValue - start[1]) / (end[1] - start[1]);
+    if (t >= -epsilon && t <= 1 + epsilon) {
+      intersections.push(start[0] + (end[0] - start[0]) * t);
+    }
+  }
+
+  const unique = intersections
+    .sort((left, right) => left - right)
+    .filter(
+      (value, index, values) =>
+        index === 0 || Math.abs(value - values[index - 1]) > epsilon
+    );
+
+  if (unique.length < 2) {
+    return null;
+  }
+
+  return [unique[0], unique[unique.length - 1]];
+};
+
+const buildTrueSizeFrontAnchoredHouseBoundary = (
+  innerLL: Pt[],
+  houseWidth: number,
+  houseDepth: number
+) => {
+  if (houseWidth <= 0 || houseDepth <= 0 || innerLL.length < 4) {
+    return null;
+  }
+
+  const placementBasis = createPlacementBasis(innerLL);
+  if (!placementBasis) {
+    return null;
+  }
+
+  const openBasisRing = placementBasis.basisRing;
+  const maxDepth = Math.max(...openBasisRing.map((point) => point[1]));
+  const searchLimit = maxDepth - houseDepth;
+  const epsilon = 0.01;
+
+  if (!Number.isFinite(searchLimit)) {
+    return null;
+  }
+
+  const candidateFrontOffsets = new Set<number>([epsilon]);
+  for (
+    let offset = epsilon;
+    offset <= searchLimit + epsilon;
+    offset += 0.25
+  ) {
+    candidateFrontOffsets.add(roundPlacementValue(offset));
+  }
+  for (const point of openBasisRing) {
+    if (point[1] >= epsilon && point[1] <= searchLimit + epsilon) {
+      candidateFrontOffsets.add(roundPlacementValue(point[1]));
+    }
+  }
+
+  const sortedOffsets = Array.from(candidateFrontOffsets).sort(
+    (left, right) => left - right
+  );
+
+  let chosenFrontOffset: number | null = null;
+  let chosenCenterX = 0;
+
+  for (const rawFrontOffset of sortedOffsets) {
+    const frontOffset = Math.max(epsilon, rawFrontOffset);
+    const rearOffset = frontOffset + houseDepth;
+    if (rearOffset > maxDepth + epsilon) {
+      continue;
+    }
+
+    const sampleDepths = new Set<number>([frontOffset, rearOffset]);
+    for (const point of openBasisRing) {
+      if (point[1] > frontOffset && point[1] < rearOffset) {
+        sampleDepths.add(point[1]);
+      }
+    }
+
+    let leftBoundary = Number.NEGATIVE_INFINITY;
+    let rightBoundary = Number.POSITIVE_INFINITY;
+    let valid = true;
+
+    for (const sampleDepth of sampleDepths) {
+      const interval = getScanlineInterval(openBasisRing, sampleDepth);
+      if (!interval) {
+        valid = false;
+        break;
+      }
+      leftBoundary = Math.max(leftBoundary, interval[0]);
+      rightBoundary = Math.min(rightBoundary, interval[1]);
+    }
+
+    if (!valid || rightBoundary - leftBoundary < houseWidth - epsilon) {
+      continue;
+    }
+
+    chosenFrontOffset = frontOffset;
+    chosenCenterX = clamp(
+      0,
+      leftBoundary + houseWidth / 2,
+      rightBoundary - houseWidth / 2
+    );
+    break;
+  }
+
+  const finalFrontOffset = chosenFrontOffset ?? epsilon;
+  const frontInterval =
+    getScanlineInterval(openBasisRing, finalFrontOffset) ??
+    ([-houseWidth / 2, houseWidth / 2] as [number, number]);
+  const finalCenterX =
+    chosenFrontOffset !== null
+      ? chosenCenterX
+      : clamp(
+          0,
+          frontInterval[0] + houseWidth / 2,
+          frontInterval[1] - houseWidth / 2
+        );
+  const halfWidth = houseWidth / 2;
+
+  const rectangleBasisRing: Pt[] = [
+    [finalCenterX - halfWidth, finalFrontOffset],
+    [finalCenterX + halfWidth, finalFrontOffset],
+    [finalCenterX + halfWidth, finalFrontOffset + houseDepth],
+    [finalCenterX - halfWidth, finalFrontOffset + houseDepth],
+    [finalCenterX - halfWidth, finalFrontOffset],
+  ];
+
+  return turf.polygon([
+    rectangleBasisRing.map((point) => placementBasis.toLngLat(point)),
+  ]) as GeoJSON.Feature<GeoJSON.Polygon>;
 };
 
 const buildFrontAnchoredHouseBoundary = (
   innerLL: Pt[],
   houseWidth: number,
   houseDepth: number
-) => {
-  if (houseWidth <= 0 || houseDepth <= 0 || innerLL.length < 5) {
-    return null;
-  }
-
-  const projection = createLocalProjectionFromRing(innerLL);
-  const innerLocal = projectRingToLocal(innerLL, projection);
-  const frontLeft = innerLocal[0];
-  const frontRight = innerLocal[1];
-  const rearRight = innerLocal[2];
-  const rearLeft = innerLocal[3];
-
-  const frontMid: Pt = [
-    (frontLeft[0] + frontRight[0]) / 2,
-    (frontLeft[1] + frontRight[1]) / 2,
-  ];
-  const rearMid: Pt = [
-    (rearLeft[0] + rearRight[0]) / 2,
-    (rearLeft[1] + rearRight[1]) / 2,
-  ];
-
-  const alongFront = unit([
-    frontRight[0] - frontLeft[0],
-    frontRight[1] - frontLeft[1],
-  ]);
-  const inward = unit([rearMid[0] - frontMid[0], rearMid[1] - frontMid[1]]);
-
-  const availableWidth = Math.hypot(
-    frontRight[0] - frontLeft[0],
-    frontRight[1] - frontLeft[1]
-  );
-  const availableDepth = Math.hypot(
-    rearMid[0] - frontMid[0],
-    rearMid[1] - frontMid[1]
-  );
-  const fitScale = Math.min(
-    1,
-    availableWidth / houseWidth,
-    availableDepth / houseDepth
-  );
-
-  if (!Number.isFinite(fitScale) || fitScale <= 0) {
-    return null;
-  }
-
-  const actualWidth = houseWidth * fitScale;
-  const actualDepth = houseDepth * fitScale;
-  const frontInset = Math.min(0.05, Math.max(availableDepth - actualDepth, 0));
-  const frontCenter: Pt = [
-    frontMid[0] + inward[0] * frontInset,
-    frontMid[1] + inward[1] * frontInset,
-  ];
-  const halfWidth = actualWidth / 2;
-
-  const placedFrontLeft: Pt = [
-    frontCenter[0] - alongFront[0] * halfWidth,
-    frontCenter[1] - alongFront[1] * halfWidth,
-  ];
-  const placedFrontRight: Pt = [
-    frontCenter[0] + alongFront[0] * halfWidth,
-    frontCenter[1] + alongFront[1] * halfWidth,
-  ];
-  const placedRearRight: Pt = [
-    placedFrontRight[0] + inward[0] * actualDepth,
-    placedFrontRight[1] + inward[1] * actualDepth,
-  ];
-  const placedRearLeft: Pt = [
-    placedFrontLeft[0] + inward[0] * actualDepth,
-    placedFrontLeft[1] + inward[1] * actualDepth,
-  ];
-
-  return turf.polygon([
-    unprojectRingFromLocal(
-      [
-        placedFrontLeft,
-        placedFrontRight,
-        placedRearRight,
-        placedRearLeft,
-        placedFrontLeft,
-      ],
-      projection
-    ),
-  ]) as GeoJSON.Feature<GeoJSON.Polygon>;
-};
+) => buildTrueSizeFrontAnchoredHouseBoundary(innerLL, houseWidth, houseDepth);
 
 const buildRectangularHouseBoundary = ({
   innerLL,
@@ -1004,13 +1294,13 @@ export const MapLayers = ({
           const coordinates = geometry.coordinates[0] as [number, number][];
           const setbackRing =
             getPlacementRing(selectedLot)?.ring ??
-            normalizeClosedQuadRing(coordinates);
+            normalizeClosedRing(coordinates);
           if (!setbackRing) {
             return;
           }
 
           // Create setback boundary
-          const innerLL = insetQuadPerSideLL(setbackRing, {
+          const innerLL = getPlacementInsetRing(setbackRing, {
             front: setbackValues.front,
             side: setbackValues.side,
             rear: setbackValues.rear,
@@ -1040,9 +1330,13 @@ export const MapLayers = ({
     manualRotation,
     pendingRotation,
     map,
+    selectedLot,
     selectedFloorPlan,
+    setbackValues,
+    fsrBuildableArea,
     setPendingRotation,
     applyPendingRotation,
+    setManualRotation,
   ]);
 
   // Handle pending rotations when layer becomes available
@@ -1234,14 +1528,15 @@ export const MapLayers = ({
     if (!coordinates || coordinates.length < 4) return;
     const placementResult = getPlacementRing(selectedLot);
     const setbackRing =
-      placementResult?.ring ?? normalizeClosedQuadRing(coordinates);
+      placementResult?.ring ?? normalizeClosedRing(coordinates);
     if (!setbackRing) return;
+    const dimensionRing = toClosedQuadRing(setbackRing);
 
     const { s1, s2, s3, s4 } = selectedLot.properties;
     const newMarkers: mapboxgl.Marker[] = [];
 
     // Per-side setbacks ring
-    const innerLL = insetQuadPerSideLL(setbackRing, {
+    const innerLL = getPlacementInsetRing(setbackRing, {
       front: setbackValues.front,
       side: setbackValues.side,
       rear: setbackValues.rear,
@@ -1426,44 +1721,8 @@ export const MapLayers = ({
           return;
         }
 
-        // Frontage-anchored placement should fit the actual setback envelope.
-        // Centered FSR scaling is only used for the generic fallback layout.
-        try {
-          const containmentBoundary = frontageAnchoredBoundary
-            ? innerPoly
-            : fsrBoundary;
-          if (
-            !turf.booleanWithin(
-              houseBoundary as any,
-              containmentBoundary as any
-            )
-          ) {
-            const pivotCenter = turf.centroid(houseBoundary as any).geometry
-              .coordinates as [number, number];
-            let attempts = 0;
-            while (
-              attempts < 80 &&
-              !turf.booleanWithin(
-                houseBoundary as any,
-                containmentBoundary as any
-              )
-            ) {
-              houseBoundary = turf.transformScale(houseBoundary as any, 0.98, {
-                origin: pivotCenter,
-              });
-              attempts++;
-            }
-          }
-        } catch (error) {
-          console.error("Error during house boundary scaling:", error);
-          showToast({
-            message:
-              "Unable to properly scale house design. Using simplified layout.",
-            type: "error",
-            options: { autoClose: 4000 },
-          });
-        }
-
+        // Keep the rendered footprint at true size; if it overflows the
+        // envelope, that should be visible rather than silently shrinking it.
         if (map.getLayer("house-area-boundary-layer"))
           map.removeLayer("house-area-boundary-layer");
         if (map.getSource("house-area-boundary-source"))
@@ -1479,10 +1738,12 @@ export const MapLayers = ({
         if (map.getSource("house-dimension-source"))
           map.removeSource("house-dimension-source");
 
-        const houseDimensions = buildHouseDimensionOverlay(
-          setbackRing,
-          houseBoundary as GeoJSON.Feature<GeoJSON.Polygon>
-        );
+        const houseDimensions = dimensionRing
+          ? buildHouseDimensionOverlay(
+              dimensionRing,
+              houseBoundary as GeoJSON.Feature<GeoJSON.Polygon>
+            )
+          : null;
         if (houseDimensions) {
           map.addSource("house-dimension-source", {
             type: "geojson",
