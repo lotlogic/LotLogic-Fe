@@ -12,6 +12,7 @@ import type {
   AuditLogResponse,
   CreateBuilderEstateApprovalPayload,
   CreateBuilderEstateApprovalResponse,
+  ReviewDesignOnLotPayload,
   CreateEstateRuleSetPayload,
   CreateEstateRuleSetResponse,
   CreateLotConstraintPayload,
@@ -19,6 +20,8 @@ import type {
   CreateStateRuleSetPayload,
   CreateStateRuleSetResponse,
   RecomputeEstateSummary,
+  ReviewLotDesignOnLotsPayload,
+  ReviewLotDesignOnLotsResponse,
   RuleSetRecordBase,
   StateRuleSetRecord,
   UpdateBuilderEstateApprovalPayload,
@@ -220,6 +223,12 @@ const estateRecomputePath = (estateId: AdminId) =>
   `${idPath("estates", estateId)}/recompute-design-on-lot`;
 const estatePerformancePath = (estateId: AdminId) =>
   `${idPath("estates", estateId)}/performance`;
+const designOnLotReviewPath = (id: AdminId) =>
+  `${idPath("design-on-lots", id)}/review`;
+const designOnLotClearReviewPath = (id: AdminId) =>
+  `${idPath("design-on-lots", id)}/clear-review`;
+const lotDesignOnLotReviewPath = (lotId: AdminId) =>
+  `${basePath("design-on-lots")}/lot/${encodeId(lotId)}/review`;
 
 export const adminApi = {
   async getStateRuleSets<T = StateRuleSetRecord>(
@@ -512,6 +521,21 @@ export const adminApi = {
     payload: B
   ): Promise<T> {
     return data(adminApiClient.patch<T>(idPath("design-on-lots", id), payload));
+  },
+  async reviewDesignOnLot<T = unknown, B extends ReviewDesignOnLotPayload = ReviewDesignOnLotPayload>(
+    id: AdminId,
+    payload: B
+  ): Promise<T> {
+    return data(adminApiClient.post<T>(designOnLotReviewPath(id), payload));
+  },
+  async clearDesignOnLotReview<T = unknown>(id: AdminId): Promise<T> {
+    return data(adminApiClient.post<T>(designOnLotClearReviewPath(id)));
+  },
+  async reviewLotDesignOnLots<
+    T = ReviewLotDesignOnLotsResponse,
+    B extends ReviewLotDesignOnLotsPayload = ReviewLotDesignOnLotsPayload
+  >(lotId: AdminId, payload: B): Promise<T> {
+    return data(adminApiClient.post<T>(lotDesignOnLotReviewPath(lotId), payload));
   },
   async deleteDesignOnLot<T = unknown>(id: AdminId): Promise<T> {
     return data(adminApiClient.delete<T>(idPath("design-on-lots", id)));

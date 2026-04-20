@@ -18,6 +18,14 @@ export const DESIGN_ON_LOT_STATUSES = [
 ] as const;
 export type DesignOnLotStatus = (typeof DESIGN_ON_LOT_STATUSES)[number];
 
+export const DESIGN_ON_LOT_REVIEW_DECISIONS = [
+  "NONE",
+  "APPROVED",
+  "REJECTED",
+] as const;
+export type DesignOnLotReviewDecision =
+  (typeof DESIGN_ON_LOT_REVIEW_DECISIONS)[number];
+
 export type RuleLayer = {
   minFrontSetbackM?: number | null;
   minRearSetbackM?: number | null;
@@ -379,13 +387,31 @@ export type DesignOnLotRecord = {
   lotId?: string | null;
   floorPlanId?: string | null;
   status?: DesignOnLotStatus | null;
+  effectiveStatus?: DesignOnLotStatus | null;
+  systemStatus?: DesignOnLotStatus | null;
   reasons?: string[] | null;
+  systemReasons?: string[] | null;
   failReasons?: string[] | null;
   manualReviewReasons?: string[] | null;
+  systemFailReasons?: string[] | null;
+  systemManualReviewReasons?: string[] | null;
   matchedFilters?: Record<string, unknown> | null;
+  systemMatchedFilters?: Record<string, unknown> | null;
   assessedAt?: string | null;
+  systemAssessedAt?: string | null;
+  reviewDecision?: DesignOnLotReviewDecision | null;
+  reviewNote?: string | null;
+  reviewedAt?: string | null;
+  reviewedByUserId?: string | null;
+  isOverridden?: boolean | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  reviewedBy?: {
+    id?: string;
+    email?: string | null;
+    displayName?: string | null;
+    [key: string]: unknown;
+  } | null;
   lot?: {
     id?: string;
     blockKey?: string | null;
@@ -425,6 +451,23 @@ export type DesignOnLotRecord = {
     } | null;
     [key: string]: unknown;
   } | null;
+  [key: string]: unknown;
+};
+
+export type ReviewDesignOnLotPayload = {
+  decision: Exclude<DesignOnLotReviewDecision, "NONE">;
+  note?: string | null;
+};
+
+export type ReviewLotDesignOnLotsPayload = ReviewDesignOnLotPayload & {
+  scope?: "manual_review" | "all" | "selected";
+  ids?: string[];
+};
+
+export type ReviewLotDesignOnLotsResponse = {
+  lotId: string;
+  updated: number;
+  ids: string[];
   [key: string]: unknown;
 };
 
