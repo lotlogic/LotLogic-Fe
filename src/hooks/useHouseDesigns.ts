@@ -69,6 +69,7 @@ const convertApiResponseToHouseDesign = (
   return {
     ...apiDesign,
     area: apiDesign.area.toString(),
+    homeSize: apiDesign.homeSize ?? null,
     builderId: builderContext.builderId,
     builderName: builderContext.builderName,
     builder: builderContext.builder,

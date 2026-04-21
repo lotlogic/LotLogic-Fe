@@ -70,6 +70,7 @@ export interface HouseDesignItemResponse {
   id: string;
   title: string;
   area: number;
+  homeSize?: string | null;
   builderId?: string | null;
   builderName?: string | null;
   builder?:

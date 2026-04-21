@@ -10,6 +10,7 @@ export type FloorPlanRecord = {
   id: string;
   name?: string | null;
   floorplanUrl?: string | null;
+  homeSize?: string | null;
   bedrooms?: number | null;
   bathrooms?: number | null;
   garages?: number | null;
@@ -32,6 +33,7 @@ export type FloorPlanRecord = {
 export type FloorPlanPayload = {
   name: string;
   floorplanUrl: string;
+  homeSize?: string | null;
   bedrooms: number;
   bathrooms: number;
   garages: number;
@@ -52,6 +54,7 @@ export type FloorPlanPayload = {
 type FloorPlanForm = {
   name: string;
   floorplanUrl: string;
+  homeSize: string;
   bedrooms: string;
   bathrooms: string;
   garages: string;
@@ -71,6 +74,7 @@ type FloorPlanForm = {
 const emptyForm: FloorPlanForm = {
   name: "",
   floorplanUrl: "",
+  homeSize: "",
   bedrooms: "",
   bathrooms: "",
   garages: "",
@@ -957,6 +961,7 @@ export const FloorPlanCrud = ({
     setForm({
       name: plan.name ?? "",
       floorplanUrl: plan.floorplanUrl ?? "",
+      homeSize: plan.homeSize ?? "",
       bedrooms: plan.bedrooms?.toString() ?? "",
       bathrooms: plan.bathrooms?.toString() ?? "",
       garages: plan.garages?.toString() ?? "",
@@ -991,6 +996,7 @@ export const FloorPlanCrud = ({
 
     const name = form.name.trim();
     const floorplanUrl = form.floorplanUrl.trim();
+    const homeSize = form.homeSize.trim();
     const bedrooms = toNumber(form.bedrooms);
     const bathrooms = toNumber(form.bathrooms);
     const garages = toNumber(form.garages);
@@ -1033,6 +1039,7 @@ export const FloorPlanCrud = ({
     const payload: FloorPlanPayload = {
       name,
       floorplanUrl,
+      homeSize: homeSize || null,
       bedrooms,
       bathrooms,
       garages,
@@ -1373,7 +1380,21 @@ export const FloorPlanCrud = ({
                 helperText="Upload marketing-ready image files only. PDFs, sketches, and architectural drawings are not allowed."
               />
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Home size</span>
+                <Input
+                  value={form.homeSize}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      homeSize: event.target.value,
+                    }))
+                  }
+                  className="w-full"
+                  placeholder="Single Storey, 29 squares"
+                />
+              </div>
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Bedrooms</span>
                 <Input
@@ -1688,7 +1709,10 @@ export const FloorPlanCrud = ({
                         {plan.garages ?? "--"}
                       </td>
                       <td className="p-2 border-b border-slate-100">
-                        {plan.areaSqm ?? "--"}
+                        <div>{plan.areaSqm ?? "--"}</div>
+                        <div className="text-xs text-slate-500">
+                          {plan.homeSize ?? "--"}
+                        </div>
                       </td>
                       <td className="p-2 border-b border-slate-100">
                         {plan.width ?? "--"} x {plan.depth ?? "--"}

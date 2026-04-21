@@ -51,15 +51,6 @@ const SWIPE_MAX_VERTICAL_PX = 28;
 const buildDesignMedia = (house: HouseDesignItem): DesignMediaItem[] => {
   const items: DesignMediaItem[] = [];
 
-  if (house.floorPlanImage) {
-    items.push({
-      kind: "floorplan",
-      src: getImageUrl(house.floorPlanImage),
-      alt: `${house.title} floor plan`,
-      label: "Floor plan",
-    });
-  }
-
   house.images.forEach((image, index) => {
     items.push({
       kind: "facade",
@@ -69,6 +60,15 @@ const buildDesignMedia = (house: HouseDesignItem): DesignMediaItem[] => {
       facadeIndex: index,
     });
   });
+
+  if (house.floorPlanImage) {
+    items.push({
+      kind: "floorplan",
+      src: getImageUrl(house.floorPlanImage),
+      alt: `${house.title} floor plan`,
+      label: "Floor plan",
+    });
+  }
 
   if (items.length === 0 && house.image) {
     items.push({
@@ -561,9 +561,11 @@ export const HouseDesignList = ({
               : 0;
           const activeMedia = mediaItems[activeMediaIndex];
 
-          const areaLabel = `${lotSidebar.singleStorey} ${houseDesign.area}: ${
-            house.area
-          } ${houseDesign.m2}`;
+          const homeSizeLabel =
+            typeof house.homeSize === "string" ? house.homeSize.trim() : "";
+          const areaLabel =
+            homeSizeLabel ||
+            `${lotSidebar.singleStorey} ${houseDesign.area}: ${house.area} ${houseDesign.m2}`;
           const pricingText = getDesignCardPriceText({
             lotSalesMode: normalizeLotSalesMode(lot.salesMode),
             lotPrice: lot.price,

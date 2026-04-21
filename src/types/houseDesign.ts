@@ -14,6 +14,7 @@ export interface HouseDesignItem {
   id: string;
   title: string;
   area: string;
+  homeSize?: string | null;
   builderId?: string;
   builderName?: string;
   builder?:
