@@ -11,6 +11,7 @@ export type FloorPlanRecord = {
   name?: string | null;
   floorplanUrl?: string | null;
   homeSize?: string | null;
+  price?: number | null;
   bedrooms?: number | null;
   bathrooms?: number | null;
   garages?: number | null;
@@ -34,6 +35,7 @@ export type FloorPlanPayload = {
   name: string;
   floorplanUrl: string;
   homeSize?: string | null;
+  price?: number | null;
   bedrooms: number;
   bathrooms: number;
   garages: number;
@@ -55,6 +57,7 @@ type FloorPlanForm = {
   name: string;
   floorplanUrl: string;
   homeSize: string;
+  price: string;
   bedrooms: string;
   bathrooms: string;
   garages: string;
@@ -75,6 +78,7 @@ const emptyForm: FloorPlanForm = {
   name: "",
   floorplanUrl: "",
   homeSize: "",
+  price: "",
   bedrooms: "",
   bathrooms: "",
   garages: "",
@@ -109,6 +113,18 @@ const toNumber = (value: string): number | null => {
   return Number.isFinite(num) ? num : null;
 };
 
+const formatPriceValue = (value: number | null | undefined) => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return "--";
+  }
+
+  return new Intl.NumberFormat("en-AU", {
+    style: "currency",
+    currency: "AUD",
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
 const parseOptionalNumberField = (
   value: string
 ): { ok: true; value?: number } | { ok: false } => {
@@ -120,6 +136,22 @@ const parseOptionalNumberField = (
   if (!Number.isFinite(parsed)) {
     return { ok: false };
   }
+  return { ok: true, value: parsed };
+};
+
+const parseOptionalWholeNumberField = (
+  value: string
+): { ok: true; value?: number | null } | { ok: false } => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { ok: true, value: null };
+  }
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 0) {
+    return { ok: false };
+  }
+
   return { ok: true, value: parsed };
 };
 
@@ -144,8 +176,8 @@ type CsvImportResult = {
   errors: CsvImportError[];
 };
 
-const CSV_IMPORT_TEMPLATE = `id,name,floorplanUrl,bedrooms,bathrooms,garages,areaSqm,width,depth,rumpus,alfresco,pergola,storeys,buildingHeight_m,roofPitch_deg,architecturalStyle,hasFrontFacingServiceAreas,facades
-,Acacia 21,https://cdn.example.com/floorplans/acacia-21.jpg,4,2,2,210,12.5,18.2,true,true,false,1,8.9,22.5,"Contemporary,Coastal",false,"https://cdn.example.com/facades/acacia-modern.jpg,https://cdn.example.com/facades/acacia-classic.jpg"`;
+const CSV_IMPORT_TEMPLATE = `id,name,floorplanUrl,price,bedrooms,bathrooms,garages,areaSqm,width,depth,rumpus,alfresco,pergola,storeys,buildingHeight_m,roofPitch_deg,architecturalStyle,hasFrontFacingServiceAreas,facades
+,Acacia 21,https://cdn.example.com/floorplans/acacia-21.jpg,485000,4,2,2,210,12.5,18.2,true,true,false,1,8.9,22.5,"Contemporary,Coastal",false,"https://cdn.example.com/facades/acacia-modern.jpg,https://cdn.example.com/facades/acacia-classic.jpg"`;
 
 const parseCsvRecords = (text: string): Record<string, string>[] => {
   const rows: string[][] = [];
@@ -591,6 +623,23 @@ export const FloorPlanCrud = ({
           return { ok: true, value: undefined };
         };
 
+        const pickOptionalWholeNumber = (
+          ...values: Array<string | number | null | undefined>
+        ): { ok: true; value?: number } | { ok: false } => {
+          for (const value of values) {
+            if (value === null || value === undefined || value === "") {
+              continue;
+            }
+            const numeric =
+              typeof value === "number" ? value : Number(String(value).trim());
+            if (!Number.isFinite(numeric) || !Number.isInteger(numeric) || numeric < 0) {
+              return { ok: false };
+            }
+            return { ok: true, value: numeric };
+          }
+          return { ok: true, value: undefined };
+        };
+
         const pickOptionalBoolean = (
           ...values: Array<string | boolean | null | undefined>
         ): { ok: true; value?: boolean } | { ok: false } => {
@@ -637,6 +686,7 @@ export const FloorPlanCrud = ({
           row["areasqm"],
           existingPlan?.areaSqm
         );
+        const price = pickOptionalWholeNumber(row["price"], existingPlan?.price);
         const width = pickRequiredNumber(
           "Design width",
           row["width"],
@@ -691,6 +741,15 @@ export const FloorPlanCrud = ({
             rowNumber,
             rowLabel,
             message: "Missing required numeric values.",
+          });
+          continue;
+        }
+
+        if (!price.ok) {
+          errors.push({
+            rowNumber,
+            rowLabel,
+            message: "Price must be a whole-dollar amount when provided.",
           });
           continue;
         }
@@ -792,6 +851,10 @@ export const FloorPlanCrud = ({
           alfresco: alfrescoResult.value ?? false,
           pergola: pergolaResult.value ?? false,
         };
+
+        if (price.value !== undefined) {
+          payload.price = price.value;
+        }
 
         if (storeysResult.value !== undefined) {
           payload.storeys = storeysResult.value;
@@ -962,6 +1025,7 @@ export const FloorPlanCrud = ({
       name: plan.name ?? "",
       floorplanUrl: plan.floorplanUrl ?? "",
       homeSize: plan.homeSize ?? "",
+      price: plan.price?.toString() ?? "",
       bedrooms: plan.bedrooms?.toString() ?? "",
       bathrooms: plan.bathrooms?.toString() ?? "",
       garages: plan.garages?.toString() ?? "",
@@ -997,6 +1061,7 @@ export const FloorPlanCrud = ({
     const name = form.name.trim();
     const floorplanUrl = form.floorplanUrl.trim();
     const homeSize = form.homeSize.trim();
+    const priceResult = parseOptionalWholeNumberField(form.price);
     const bedrooms = toNumber(form.bedrooms);
     const bathrooms = toNumber(form.bathrooms);
     const garages = toNumber(form.garages);
@@ -1006,6 +1071,10 @@ export const FloorPlanCrud = ({
 
     if (!name || !floorplanUrl) {
       setFormErrorMessage("Name and floorplan URL are required.");
+      return;
+    }
+    if (!priceResult.ok) {
+      setFormErrorMessage("Price must be a whole-dollar amount.");
       return;
     }
     if (
@@ -1040,6 +1109,7 @@ export const FloorPlanCrud = ({
       name,
       floorplanUrl,
       homeSize: homeSize || null,
+      price: priceResult.value ?? null,
       bedrooms,
       bathrooms,
       garages,
@@ -1380,7 +1450,7 @@ export const FloorPlanCrud = ({
                 helperText="Upload marketing-ready image files only. PDFs, sketches, and architectural drawings are not allowed."
               />
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Home size</span>
                 <Input
@@ -1393,6 +1463,23 @@ export const FloorPlanCrud = ({
                   }
                   className="w-full"
                   placeholder="Single Storey, 29 squares"
+                />
+              </div>
+              <div className="grid gap-2">
+                <span className="text-sm font-medium">Price</span>
+                <Input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={form.price}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      price: event.target.value,
+                    }))
+                  }
+                  className="w-full"
+                  placeholder="485000"
                 />
               </div>
               <div className="grid gap-2">
@@ -1680,6 +1767,7 @@ export const FloorPlanCrud = ({
                   <th className="p-2 border-b">Name</th>
                   <th className="p-2 border-b">Beds/Baths/Garages</th>
                   <th className="p-2 border-b">Area (sqm)</th>
+                  <th className="p-2 border-b">Price</th>
                   <th className="p-2 border-b">Design (W x D)</th>
                   <th className="p-2 border-b">Storeys / Height</th>
                   <th className="p-2 border-b">Features</th>
@@ -1713,6 +1801,9 @@ export const FloorPlanCrud = ({
                         <div className="text-xs text-slate-500">
                           {plan.homeSize ?? "--"}
                         </div>
+                      </td>
+                      <td className="p-2 border-b border-slate-100">
+                        {formatPriceValue(plan.price)}
                       </td>
                       <td className="p-2 border-b border-slate-100">
                         {plan.width ?? "--"} x {plan.depth ?? "--"}

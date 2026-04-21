@@ -71,6 +71,7 @@ export interface HouseDesignItemResponse {
   title: string;
   area: number;
   homeSize?: string | null;
+  price?: number | null;
   builderId?: string | null;
   builderName?: string | null;
   builder?:
