@@ -32,6 +32,30 @@ const normalizeText = (value: unknown) => {
   return trimmed || undefined;
 };
 
+const formatSelectedLotSummary = ({
+  displayId,
+  suburb,
+  address,
+}: {
+  displayId: string;
+  suburb: unknown;
+  address: unknown;
+}) => {
+  const normalizedSuburb = normalizeText(suburb);
+  if (normalizedSuburb) {
+    return `Lot ${displayId}, ${normalizedSuburb}`;
+  }
+
+  const normalizedAddress = normalizeText(address);
+  if (!normalizedAddress) {
+    return `Lot ${displayId}`;
+  }
+
+  return /^lot\b/i.test(normalizedAddress)
+    ? normalizedAddress
+    : `Lot ${displayId}, ${normalizedAddress}`;
+};
+
 const resolveBuilderForDesign = (selectedHouseDesign: HouseDesignItem | null) => {
   if (!selectedHouseDesign) {
     return {
@@ -112,6 +136,11 @@ export const GetYourQuoteSidebar = ({
     lotDetails.displayId !== undefined && lotDetails.displayId !== null
       ? String(lotDetails.displayId)
       : String(lotDetails.id);
+  const selectedLotSummary = formatSelectedLotSummary({
+    displayId: lotDisplayId,
+    suburb: lotDetails.suburb,
+    address: lotDetails.address,
+  });
   const analyticsLotId =
     lotDetails.blockKey !== undefined && lotDetails.blockKey !== null
       ? String(lotDetails.blockKey)
@@ -380,9 +409,7 @@ export const GetYourQuoteSidebar = ({
                   <div className="font-bold text-brand">
                     {selectedHouseDesign?.title || "Selected design"}
                   </div>
-                  <div className="text-sm text-brand-muted">
-                    {`Lot ${lotDisplayId}, ${lotDetails.suburb || lotDetails.address || ""}`}
-                  </div>
+                  <div className="text-sm text-brand-muted">{selectedLotSummary}</div>
                   <div className="text-sm text-brand-muted">
                     {selectedFacadeLabel !== "N/A"
                       ? `Facade: ${selectedFacadeLabel}`
