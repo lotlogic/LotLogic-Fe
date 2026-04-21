@@ -115,6 +115,18 @@ type DxfImportForm = {
   targetSrid: string;
 };
 
+type LotSortField =
+  | "blockKey"
+  | "blockNumber"
+  | "address"
+  | "stage"
+  | "salesMode"
+  | "price"
+  | "zoning"
+  | "areaSqm";
+
+type LotSortDirection = "asc" | "desc";
+
 export type DxfImportResult = {
   estateId?: string;
   created?: number;
@@ -723,6 +735,28 @@ const getLotPrice = (lot: EstateLotRecord) => {
 const getLotBlockKey = (lot: EstateLotRecord) =>
   formatLotValue(lot.blockKey ?? (lot as { BLOCK_KEY?: string }).BLOCK_KEY);
 
+const getLotBlockNumberValue = (lot: EstateLotRecord) => {
+  const rawValue =
+    lot.blockNumber ??
+    (lot as { BLOCK_NUMBER?: number | string | null }).BLOCK_NUMBER ??
+    lot.lotNumber ??
+    (lot as { LOT_NUMBER?: number | string | null }).LOT_NUMBER;
+
+  if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+    return rawValue;
+  }
+
+  if (typeof rawValue === "string" && rawValue.trim()) {
+    const parsed = Number(rawValue);
+    return Number.isFinite(parsed) ? parsed : rawValue.trim();
+  }
+
+  return null;
+};
+
+const getLotBlockNumber = (lot: EstateLotRecord) =>
+  formatLotValue(getLotBlockNumberValue(lot));
+
 export const EstateLotsCrud = ({
   estateId,
   estateName,
@@ -752,6 +786,9 @@ export const EstateLotsCrud = ({
   const [lotsLoading, setLotsLoading] = useState(false);
   const [lotsErrorMessage, setLotsErrorMessage] = useState<string | null>(null);
   const [lotFilter, setLotFilter] = useState("");
+  const [lotSortField, setLotSortField] = useState<LotSortField>("blockKey");
+  const [lotSortDirection, setLotSortDirection] =
+    useState<LotSortDirection>("desc");
   const [showLotForm, setShowLotForm] = useState(false);
   const [showAdvancedLotFields, setShowAdvancedLotFields] = useState(false);
   const [editingLotId, setEditingLotId] = useState<string | null>(null);
@@ -1781,33 +1818,134 @@ export const EstateLotsCrud = ({
 
   const filteredLots = useMemo(() => {
     const needle = lotFilter.trim().toLowerCase();
-    if (!needle) {
-      return lots;
-    }
-    return lots.filter((lot) => {
-      const address = [
-        lot.address,
-        (lot as { ADDRESSES?: string }).ADDRESSES,
-        (lot as { addressLine?: string }).addressLine,
-      ]
-        .filter((value) => typeof value === "string" && value.trim())
-        .join(" ")
-        .toLowerCase();
-      const haystacks = [
-        String(lot.id ?? "").toLowerCase(),
-        address,
-        String(lot.zoning ?? "").toLowerCase(),
-        String(
-          normalizeLotLifecycle(lot.lifecycleStage ?? lot.status) ??
-            lot.lifecycleStage ??
-            lot.status ??
-            ""
-        ).toLowerCase(),
-        String(lot.blockKey ?? "").toLowerCase(),
-      ];
-      return haystacks.some((value) => value.includes(needle));
+    const nextLots = !needle
+      ? [...lots]
+      : lots.filter((lot) => {
+          const address = [
+            lot.address,
+            (lot as { ADDRESSES?: string }).ADDRESSES,
+            (lot as { addressLine?: string }).addressLine,
+          ]
+            .filter((value) => typeof value === "string" && value.trim())
+            .join(" ")
+            .toLowerCase();
+          const haystacks = [
+            String(lot.id ?? "").toLowerCase(),
+            String(getLotBlockNumberValue(lot) ?? "").toLowerCase(),
+            address,
+            String(lot.zoning ?? "").toLowerCase(),
+            String(
+              normalizeLotLifecycle(lot.lifecycleStage ?? lot.status) ??
+                lot.lifecycleStage ??
+                lot.status ??
+                ""
+            ).toLowerCase(),
+            String(lot.blockKey ?? "").toLowerCase(),
+          ];
+          return haystacks.some((value) => value.includes(needle));
+        });
+
+    const getSortValue = (lot: EstateLotRecord): string | number | null => {
+      switch (lotSortField) {
+        case "blockKey":
+          return String(lot.blockKey ?? "").trim() || null;
+        case "blockNumber":
+          return getLotBlockNumberValue(lot);
+        case "address": {
+          const address =
+            lot.address ??
+            (lot as { ADDRESSES?: string | null }).ADDRESSES ??
+            (lot as { addressLine?: string | null }).addressLine;
+          return String(address ?? "").trim() || null;
+        }
+        case "stage": {
+          const rawValue =
+            lot.lifecycleStage ?? lot.status ?? (lot as { stage?: string }).stage;
+          const normalized = normalizeLotLifecycle(rawValue);
+          return normalized ? getLotLifecycleLabel(normalized) : String(rawValue ?? "").trim() || null;
+        }
+        case "salesMode": {
+          const normalized = normalizeLotSalesMode(lot.salesMode);
+          return normalized ? getLotSalesModeLabel(normalized) : null;
+        }
+        case "price":
+          return typeof lot.price === "number" && Number.isFinite(lot.price)
+            ? lot.price
+            : null;
+        case "zoning":
+          return String(lot.zoning ?? "").trim() || null;
+        case "areaSqm": {
+          const rawValue =
+            lot.areaSqm ??
+            (lot as { area?: number | string }).area ??
+            (lot as { BLOCK_DERIVED_AREA?: string }).BLOCK_DERIVED_AREA;
+          if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+            return rawValue;
+          }
+          if (typeof rawValue === "string" && rawValue.trim()) {
+            const parsed = Number(rawValue);
+            return Number.isFinite(parsed) ? parsed : rawValue.trim();
+          }
+          return null;
+        }
+        default:
+          return null;
+      }
+    };
+
+    nextLots.sort((left, right) => {
+      const leftValue = getSortValue(left);
+      const rightValue = getSortValue(right);
+
+      if (leftValue == null && rightValue == null) {
+        return 0;
+      }
+      if (leftValue == null) {
+        return 1;
+      }
+      if (rightValue == null) {
+        return -1;
+      }
+
+      let comparison = 0;
+      if (typeof leftValue === "number" && typeof rightValue === "number") {
+        comparison = leftValue - rightValue;
+      } else {
+        comparison = String(leftValue).localeCompare(String(rightValue), undefined, {
+          numeric: true,
+          sensitivity: "base",
+        });
+      }
+
+      return lotSortDirection === "asc" ? comparison : -comparison;
     });
-  }, [lotFilter, lots]);
+
+    return nextLots;
+  }, [lotFilter, lotSortDirection, lotSortField, lots]);
+
+  const toggleLotSort = useCallback((field: LotSortField) => {
+    setLotSortField((currentField) => {
+      if (currentField === field) {
+        setLotSortDirection((currentDirection) =>
+          currentDirection === "asc" ? "desc" : "asc"
+        );
+        return currentField;
+      }
+
+      setLotSortDirection("asc");
+      return field;
+    });
+  }, []);
+
+  const getLotSortIndicator = useCallback(
+    (field: LotSortField) => {
+      if (lotSortField !== field) {
+        return "↕";
+      }
+      return lotSortDirection === "asc" ? "↑" : "↓";
+    },
+    [lotSortDirection, lotSortField]
+  );
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -1827,7 +1965,7 @@ export const EstateLotsCrud = ({
           <Input
             value={lotFilter}
             onChange={(event) => setLotFilter(event.target.value)}
-            placeholder="Filter by lot id, address, or zoning"
+            placeholder="Filter by block number, address, block key, or zoning"
             className="min-w-[240px]"
           />
           <Button
@@ -3207,28 +3345,84 @@ export const EstateLotsCrud = ({
           <thead>
             <tr className="bg-slate-100 text-left">
               <th className="p-3 border-b font-medium text-sm text-slate-700">
-                Block Key
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 font-medium hover:text-slate-900"
+                  onClick={() => toggleLotSort("blockKey")}
+                >
+                  <span>Block Key</span>
+                  <span aria-hidden="true">{getLotSortIndicator("blockKey")}</span>
+                </button>
               </th>
               <th className="p-3 border-b font-medium text-sm text-slate-700">
-                Lot ID
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 font-medium hover:text-slate-900"
+                  onClick={() => toggleLotSort("blockNumber")}
+                >
+                  <span>Block Number</span>
+                  <span aria-hidden="true">{getLotSortIndicator("blockNumber")}</span>
+                </button>
               </th>
               <th className="p-3 border-b font-medium text-sm text-slate-700">
-                Address
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 font-medium hover:text-slate-900"
+                  onClick={() => toggleLotSort("address")}
+                >
+                  <span>Address</span>
+                  <span aria-hidden="true">{getLotSortIndicator("address")}</span>
+                </button>
               </th>
               <th className="p-3 border-b font-medium text-sm text-slate-700">
-                Stage
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 font-medium hover:text-slate-900"
+                  onClick={() => toggleLotSort("stage")}
+                >
+                  <span>Stage</span>
+                  <span aria-hidden="true">{getLotSortIndicator("stage")}</span>
+                </button>
               </th>
               <th className="p-3 border-b font-medium text-sm text-slate-700">
-                Sales Mode
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 font-medium hover:text-slate-900"
+                  onClick={() => toggleLotSort("salesMode")}
+                >
+                  <span>Sales Mode</span>
+                  <span aria-hidden="true">{getLotSortIndicator("salesMode")}</span>
+                </button>
               </th>
               <th className="p-3 border-b font-medium text-sm text-slate-700">
-                Price
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 font-medium hover:text-slate-900"
+                  onClick={() => toggleLotSort("price")}
+                >
+                  <span>Price</span>
+                  <span aria-hidden="true">{getLotSortIndicator("price")}</span>
+                </button>
               </th>
               <th className="p-3 border-b font-medium text-sm text-slate-700">
-                Zoning
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 font-medium hover:text-slate-900"
+                  onClick={() => toggleLotSort("zoning")}
+                >
+                  <span>Zoning</span>
+                  <span aria-hidden="true">{getLotSortIndicator("zoning")}</span>
+                </button>
               </th>
               <th className="p-3 border-b font-medium text-sm text-slate-700">
-                Area (sqm)
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 font-medium hover:text-slate-900"
+                  onClick={() => toggleLotSort("areaSqm")}
+                >
+                  <span>Area (sqm)</span>
+                  <span aria-hidden="true">{getLotSortIndicator("areaSqm")}</span>
+                </button>
               </th>
               <th className="p-3 border-b font-medium text-sm text-slate-700">
                 Actions
@@ -3242,7 +3436,7 @@ export const EstateLotsCrud = ({
                   {getLotBlockKey(lot)}
                 </td>
                 <td className="p-3 border-b border-slate-100 text-sm font-mono">
-                  {formatLotValue(lot.id)}
+                  {getLotBlockNumber(lot)}
                 </td>
                 <td className="p-3 border-b border-slate-100 text-sm">
                   {getLotAddress(lot)}
