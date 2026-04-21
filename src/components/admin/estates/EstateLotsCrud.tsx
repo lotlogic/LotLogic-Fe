@@ -1,5 +1,5 @@
 import type { ChangeEvent, FormEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RecomputeSummaryCard } from "@/components/admin/rules/RecomputeSummaryCard";
 import { RuleLayerEditor } from "@/components/admin/rules/RuleLayerEditor";
 import { Button } from "@/components/ui/Button";
@@ -755,6 +755,7 @@ export const EstateLotsCrud = ({
   const [showLotForm, setShowLotForm] = useState(false);
   const [showAdvancedLotFields, setShowAdvancedLotFields] = useState(false);
   const [editingLotId, setEditingLotId] = useState<string | null>(null);
+  const lotFormCardRef = useRef<HTMLDivElement | null>(null);
   const [lotForm, setLotForm] = useState<LotForm>(() =>
     createDefaultManualLotForm({
       estateIdValue: estateId ?? "",
@@ -1225,6 +1226,38 @@ export const EstateLotsCrud = ({
     prefillLotZoningFromEstateAddress,
     resetConstraintForm,
   ]);
+
+  useEffect(() => {
+    if (!showLotForm) {
+      return;
+    }
+
+    const cardElement = lotFormCardRef.current;
+    if (!cardElement) {
+      return;
+    }
+
+    const focusAndScroll = window.requestAnimationFrame(() => {
+      const prefersReducedMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      cardElement.scrollIntoView({
+        behavior: prefersReducedMotion ? "auto" : "smooth",
+        block: "start",
+      });
+
+      const firstFocusable = cardElement.querySelector<
+        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+      >("input, select, textarea");
+
+      firstFocusable?.focus({ preventScroll: true });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(focusAndScroll);
+    };
+  }, [editingLotId, showLotForm]);
 
   const handleDxfFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -2171,7 +2204,10 @@ export const EstateLotsCrud = ({
       )}
 
       {showLotForm && (enableManualLotEntry || Boolean(editingLotId)) && (
-        <div className="mb-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
+        <div
+          ref={lotFormCardRef}
+          className="mb-4 rounded-lg border border-slate-100 bg-slate-50 p-4"
+        >
           <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
             <div>
               <h3 className="font-semibold text-base">

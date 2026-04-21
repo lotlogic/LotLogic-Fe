@@ -2,6 +2,7 @@ import SavedPropertiesSidebar from "@/components/features/map/SavedPropertiesSid
 import Header from "@/components/layouts/Header";
 import MobileBottomNav from "@/components/layouts/MobileBottomNav";
 import MobileSearch from "@/components/ui/MobileSearch";
+import { EstateAccessGate } from "@/components/estate/EstateAccessGate";
 import { useMobile } from "@/hooks/useMobile";
 import {
   lotApi,
@@ -23,9 +24,13 @@ const queryClient = new QueryClient();
 
 type PrototypePageProps = {
   estateId?: string;
+  skipEstateAccessGate?: boolean;
 };
 
-export const PrototypePage = ({ estateId }: PrototypePageProps) => {
+export const PrototypePage = ({
+  estateId,
+  skipEstateAccessGate = false,
+}: PrototypePageProps) => {
   const isMobile = useMobile();
   const { activeTab, toggleTab, closeAllPanels } = useMobileNavigationStore();
   const [resolvedEstateId, setResolvedEstateId] = useState<
@@ -141,80 +146,88 @@ export const PrototypePage = ({ estateId }: PrototypePageProps) => {
     };
   }, [estateId]);
 
+  const pageContent = (
+    <div className="h-screen w-screen flex flex-col overflow-hidden">
+      {/* Header - Only show on desktop */}
+      {!isMobile && <Header />}
+
+      {/* Main Content */}
+      <div className={`flex-1 relative ${isMobile ? "pb-16" : ""}`}>
+        {!isEstateResolved && !estateId ? (
+          <div className="flex items-center justify-center h-full bg-brand-muted">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary mx-auto mb-4"></div>
+              <p className="text-brand-muted">Loading estate...</p>
+            </div>
+          </div>
+        ) : (
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-full bg-brand-muted">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary mx-auto mb-4"></div>
+                  <p className="text-brand-muted">Loading map...</p>
+                </div>
+              </div>
+            }
+          >
+            <ZoneMap estateId={resolvedEstateId} />
+          </Suspense>
+        )}
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <MobileBottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+      )}
+
+      {/* Mobile Search - Only show when search tab is active */}
+      {isMobile && (
+        <MobileSearch
+          isOpen={isSearchVisible}
+          onClose={closeAllPanels}
+          onSearch={handleSearch}
+        />
+      )}
+
+      {/* Mobile Saved Properties - Only show when saved tab is active */}
+      {isMobile && (
+        <SavedPropertiesSidebar
+          open={isSavedVisible}
+          onClose={closeAllPanels}
+          onViewDetails={(_property) => {
+            closeAllPanels();
+          }}
+        />
+      )}
+
+      <ToastContainer
+        position={isMobile ? "top-center" : "bottom-right"}
+        autoClose={3000}
+        hideProgressBar={true}
+        newestOnTop={true}
+        closeOnClick={true}
+        rtl={false}
+        pauseOnFocusLoss={false}
+        draggable={true}
+        pauseOnHover={false}
+        limit={3}
+        theme="light"
+        style={{ zIndex: 9999 }}
+      />
+    </div>
+  );
+
+  const shouldGateEstate =
+    !skipEstateAccessGate && isEstateResolved && Boolean(resolvedEstateId);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="h-screen w-screen flex flex-col overflow-hidden">
-        {/* Header - Only show on desktop */}
-        {!isMobile && <Header />}
-
-        {/* Main Content */}
-        <div className={`flex-1 relative ${isMobile ? "pb-16" : ""}`}>
-          {!isEstateResolved && !estateId ? (
-            <div className="flex items-center justify-center h-full bg-brand-muted">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary mx-auto mb-4"></div>
-                <p className="text-brand-muted">Loading estate...</p>
-              </div>
-            </div>
-          ) : (
-            <Suspense
-              fallback={
-                <div className="flex items-center justify-center h-full bg-brand-muted">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-primary mx-auto mb-4"></div>
-                    <p className="text-brand-muted">Loading map...</p>
-                  </div>
-                </div>
-              }
-            >
-              <ZoneMap estateId={resolvedEstateId} />
-            </Suspense>
-          )}
-        </div>
-
-        {/* Mobile Bottom Navigation */}
-        {isMobile && (
-          <MobileBottomNav
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-          />
-        )}
-
-        {/* Mobile Search - Only show when search tab is active */}
-        {isMobile && (
-          <MobileSearch
-            isOpen={isSearchVisible}
-            onClose={closeAllPanels}
-            onSearch={handleSearch}
-          />
-        )}
-
-        {/* Mobile Saved Properties - Only show when saved tab is active */}
-        {isMobile && (
-          <SavedPropertiesSidebar
-            open={isSavedVisible}
-            onClose={closeAllPanels}
-            onViewDetails={(_property) => {
-              closeAllPanels();
-            }}
-          />
-        )}
-
-        <ToastContainer
-          position={isMobile ? "top-center" : "bottom-right"}
-          autoClose={3000}
-          hideProgressBar={true}
-          newestOnTop={true}
-          closeOnClick={true}
-          rtl={false}
-          pauseOnFocusLoss={false}
-          draggable={true}
-          pauseOnHover={false}
-          limit={3}
-          theme="light"
-          style={{ zIndex: 9999 }}
-        />
-      </div>
+      {shouldGateEstate ? (
+        <EstateAccessGate estateId={resolvedEstateId}>{pageContent}</EstateAccessGate>
+      ) : (
+        pageContent
+      )}
     </QueryClientProvider>
   );
 };
