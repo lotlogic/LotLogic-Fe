@@ -158,6 +158,7 @@ type EstateLotsCrudProps = {
   importLotsDxf?: (estateId: string, payload: FormData) => Promise<DxfImportResult>;
   recomputeEstateDesignOnLot?: (estateId: string) => Promise<unknown>;
   enableDxfImport?: boolean;
+  defaultCollapsed?: boolean;
 };
 
 const createEmptyLotForm = (estateIdValue: string): LotForm => ({
@@ -769,6 +770,7 @@ export const EstateLotsCrud = ({
   importLotsDxf,
   recomputeEstateDesignOnLot,
   enableDxfImport,
+  defaultCollapsed = false,
 }: EstateLotsCrudProps) => {
   const canImportDxf = enableDxfImport ?? Boolean(importLotsDxf);
   // Keep manual lot entry code-path available behind a local toggle.
@@ -785,6 +787,7 @@ export const EstateLotsCrud = ({
   const [lots, setLots] = useState<EstateLotRecord[]>([]);
   const [lotsLoading, setLotsLoading] = useState(false);
   const [lotsErrorMessage, setLotsErrorMessage] = useState<string | null>(null);
+  const [lotsPanelCollapsed, setLotsPanelCollapsed] = useState(defaultCollapsed);
   const [lotFilter, setLotFilter] = useState("");
   const [lotSortField, setLotSortField] = useState<LotSortField>("blockKey");
   const [lotSortDirection, setLotSortDirection] =
@@ -1962,22 +1965,34 @@ export const EstateLotsCrud = ({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Input
-            value={lotFilter}
-            onChange={(event) => setLotFilter(event.target.value)}
-            placeholder="Filter by block number, address, block key, or zoning"
-            className="min-w-[240px]"
-          />
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             className="h-8 px-2 text-xs"
-            label="Refresh"
-            onClick={handleLoadLots}
-            disabled={lotsLoading}
-            loading={lotsLoading}
+            label={lotsPanelCollapsed ? "Show lots" : "Hide lots"}
+            aria-expanded={!lotsPanelCollapsed}
+            onClick={() => setLotsPanelCollapsed((value) => !value)}
           />
-          {enableManualLotEntry && (
+          {!lotsPanelCollapsed && (
+            <>
+              <Input
+                value={lotFilter}
+                onChange={(event) => setLotFilter(event.target.value)}
+                placeholder="Filter by block number, address, block key, or zoning"
+                className="min-w-[240px]"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-8 px-2 text-xs"
+                label="Refresh"
+                onClick={handleLoadLots}
+                disabled={lotsLoading}
+                loading={lotsLoading}
+              />
+            </>
+          )}
+          {!lotsPanelCollapsed && enableManualLotEntry && (
             <Button
               type="button"
               onClick={showLotForm ? closeLotForm : openNewLotForm}
@@ -1986,7 +2001,7 @@ export const EstateLotsCrud = ({
               label={showLotForm ? "Close manual entry" : "Manual entry"}
             />
           )}
-          {canImportDxf && (
+          {!lotsPanelCollapsed && canImportDxf && (
             <Button
               type="button"
               variant="ghost"
@@ -1995,7 +2010,7 @@ export const EstateLotsCrud = ({
               onClick={openDxfImport}
             />
           )}
-          {recomputeEstateDesignOnLot && (
+          {!lotsPanelCollapsed && recomputeEstateDesignOnLot && (
             <Button
               type="button"
               variant="outline"
@@ -2006,7 +2021,7 @@ export const EstateLotsCrud = ({
               loading={recomputeLoading}
             />
           )}
-          {deleteAllLots && estateId && (
+          {!lotsPanelCollapsed && deleteAllLots && estateId && (
             <Button
               type="button"
               variant="ghost"
@@ -2020,6 +2035,13 @@ export const EstateLotsCrud = ({
         </div>
       </div>
 
+      {lotsPanelCollapsed ? (
+        <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+          Lot editing is hidden. Use "Show lots" when you need to review,
+          import, or edit the estate lot records.
+        </div>
+      ) : (
+        <>
       {lotsErrorMessage && (
         <div className="mb-3 rounded-md border border-red-100 bg-red-50 p-3 text-sm text-red-600">
           {lotsErrorMessage}
@@ -3493,6 +3515,8 @@ export const EstateLotsCrud = ({
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </div>
   );
 };

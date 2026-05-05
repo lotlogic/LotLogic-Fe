@@ -1147,6 +1147,7 @@ const DashboardEstatePage = () => {
           deleteAllLots={isAdmin ? (id) => adminApi.deleteEstateLots(id) : undefined}
           importLotsDxf={importLotsDxf}
           recomputeEstateDesignOnLot={(id) => adminApi.recomputeEstateDesignOnLot(id)}
+          defaultCollapsed
         />
       </section>
     </DashboardLayout>
