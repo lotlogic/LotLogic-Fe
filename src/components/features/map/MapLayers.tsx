@@ -21,13 +21,6 @@ import * as turf from "@turf/turf";
 import mapboxgl from "mapbox-gl";
 import { useCallback, useEffect, useRef } from "react";
 
-declare global {
-  interface Window {
-    __lotlogicPlacementDebug?: unknown;
-    __lotlogicPlacementDebugHistory?: unknown[];
-  }
-}
-
 interface HouseBoundaryData {
   center: [number, number];
   widthInDegrees: number;
@@ -52,7 +45,6 @@ type PlacementBasis = {
 type FloorPlanImageOrientation = "default" | "quarter-turn-ccw";
 const FLOORPLAN_SOURCE_ID = "floorplan-image";
 const FLOORPLAN_LAYER_ID = "floorplan-layer";
-const FLOORPLAN_DEBUG_HISTORY_LIMIT = 15;
 
 const toClosedQuadRing = (ring: Pt[]): [Pt, Pt, Pt, Pt, Pt] | null => {
   if (ring.length !== 5) {
@@ -203,56 +195,6 @@ const dot = (a: Pt, b: Pt) => a[0] * b[0] + a[1] * b[1];
 
 const roundPlacementValue = (value: number) =>
   Number.isFinite(value) ? Number(value.toFixed(4)) : value;
-
-const roundDebugNumber = (value: number | null | undefined, digits = 3) =>
-  value !== null && value !== undefined && Number.isFinite(value)
-    ? Number(value.toFixed(digits))
-    : null;
-
-const toDebugPoint = (point: Pt | null | undefined) =>
-  point ? [roundDebugNumber(point[0], 7), roundDebugNumber(point[1], 7)] : null;
-
-const toDebugRing = (ring: Pt[] | null | undefined) =>
-  ring?.map((point) => toDebugPoint(point)) ?? null;
-
-const getRingEdgeMetrics = (ring: Pt[] | null | undefined) => {
-  if (!ring || ring.length < 2) {
-    return [];
-  }
-
-  const openRing =
-    ring.length > 2 &&
-    Math.abs(ring[0][0] - ring[ring.length - 1][0]) < 1e-9 &&
-    Math.abs(ring[0][1] - ring[ring.length - 1][1]) < 1e-9
-      ? ring.slice(0, -1)
-      : ring;
-
-  return openRing.map((start, index) => {
-    const end = openRing[(index + 1) % openRing.length];
-    return {
-      index,
-      start: toDebugPoint(start),
-      end: toDebugPoint(end),
-      lengthM: roundDebugNumber(
-        turf.distance(turf.point(start), turf.point(end), { units: "meters" }),
-        2
-      ),
-      bearingDeg: roundDebugNumber(turf.bearing(start, end), 2),
-    };
-  });
-};
-
-const getLongestEdgeMetric = (
-  edges: ReturnType<typeof getRingEdgeMetrics>
-) => {
-  if (edges.length === 0) {
-    return null;
-  }
-
-  return edges.reduce((longest, edge) =>
-    (edge.lengthM ?? 0) > (longest.lengthM ?? 0) ? edge : longest
-  );
-};
 
 const consolidateFrontageChain = ({
   ring,
@@ -1629,7 +1571,6 @@ export const MapLayers = ({
     contentHeight: number | null;
   } | null>(null);
   const floorPlanFitWarningRef = useRef<string | null>(null);
-  const debugSignatureRef = useRef<string>("");
 
   // Manual rotation state from Zustand
   const {
@@ -1671,152 +1612,6 @@ export const MapLayers = ({
     [map, onPlacementWarningChange, removeFloorPlanOverlay]
   );
 
-  const publishPlacementDebug = useCallback(
-    ({
-      phase,
-      placementRing,
-      setbackRing,
-      houseBoundaryRing,
-      warning,
-      frontageAligned,
-      imageOrientation,
-    }: {
-      phase: "placement" | "rotation";
-      placementRing: Pt[] | null;
-      setbackRing: Pt[] | null;
-      houseBoundaryRing: Pt[] | null;
-      warning: string | null;
-      frontageAligned: boolean;
-      imageOrientation: FloorPlanImageOrientation;
-    }) => {
-      if (!selectedLot || !selectedFloorPlan || !houseBoundaryRing || !placementRing) {
-        return;
-      }
-
-      const frontageLine = parseFrontageLineCoordinates(
-        selectedLot.properties.frontageCoordinate
-      );
-      const lotEdges = getRingEdgeMetrics(placementRing);
-      const setbackEdges = getRingEdgeMetrics(setbackRing);
-      const houseEdges = getRingEdgeMetrics(houseBoundaryRing);
-      const lotFrontEdge = lotEdges[0] ?? null;
-      const lotSideEdge = lotEdges[1] ?? null;
-      const houseFrontEdge = houseEdges[0] ?? null;
-      const houseSideEdge = houseEdges[1] ?? null;
-      const lotLongestEdge = getLongestEdgeMetric(lotEdges);
-      const houseLongestEdge = getLongestEdgeMetric(houseEdges);
-      const imageMetrics = floorPlanImageMetricsRef.current;
-      const snapshot = {
-        timestamp: new Date().toISOString(),
-        phase,
-        lot: {
-          id: selectedLot.properties.ID?.toString() ?? null,
-          blockKey: selectedLot.properties.BLOCK_KEY ?? null,
-          blockNumber: selectedLot.properties.BLOCK_NUMBER ?? null,
-          frontageAligned,
-          frontageCoordinate: selectedLot.properties.frontageCoordinate ?? null,
-          frontageLine: toDebugRing(frontageLine ?? null),
-          placementRing: toDebugRing(placementRing),
-          setbackRing: toDebugRing(setbackRing),
-          lotEdges,
-          setbackEdges,
-          lotLongestEdge,
-        },
-        floorPlan: {
-          url: selectedFloorPlan.url,
-          houseArea: roundDebugNumber(selectedFloorPlan.houseArea ?? null, 2),
-          houseWidth: roundDebugNumber(selectedFloorPlan.houseWidth ?? null, 2),
-          houseDepth: roundDebugNumber(selectedFloorPlan.houseDepth ?? null, 2),
-          imageOrientation,
-          imageMetrics,
-          manualRotation,
-          pendingRotation,
-          warning,
-        },
-        houseBoundary: {
-          ring: toDebugRing(houseBoundaryRing),
-          edges: houseEdges,
-          houseFrontEdge,
-          houseSideEdge,
-          houseLongestEdge,
-        },
-        deltas: {
-          frontEdgeDeg: roundDebugNumber(
-            lotFrontEdge?.bearingDeg !== null &&
-              lotFrontEdge?.bearingDeg !== undefined &&
-              houseFrontEdge?.bearingDeg !== null &&
-              houseFrontEdge?.bearingDeg !== undefined
-              ? getParallelBearingDifference(
-                  lotFrontEdge.bearingDeg,
-                  houseFrontEdge.bearingDeg
-                )
-              : null,
-            2
-          ),
-          sideEdgeDeg: roundDebugNumber(
-            lotSideEdge?.bearingDeg !== null &&
-              lotSideEdge?.bearingDeg !== undefined &&
-              houseSideEdge?.bearingDeg !== null &&
-              houseSideEdge?.bearingDeg !== undefined
-              ? getParallelBearingDifference(
-                  lotSideEdge.bearingDeg,
-                  houseSideEdge.bearingDeg
-                )
-              : null,
-            2
-          ),
-          longestEdgeDeg: roundDebugNumber(
-            lotLongestEdge?.bearingDeg !== null &&
-              lotLongestEdge?.bearingDeg !== undefined &&
-              houseLongestEdge?.bearingDeg !== null &&
-              houseLongestEdge?.bearingDeg !== undefined
-              ? getParallelBearingDifference(
-                  lotLongestEdge.bearingDeg,
-                  houseLongestEdge.bearingDeg
-                )
-              : null,
-            2
-          ),
-        },
-      };
-
-      const signature = JSON.stringify({
-        phase,
-        lotId: snapshot.lot.id,
-        url: snapshot.floorPlan.url,
-        manualRotation: snapshot.floorPlan.manualRotation,
-        pendingRotation: snapshot.floorPlan.pendingRotation,
-        warning: snapshot.floorPlan.warning,
-        imageOrientation: snapshot.floorPlan.imageOrientation,
-        frontEdgeDeg: snapshot.deltas.frontEdgeDeg,
-        sideEdgeDeg: snapshot.deltas.sideEdgeDeg,
-        longestEdgeDeg: snapshot.deltas.longestEdgeDeg,
-        houseBoundary: snapshot.houseBoundary.ring,
-      });
-
-      if (debugSignatureRef.current === signature) {
-        return;
-      }
-      debugSignatureRef.current = signature;
-
-      if (typeof window !== "undefined") {
-        window.__lotlogicPlacementDebug = snapshot;
-        const history = window.__lotlogicPlacementDebugHistory ?? [];
-        history.push(snapshot);
-        window.__lotlogicPlacementDebugHistory = history.slice(
-          -FLOORPLAN_DEBUG_HISTORY_LIMIT
-        );
-      }
-
-      console.groupCollapsed(
-        `[LotLogic placement debug] ${phase} lot=${snapshot.lot.blockKey ?? snapshot.lot.id ?? "unknown"} frontΔ=${snapshot.deltas.frontEdgeDeg ?? "n/a"} sideΔ=${snapshot.deltas.sideEdgeDeg ?? "n/a"}`
-      );
-      console.log(snapshot);
-      console.groupEnd();
-    },
-    [manualRotation, pendingRotation, selectedFloorPlan, selectedLot]
-  );
-
   // Reset manual rotation when switching lots or floorplans
   useEffect(() => {
     setManualRotation(0);
@@ -1851,7 +1646,6 @@ export const MapLayers = ({
     floorPlanImageOrientationRef.current = "default";
     floorPlanImageMetricsRef.current = null;
     floorPlanFitWarningRef.current = null;
-    debugSignatureRef.current = "";
   }, [selectedFloorPlan?.url, selectedLot?.properties?.ID]);
 
   // Separate useEffect for immediate rotation updates
@@ -2013,16 +1807,6 @@ export const MapLayers = ({
               setbackBoundary: innerPoly,
             });
             updatePlacementWarning(warning);
-            publishPlacementDebug({
-              phase: "rotation",
-              placementRing: setbackRing,
-              setbackRing: innerLL,
-              houseBoundaryRing:
-                (rotated.geometry.coordinates[0] as Pt[] | undefined) ?? null,
-              warning,
-              frontageAligned: Boolean(getPlacementRing(selectedLot)?.frontageAligned),
-              imageOrientation: floorPlanImageOrientationRef.current,
-            });
           } else {
             updatePlacementWarning(
               "This floor plan does not fit within the buildable setback area for this lot."
@@ -2043,7 +1827,6 @@ export const MapLayers = ({
     applyPendingRotation,
     setManualRotation,
     updatePlacementWarning,
-    publishPlacementDebug,
   ]);
 
   // Handle pending rotations when layer becomes available
@@ -2462,16 +2245,6 @@ export const MapLayers = ({
           setbackBoundary: innerPoly,
         });
         updatePlacementWarning(warning);
-        publishPlacementDebug({
-          phase: "placement",
-          placementRing: setbackRing,
-          setbackRing: innerLL,
-          houseBoundaryRing:
-            (houseBoundary.geometry.coordinates[0] as Pt[] | undefined) ?? null,
-          warning,
-          frontageAligned: Boolean(placementResult?.frontageAligned),
-          imageOrientation: floorPlanImageOrientationRef.current,
-        });
 
         // Keep the rendered footprint at true size; if it overflows the
         // envelope, that should be visible rather than silently shrinking it.
@@ -2679,7 +2452,6 @@ export const MapLayers = ({
     showFacadeModal,
     setSValuesMarkers,
     updatePlacementWarning,
-    publishPlacementDebug,
   ]);
 
   return null;
