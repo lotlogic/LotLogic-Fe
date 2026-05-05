@@ -89,15 +89,15 @@ export const useHouseDesigns = (
       houseDesigns: HouseDesignItem[];
       zoning: {
         fsr?: number;
-        frontSetback: number;
-        rearSetback: number;
-        sideSetback: number;
+        frontSetback?: number;
+        rearSetback?: number;
+        sideSetback?: number;
       };
     }> => {
       if (!lotId) {
         return {
           houseDesigns: [],
-          zoning: { frontSetback: 4, rearSetback: 3, sideSetback: 3 },
+          zoning: {},
         };
       }
 
@@ -120,15 +120,15 @@ export const useHouseDesigns = (
         frontSetback:
           typeof apiResponse?.zoning?.frontSetback === "number"
             ? apiResponse.zoning.frontSetback
-            : 4,
+            : undefined,
         rearSetback:
           typeof apiResponse?.zoning?.rearSetback === "number"
             ? apiResponse.zoning.rearSetback
-            : 3,
+            : undefined,
         sideSetback:
           typeof apiResponse?.zoning?.sideSetback === "number"
             ? apiResponse.zoning.sideSetback
-            : 3,
+            : undefined,
       };
 
       return {

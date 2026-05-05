@@ -11,9 +11,9 @@ export interface LotSidebarProps {
   onSelectFloorPlan?: (data: FloorPlan | null) => void;
   onZoningDataUpdate?: (zoning: {
     fsr?: number;
-    frontSetback: number;
-    rearSetback: number;
-    sideSetback: number;
+    frontSetback?: number;
+    rearSetback?: number;
+    sideSetback?: number;
   }) => void;
   isLoadingApiData?: boolean;
   apiError?: Error | null;

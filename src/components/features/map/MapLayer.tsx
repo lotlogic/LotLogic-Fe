@@ -55,6 +55,12 @@ type ZoneMapProps = {
   estateId?: string;
 };
 
+const DEFAULT_SETBACK_VALUES: SetbackValues = {
+  front: 4,
+  side: 3,
+  rear: 3,
+};
+
 export const ZoneMap = ({ estateId }: ZoneMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const selectedIdRef = useRef<string | null>(null);
@@ -161,44 +167,80 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
   // Lot details for sidebar
   const lotId = selectedLot?.properties?.ID?.toString() || null;
   const { data: lotApiData } = useLotDetails(lotId);
-  const [setbackValues, setSetbackValues] = useState<SetbackValues>({
-    front: 4,
-    side: 3,
-    rear: 3,
-  });
+  const [setbackValues, setSetbackValues] = useState<SetbackValues>(
+    DEFAULT_SETBACK_VALUES
+  );
+
+  useEffect(() => {
+    setSetbackValues(DEFAULT_SETBACK_VALUES);
+  }, [selectedLot?.properties?.ID]);
 
   // Handle zoning data updates from LotSidebar
   const handleZoningDataUpdate = useCallback(
     (zoning: {
       fsr?: number;
-      frontSetback: number;
-      rearSetback: number;
-      sideSetback: number;
+      frontSetback?: number;
+      rearSetback?: number;
+      sideSetback?: number;
     }) => {
       const { fsr, frontSetback, rearSetback, sideSetback } = zoning;
       if (typeof fsr === "number" && Number.isFinite(fsr)) {
         setFsrBuildableArea(fsr);
       }
       setSetbackValues((prev) => ({
-        front: Number.isFinite(frontSetback) ? frontSetback : prev.front,
-        side: Number.isFinite(sideSetback) ? sideSetback : prev.side,
-        rear: Number.isFinite(rearSetback) ? rearSetback : prev.rear,
+        front:
+          typeof frontSetback === "number" && Number.isFinite(frontSetback)
+            ? frontSetback
+            : prev.front,
+        side:
+          typeof sideSetback === "number" && Number.isFinite(sideSetback)
+            ? sideSetback
+            : prev.side,
+        rear:
+          typeof rearSetback === "number" && Number.isFinite(rearSetback)
+            ? rearSetback
+            : prev.rear,
       }));
     },
     []
   );
 
-  // Update setback values when lot data is loaded (if it contains zoning setbacks)
+  // Update setback values when lot data is loaded. Effective backend rules
+  // must win over raw zoning rows so map placement matches compatibility.
   useEffect(() => {
-    if (lotApiData?.zoningSetbacks) {
-      // console.log('MapLayer: Updating setback values from lot API:', lotApiData.zoningSetbacks);
-      setSetbackValues({
-        front: lotApiData.zoningSetbacks.frontSetback,
-        side: lotApiData.zoningSetbacks.sideSetback,
-        rear: lotApiData.zoningSetbacks.rearSetback,
-      });
+    const effective = lotApiData?.effectiveSetbacks;
+    const zoning = lotApiData?.zoningSetbacks;
+    if (effective || zoning) {
+      const pickNumber = (...values: unknown[]) =>
+        values.find(
+          (value): value is number =>
+            typeof value === "number" && Number.isFinite(value)
+        );
+
+      setSetbackValues((prev) => ({
+        front:
+          pickNumber(effective?.frontSetback, zoning?.frontSetback) ??
+          prev.front,
+        side:
+          pickNumber(effective?.sideSetback, zoning?.sideSetback) ??
+          prev.side,
+        rear:
+          pickNumber(effective?.rearSetback, zoning?.rearSetback) ??
+          prev.rear,
+      }));
     }
-  }, [lotApiData?.zoningSetbacks]);
+
+    if (
+      typeof lotApiData?.maxCoverageArea === "number" &&
+      Number.isFinite(lotApiData.maxCoverageArea)
+    ) {
+      setFsrBuildableArea(lotApiData.maxCoverageArea);
+    }
+  }, [
+    lotApiData?.effectiveSetbacks,
+    lotApiData?.maxCoverageArea,
+    lotApiData?.zoningSetbacks,
+  ]);
 
   const handleViewDetails = (property: SavedProperty) => {
     setIsSavedSidebarOpen(false);

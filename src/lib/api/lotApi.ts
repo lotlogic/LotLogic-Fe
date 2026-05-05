@@ -33,6 +33,14 @@ export interface DatabaseLot {
     rearSetback: number;
     sideSetback: number;
   } | null;
+  effectiveSetbacks?: {
+    frontSetback?: number | null;
+    rearSetback?: number | null;
+    sideSetback?: number | null;
+  } | null;
+  effectiveRules?: Record<string, unknown> | null;
+  effectiveRuleSources?: Record<string, unknown> | null;
+  maxCoverageArea?: number | null;
 }
 
 export interface LotCalculationResponse {
@@ -106,6 +114,8 @@ export interface HouseDesignFilterResponse {
     frontSetback?: number;
     rearSetback?: number;
     sideSetback?: number;
+    effectiveRules?: Record<string, unknown>;
+    sourceRefs?: Record<string, unknown>;
   };
 }
 
@@ -450,7 +460,7 @@ export const lotApi = {
       if (response.status === 204) {
         return {
           houseDesigns: [],
-          zoning: { frontSetback: 4, rearSetback: 3, sideSetback: 3 },
+          zoning: {},
         };
       }
 
