@@ -1,5 +1,6 @@
 import { showToast } from "@/components/ui/Toast";
-import type { MapboxGeoJSONFeature } from "mapbox-gl";
+import { AlertTriangle } from "lucide-react";
+import mapboxgl, { type MapboxGeoJSONFeature } from "mapbox-gl";
 import {
   Suspense,
   lazy,
@@ -34,7 +35,10 @@ import { useMapInitialization } from "@/hooks/useMapInitialization";
 import useEstate from "@/hooks/useEstate";
 import { useMobile } from "@/hooks/useMobile";
 import { getImageUrl } from "@/lib/api/lotApi";
-import { syncEstateBackgroundOverlay } from "@/lib/map/estateBackgroundOverlay";
+import {
+  normalizeEstateBackgroundOverlay,
+  syncEstateBackgroundOverlay,
+} from "@/lib/map/estateBackgroundOverlay";
 import type { SetbackValues } from "@/lib/utils/geometry";
 import { useMobileNavigationStore } from "@/stores/mobileNavigationStore";
 import { useModalStore } from "@/stores/modalStore";
@@ -55,6 +59,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const selectedIdRef = useRef<string | null>(null);
   const sidebarOpenRef = useRef<boolean>(false);
+  const initialViewKeyRef = useRef<string | null>(null);
   const isMobile = useMobile();
   const eventListenersAddedRef = useRef<boolean>(false);
 
@@ -62,6 +67,9 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
     (MapboxGeoJSONFeature & { properties: LotProperties }) | null
   >(null);
   const [selectedFloorPlan, setSelectedFloorPlan] = useState<FloorPlan | null>(
+    null
+  );
+  const [floorPlanFitWarning, setFloorPlanFitWarning] = useState<string | null>(
     null
   );
   const [sValuesMarkers, setSValuesMarkers] = useState<mapboxgl.Marker[]>([]);
@@ -143,6 +151,12 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
     selectedLot?.properties?.BLOCK_DERIVED_AREA,
     selectedLot?.properties?.maxFSR,
   ]);
+
+  useEffect(() => {
+    if (!selectedLot || !selectedFloorPlan) {
+      setFloorPlanFitWarning(null);
+    }
+  }, [selectedFloorPlan, selectedLot]);
 
   // Lot details for sidebar
   const lotId = selectedLot?.properties?.ID?.toString() || null;
@@ -371,21 +385,105 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
 
   // Set initial view when lots data is available
   useEffect(() => {
-    if (!mapRef || !lotsData || lotsData.length === 0) return;
+    if (!mapRef) {
+      return;
+    }
 
-    const first = lotsData[0];
-    const coords = first?.geometry?.coordinates?.[0];
-    if (!coords?.length) return;
-    const avgLng =
-      coords.reduce((s: number, c: number[]) => s + c[0], 0) / coords.length;
-    const avgLat =
-      coords.reduce((s: number, c: number[]) => s + c[1], 0) / coords.length;
-    const initialCenter: [number, number] = [avgLng, avgLat];
-    const initialZoom = 16;
+    const bounds = new mapboxgl.LngLatBounds();
+    let hasBounds = false;
 
-    setInitialView({ center: initialCenter, zoom: initialZoom });
-    mapRef.jumpTo({ center: initialCenter, zoom: initialZoom });
-  }, [mapRef, lotsData, setInitialView]);
+    const extendCoordinate = (coordinate: [number, number]) => {
+      if (
+        Array.isArray(coordinate) &&
+        coordinate.length >= 2 &&
+        Number.isFinite(coordinate[0]) &&
+        Number.isFinite(coordinate[1])
+      ) {
+        bounds.extend(coordinate);
+        hasBounds = true;
+      }
+    };
+
+    const extendPolygonCoordinates = (coordinates: unknown) => {
+      if (!Array.isArray(coordinates)) {
+        return;
+      }
+
+      coordinates.forEach((ring) => {
+        if (!Array.isArray(ring)) {
+          return;
+        }
+
+        ring.forEach((coordinate) => {
+          if (
+            Array.isArray(coordinate) &&
+            coordinate.length >= 2 &&
+            Number.isFinite(Number(coordinate[0])) &&
+            Number.isFinite(Number(coordinate[1]))
+          ) {
+            extendCoordinate([Number(coordinate[0]), Number(coordinate[1])]);
+          }
+        });
+      });
+    };
+
+    lotsData?.forEach((lot) => {
+      const geometry = lot.geometry;
+      if (!geometry) {
+        return;
+      }
+
+      if (geometry.type === "Polygon") {
+        extendPolygonCoordinates(geometry.coordinates);
+        return;
+      }
+
+      if (geometry.type === "MultiPolygon") {
+        geometry.coordinates.forEach((polygon) => {
+          extendPolygonCoordinates(polygon);
+        });
+      }
+    });
+
+    const normalizedOverlay = normalizeEstateBackgroundOverlay(estateData);
+    normalizedOverlay?.coordinates.forEach((coordinate) => {
+      extendCoordinate(coordinate);
+    });
+
+    if (!hasBounds) {
+      return;
+    }
+
+    const southWest = bounds.getSouthWest();
+    const northEast = bounds.getNorthEast();
+    const nextViewKey = [
+      estateId ?? "default",
+      southWest.lng.toFixed(6),
+      southWest.lat.toFixed(6),
+      northEast.lng.toFixed(6),
+      northEast.lat.toFixed(6),
+      normalizedOverlay ? "overlay" : "lots",
+    ].join("|");
+
+    if (initialViewKeyRef.current === nextViewKey) {
+      return;
+    }
+
+    const fitPadding = isMobile
+      ? { top: 24, right: 24, bottom: 24, left: 24 }
+      : { top: 32, right: 160, bottom: 48, left: 64 };
+
+    mapRef.fitBounds(bounds, {
+      padding: fitPadding,
+      maxZoom: 17,
+      duration: 0,
+    });
+
+    const center = mapRef.getCenter();
+    const zoom = mapRef.getZoom();
+    setInitialView({ center: [center.lng, center.lat], zoom });
+    initialViewKeyRef.current = nextViewKey;
+  }, [estateData, estateId, isMobile, lotsData, mapRef, setInitialView]);
 
   // CLOSE
   const handleCloseSidebar = useCallback(() => {
@@ -479,6 +577,24 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
         </div>
       )}
 
+      {floorPlanFitWarning && (
+        <div className="pointer-events-none absolute left-1/2 top-4 z-20 w-[min(36rem,calc(100%-2rem))] -translate-x-1/2">
+          <div className="flex items-start gap-3 rounded-xl border border-warning bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-brand">
+                Floor plan doesn&apos;t fit
+              </p>
+              <p className="text-sm text-brand-secondary">
+                {floorPlanFitWarning}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Only show these controls on desktop */}
       {!isMobile && (
         <>
@@ -551,6 +667,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
         showFloorPlanModal={showFloorPlanModal}
         showFacadeModal={showFacadeModal}
         setSValuesMarkers={setSValuesMarkers}
+        onPlacementWarningChange={setFloorPlanFitWarning}
       />
 
       {/* Lot Sidebar - show on both desktop and mobile */}

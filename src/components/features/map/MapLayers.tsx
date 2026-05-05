@@ -19,7 +19,14 @@ import type { FloorPlan } from "@/types/houseDesign";
 import type { LotProperties } from "@/types/lot";
 import * as turf from "@turf/turf";
 import mapboxgl from "mapbox-gl";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+
+declare global {
+  interface Window {
+    __lotlogicPlacementDebug?: unknown;
+    __lotlogicPlacementDebugHistory?: unknown[];
+  }
+}
 
 interface HouseBoundaryData {
   center: [number, number];
@@ -41,6 +48,11 @@ type PlacementBasis = {
   basisRing: Pt[];
   toLngLat: (point: Pt) => Pt;
 };
+
+type FloorPlanImageOrientation = "default" | "quarter-turn-ccw";
+const FLOORPLAN_SOURCE_ID = "floorplan-image";
+const FLOORPLAN_LAYER_ID = "floorplan-layer";
+const FLOORPLAN_DEBUG_HISTORY_LIMIT = 15;
 
 const toClosedQuadRing = (ring: Pt[]): [Pt, Pt, Pt, Pt, Pt] | null => {
   if (ring.length !== 5) {
@@ -70,21 +82,32 @@ const normalizeClosedRing = (ring: [number, number][]): Pt[] | null => {
     return null;
   }
 
+  const pointsEqual = (left: Pt, right: Pt) =>
+    Math.abs(left[0] - right[0]) < 1e-9 &&
+    Math.abs(left[1] - right[1]) < 1e-9;
+
   const openRing = ring
     .map((point) => [Number(point[0]), Number(point[1])] as Pt)
     .filter(
       (point) => Number.isFinite(point[0]) && Number.isFinite(point[1])
     );
 
-  if (openRing.length < 3) {
-    return null;
+  const dedupedRing = openRing.reduce<Pt[]>((points, point) => {
+    const previous = points[points.length - 1];
+    if (!previous || !pointsEqual(previous, point)) {
+      points.push(point);
+    }
+    return points;
+  }, []);
+
+  while (
+    dedupedRing.length > 1 &&
+    pointsEqual(dedupedRing[0], dedupedRing[dedupedRing.length - 1])
+  ) {
+    dedupedRing.pop();
   }
 
-  const first = openRing[0];
-  const last = openRing[openRing.length - 1];
-  const isClosed =
-    Math.abs(first[0] - last[0]) < 1e-9 && Math.abs(first[1] - last[1]) < 1e-9;
-  const normalizedOpenRing = isClosed ? openRing.slice(0, -1) : openRing;
+  const normalizedOpenRing = dedupedRing;
 
   if (normalizedOpenRing.length < 3) {
     return null;
@@ -176,13 +199,137 @@ const getParallelBearingDifference = (bearingA: number, bearingB: number) => {
   return Math.min(rawDiff, Math.abs(rawDiff - 180));
 };
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(Math.max(value, min), max);
-
 const dot = (a: Pt, b: Pt) => a[0] * b[0] + a[1] * b[1];
 
 const roundPlacementValue = (value: number) =>
   Number.isFinite(value) ? Number(value.toFixed(4)) : value;
+
+const roundDebugNumber = (value: number | null | undefined, digits = 3) =>
+  value !== null && value !== undefined && Number.isFinite(value)
+    ? Number(value.toFixed(digits))
+    : null;
+
+const toDebugPoint = (point: Pt | null | undefined) =>
+  point ? [roundDebugNumber(point[0], 7), roundDebugNumber(point[1], 7)] : null;
+
+const toDebugRing = (ring: Pt[] | null | undefined) =>
+  ring?.map((point) => toDebugPoint(point)) ?? null;
+
+const getRingEdgeMetrics = (ring: Pt[] | null | undefined) => {
+  if (!ring || ring.length < 2) {
+    return [];
+  }
+
+  const openRing =
+    ring.length > 2 &&
+    Math.abs(ring[0][0] - ring[ring.length - 1][0]) < 1e-9 &&
+    Math.abs(ring[0][1] - ring[ring.length - 1][1]) < 1e-9
+      ? ring.slice(0, -1)
+      : ring;
+
+  return openRing.map((start, index) => {
+    const end = openRing[(index + 1) % openRing.length];
+    return {
+      index,
+      start: toDebugPoint(start),
+      end: toDebugPoint(end),
+      lengthM: roundDebugNumber(
+        turf.distance(turf.point(start), turf.point(end), { units: "meters" }),
+        2
+      ),
+      bearingDeg: roundDebugNumber(turf.bearing(start, end), 2),
+    };
+  });
+};
+
+const getLongestEdgeMetric = (
+  edges: ReturnType<typeof getRingEdgeMetrics>
+) => {
+  if (edges.length === 0) {
+    return null;
+  }
+
+  return edges.reduce((longest, edge) =>
+    (edge.lengthM ?? 0) > (longest.lengthM ?? 0) ? edge : longest
+  );
+};
+
+const consolidateFrontageChain = ({
+  ring,
+  bestEdgeIndex,
+  frontageLine,
+  frontageBearing,
+}: {
+  ring: Pt[];
+  bestEdgeIndex: number;
+  frontageLine: Pt[];
+  frontageBearing: number;
+}): Pt[] => {
+  const openRing = ring.slice(0, -1);
+  const totalEdges = openRing.length;
+  const frontageLineFeature = turf.lineString(frontageLine);
+  const isFrontageLikeEdge = (edgeIndex: number) => {
+    const start = openRing[edgeIndex];
+    const end = openRing[(edgeIndex + 1) % totalEdges];
+    const edgeBearing = turf.bearing(start, end);
+    const parallelDelta = getParallelBearingDifference(
+      edgeBearing,
+      frontageBearing
+    );
+    const edgeMidpoint = turf.midpoint(turf.point(start), turf.point(end));
+    const distanceToFrontage = turf.pointToLineDistance(
+      edgeMidpoint,
+      frontageLineFeature,
+      { units: "meters" }
+    );
+
+    return parallelDelta <= 8 && distanceToFrontage <= 8;
+  };
+
+  let startEdgeIndex = bestEdgeIndex;
+  let endEdgeIndex = bestEdgeIndex;
+  let frontageEdgeCount = 1;
+
+  while (frontageEdgeCount < totalEdges) {
+    const previousEdgeIndex =
+      (startEdgeIndex - 1 + totalEdges) % totalEdges;
+    if (!isFrontageLikeEdge(previousEdgeIndex)) {
+      break;
+    }
+    startEdgeIndex = previousEdgeIndex;
+    frontageEdgeCount += 1;
+  }
+
+  while (frontageEdgeCount < totalEdges) {
+    const nextEdgeIndex = (endEdgeIndex + 1) % totalEdges;
+    if (!isFrontageLikeEdge(nextEdgeIndex)) {
+      break;
+    }
+    endEdgeIndex = nextEdgeIndex;
+    frontageEdgeCount += 1;
+  }
+
+  if (frontageEdgeCount <= 1) {
+    return rotateClosedRingToStartAtEdge(ring, bestEdgeIndex);
+  }
+
+  const consolidatedOpenRing: Pt[] = [
+    openRing[startEdgeIndex],
+    openRing[(endEdgeIndex + 1) % totalEdges],
+  ];
+  let cursor = (endEdgeIndex + 1) % totalEdges;
+
+  while (cursor !== startEdgeIndex) {
+    cursor = (cursor + 1) % totalEdges;
+    if (cursor !== startEdgeIndex) {
+      consolidatedOpenRing.push(openRing[cursor]);
+    }
+  }
+
+  return consolidatedOpenRing.length >= 3
+    ? [...consolidatedOpenRing, consolidatedOpenRing[0]]
+    : rotateClosedRingToStartAtEdge(ring, bestEdgeIndex);
+};
 
 const getPlacementRing = (
   selectedLot: mapboxgl.MapboxGeoJSONFeature & { properties: LotProperties }
@@ -237,7 +384,12 @@ const getPlacementRing = (
   }
 
   return {
-    ring: rotateClosedRingToStartAtEdge(normalizedRing, bestEdgeIndex),
+    ring: consolidateFrontageChain({
+      ring: normalizedRing,
+      bestEdgeIndex,
+      frontageLine,
+      frontageBearing,
+    }),
     frontageAligned: true,
   };
 };
@@ -363,7 +515,6 @@ const createPlacementBasis = (ringLL: Pt[]): PlacementBasis | null => {
     frontEnd[0] - frontStart[0],
     frontEnd[1] - frontStart[1],
   ]);
-  let inward: Pt = [-alongFront[1], alongFront[0]];
   const centroid: Pt = [
     localRing.reduce((sum, point) => sum + point[0], 0) / localRing.length,
     localRing.reduce((sum, point) => sum + point[1], 0) / localRing.length,
@@ -373,8 +524,65 @@ const createPlacementBasis = (ringLL: Pt[]): PlacementBasis | null => {
     centroid[1] - frontMid[1],
   ];
 
+  let inward: Pt = [-alongFront[1], alongFront[0]];
   if (dot(inward, centroidVector) < 0) {
     inward = [-inward[0], -inward[1]];
+  }
+
+  const edgeDepthSpans = localRing.map((point, index) => {
+    const next = localRing[(index + 1) % localRing.length];
+    return Math.abs(
+      dot([next[0] - point[0], next[1] - point[1]], inward)
+    );
+  });
+  const maxDepthSpan = Math.max(...edgeDepthSpans);
+  const sideCandidates = localRing
+    .map((point, index) => {
+      if (index === 0) {
+        return null;
+      }
+      const next = localRing[(index + 1) % localRing.length];
+      const edgeVector: Pt = [next[0] - point[0], next[1] - point[1]];
+      const edgeLength = Math.hypot(edgeVector[0], edgeVector[1]);
+      const depthSpan = Math.abs(dot(edgeVector, inward));
+      if (
+        edgeLength <= 0.01 ||
+        depthSpan < Math.max(8, maxDepthSpan * 0.45)
+      ) {
+        return null;
+      }
+      const candidate = unit(edgeVector);
+      return dot(candidate, inward) < 0
+        ? ([-candidate[0], -candidate[1]] as Pt)
+        : candidate;
+    })
+    .filter((candidate): candidate is Pt => Boolean(candidate));
+
+  if (sideCandidates.length > 0) {
+    const sideBasis = sideCandidates.reduce<Pt>(
+      (sum, candidate, index) => {
+        const alignedCandidate =
+          index > 0 && dot(sum, candidate) < 0
+            ? ([-candidate[0], -candidate[1]] as Pt)
+            : candidate;
+        return [sum[0] + alignedCandidate[0], sum[1] + alignedCandidate[1]];
+      },
+      [0, 0]
+    );
+    const sideInward = unit(sideBasis);
+    const sideAlignmentDelta = getParallelBearingDifference(
+      (Math.atan2(sideInward[0], sideInward[1]) * 180) / Math.PI,
+      (Math.atan2(inward[0], inward[1]) * 180) / Math.PI
+    );
+
+    if (sideAlignmentDelta <= 25 && dot(sideInward, centroidVector) > 0) {
+      inward = sideInward;
+    }
+  }
+
+  let alongWidth: Pt = [inward[1], -inward[0]];
+  if (dot(alongWidth, alongFront) < 0) {
+    alongWidth = [-alongWidth[0], -alongWidth[1]];
   }
 
   const basisRing = localRing.map((point) => {
@@ -383,7 +591,7 @@ const createPlacementBasis = (ringLL: Pt[]): PlacementBasis | null => {
       point[1] - frontMid[1],
     ];
     return [
-      dot(relativePoint, alongFront),
+      dot(relativePoint, alongWidth),
       dot(relativePoint, inward),
     ] as Pt;
   });
@@ -393,8 +601,8 @@ const createPlacementBasis = (ringLL: Pt[]): PlacementBasis | null => {
     toLngLat: (point: Pt) =>
       unprojectPointFromLocal(
         [
-          frontMid[0] + alongFront[0] * point[0] + inward[0] * point[1],
-          frontMid[1] + alongFront[1] * point[0] + inward[1] * point[1],
+          frontMid[0] + alongWidth[0] * point[0] + inward[0] * point[1],
+          frontMid[1] + alongWidth[1] * point[0] + inward[1] * point[1],
         ],
         projection
       ),
@@ -439,6 +647,144 @@ const getScanlineInterval = (
   return [unique[0], unique[unique.length - 1]];
 };
 
+type FrontAnchoredPlacementCandidate = {
+  frontOffset: number;
+  centerX: number;
+  exactFit: boolean;
+  overflow: number;
+  minClearance: number;
+};
+
+const getPlacementSampleDepths = (
+  ring: Pt[],
+  frontOffset: number,
+  rearOffset: number
+) => {
+  const epsilon = 1e-6;
+  const criticalDepths = [
+    frontOffset,
+    rearOffset,
+    ...ring
+      .map((point) => point[1])
+      .filter((depth) => depth > frontOffset + epsilon && depth < rearOffset - epsilon),
+  ].sort((left, right) => left - right);
+
+  const samples = new Set<number>(criticalDepths);
+  for (let index = 0; index < criticalDepths.length - 1; index += 1) {
+    const start = criticalDepths[index];
+    const end = criticalDepths[index + 1];
+    if (end - start > epsilon) {
+      samples.add(roundPlacementValue((start + end) / 2));
+    }
+  }
+
+  return Array.from(samples).sort((left, right) => left - right);
+};
+
+const evaluateFrontAnchoredPlacement = ({
+  ring,
+  houseWidth,
+  houseDepth,
+  frontOffset,
+  maxDepth,
+}: {
+  ring: Pt[];
+  houseWidth: number;
+  houseDepth: number;
+  frontOffset: number;
+  maxDepth: number;
+}): FrontAnchoredPlacementCandidate | null => {
+  const rearOffset = frontOffset + houseDepth;
+  const sampledRearOffset = Math.min(rearOffset, maxDepth);
+  const sampleDepths = getPlacementSampleDepths(
+    ring,
+    frontOffset,
+    sampledRearOffset
+  );
+  const intervals = sampleDepths
+    .map((depth) => getScanlineInterval(ring, depth))
+    .filter((interval): interval is [number, number] => Array.isArray(interval));
+
+  if (intervals.length === 0) {
+    return null;
+  }
+
+  const preferredCenterX =
+    intervals.reduce((sum, interval) => sum + (interval[0] + interval[1]) / 2, 0) /
+    intervals.length;
+  const leftBoundary = Math.max(...intervals.map((interval) => interval[0]));
+  const rightBoundary = Math.min(...intervals.map((interval) => interval[1]));
+  const candidateCenters = new Set<number>([
+    0,
+    preferredCenterX,
+    leftBoundary + houseWidth / 2,
+    rightBoundary - houseWidth / 2,
+  ]);
+
+  let bestCandidate: FrontAnchoredPlacementCandidate | null = null;
+  for (const centerX of candidateCenters) {
+    const left = centerX - houseWidth / 2;
+    const right = centerX + houseWidth / 2;
+    const lateralOverflow = intervals.reduce((maxOverflow, interval) => {
+      const leftOverflow = Math.max(interval[0] - left, 0);
+      const rightOverflow = Math.max(right - interval[1], 0);
+      return Math.max(maxOverflow, leftOverflow, rightOverflow);
+    }, 0);
+    const depthOverflow = Math.max(rearOffset - maxDepth, 0);
+    const overflow = Math.max(lateralOverflow, depthOverflow);
+    const minClearance = Math.min(
+      ...intervals.map((interval) =>
+        Math.min(left - interval[0], interval[1] - right)
+      )
+    );
+    const exactFit = overflow <= 0.01;
+
+    const candidate: FrontAnchoredPlacementCandidate = {
+      frontOffset,
+      centerX,
+      exactFit,
+      overflow,
+      minClearance,
+    };
+
+    if (!bestCandidate) {
+      bestCandidate = candidate;
+      continue;
+    }
+
+    if (candidate.exactFit !== bestCandidate.exactFit) {
+      if (candidate.exactFit) {
+        bestCandidate = candidate;
+      }
+      continue;
+    }
+
+    if (candidate.exactFit) {
+      if (
+        candidate.minClearance > bestCandidate.minClearance + 0.01 ||
+        (Math.abs(candidate.minClearance - bestCandidate.minClearance) <= 0.01 &&
+          candidate.frontOffset < bestCandidate.frontOffset)
+      ) {
+        bestCandidate = candidate;
+      }
+      continue;
+    }
+
+    if (
+      candidate.overflow < bestCandidate.overflow - 0.01 ||
+      (Math.abs(candidate.overflow - bestCandidate.overflow) <= 0.01 &&
+        candidate.minClearance > bestCandidate.minClearance + 0.01) ||
+      (Math.abs(candidate.overflow - bestCandidate.overflow) <= 0.01 &&
+        Math.abs(candidate.minClearance - bestCandidate.minClearance) <= 0.01 &&
+        candidate.frontOffset < bestCandidate.frontOffset)
+    ) {
+      bestCandidate = candidate;
+    }
+  }
+
+  return bestCandidate;
+};
+
 const buildTrueSizeFrontAnchoredHouseBoundary = (
   innerLL: Pt[],
   houseWidth: number,
@@ -480,62 +826,60 @@ const buildTrueSizeFrontAnchoredHouseBoundary = (
     (left, right) => left - right
   );
 
-  let chosenFrontOffset: number | null = null;
-  let chosenCenterX = 0;
+  let bestExactCandidate: FrontAnchoredPlacementCandidate | null = null;
+  let bestApproximateCandidate: FrontAnchoredPlacementCandidate | null = null;
 
   for (const rawFrontOffset of sortedOffsets) {
     const frontOffset = Math.max(epsilon, rawFrontOffset);
-    const rearOffset = frontOffset + houseDepth;
-    if (rearOffset > maxDepth + epsilon) {
+    const candidate = evaluateFrontAnchoredPlacement({
+      ring: openBasisRing,
+      houseWidth,
+      houseDepth,
+      frontOffset,
+      maxDepth,
+    });
+    if (!candidate) {
       continue;
     }
 
-    const sampleDepths = new Set<number>([frontOffset, rearOffset]);
-    for (const point of openBasisRing) {
-      if (point[1] > frontOffset && point[1] < rearOffset) {
-        sampleDepths.add(point[1]);
+    if (candidate.exactFit) {
+      if (
+        !bestExactCandidate ||
+        candidate.minClearance > bestExactCandidate.minClearance + 0.01 ||
+        (Math.abs(candidate.minClearance - bestExactCandidate.minClearance) <=
+          0.01 &&
+          candidate.frontOffset < bestExactCandidate.frontOffset) ||
+        (Math.abs(candidate.minClearance - bestExactCandidate.minClearance) <=
+          0.01 &&
+          Math.abs(candidate.frontOffset - bestExactCandidate.frontOffset) <=
+            0.01 &&
+          Math.abs(candidate.centerX) < Math.abs(bestExactCandidate.centerX))
+      ) {
+        bestExactCandidate = candidate;
       }
-    }
-
-    let leftBoundary = Number.NEGATIVE_INFINITY;
-    let rightBoundary = Number.POSITIVE_INFINITY;
-    let valid = true;
-
-    for (const sampleDepth of sampleDepths) {
-      const interval = getScanlineInterval(openBasisRing, sampleDepth);
-      if (!interval) {
-        valid = false;
-        break;
-      }
-      leftBoundary = Math.max(leftBoundary, interval[0]);
-      rightBoundary = Math.min(rightBoundary, interval[1]);
-    }
-
-    if (!valid || rightBoundary - leftBoundary < houseWidth - epsilon) {
       continue;
     }
 
-    chosenFrontOffset = frontOffset;
-    chosenCenterX = clamp(
-      0,
-      leftBoundary + houseWidth / 2,
-      rightBoundary - houseWidth / 2
-    );
-    break;
+    if (
+      !bestApproximateCandidate ||
+      candidate.overflow < bestApproximateCandidate.overflow - 0.01 ||
+      (Math.abs(candidate.overflow - bestApproximateCandidate.overflow) <= 0.01 &&
+        candidate.minClearance > bestApproximateCandidate.minClearance + 0.01) ||
+      (Math.abs(candidate.overflow - bestApproximateCandidate.overflow) <= 0.01 &&
+        Math.abs(candidate.minClearance - bestApproximateCandidate.minClearance) <=
+          0.01 &&
+        candidate.frontOffset < bestApproximateCandidate.frontOffset)
+    ) {
+      bestApproximateCandidate = candidate;
+    }
   }
 
-  const finalFrontOffset = chosenFrontOffset ?? epsilon;
-  const frontInterval =
-    getScanlineInterval(openBasisRing, finalFrontOffset) ??
-    ([-houseWidth / 2, houseWidth / 2] as [number, number]);
+  const finalFrontOffset =
+    bestExactCandidate?.frontOffset ??
+    bestApproximateCandidate?.frontOffset ??
+    epsilon;
   const finalCenterX =
-    chosenFrontOffset !== null
-      ? chosenCenterX
-      : clamp(
-          0,
-          frontInterval[0] + houseWidth / 2,
-          frontInterval[1] - houseWidth / 2
-        );
+    bestExactCandidate?.centerX ?? bestApproximateCandidate?.centerX ?? 0;
   const halfWidth = houseWidth / 2;
 
   const rectangleBasisRing: Pt[] = [
@@ -772,17 +1116,130 @@ const formatDimensionMeters = (distance: number) => {
   return Number.isInteger(rounded) ? `${rounded.toFixed(0)}m` : `${rounded.toFixed(1)}m`;
 };
 
+const getFloorPlanContentDimensions = (
+  image: HTMLImageElement
+): { width: number; height: number } | null => {
+  if (!image.naturalWidth || !image.naturalHeight) {
+    return null;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) {
+    return null;
+  }
+
+  context.drawImage(image, 0, 0);
+  const { data, width, height } = context.getImageData(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+  const colorThreshold = 245;
+  const alphaThreshold = 8;
+  let minX = width;
+  let minY = height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const offset = (y * width + x) * 4;
+      const red = data[offset];
+      const green = data[offset + 1];
+      const blue = data[offset + 2];
+      const alpha = data[offset + 3];
+      const isContent =
+        alpha > alphaThreshold &&
+        (red < colorThreshold || green < colorThreshold || blue < colorThreshold);
+
+      if (!isContent) {
+        continue;
+      }
+
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    return {
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+    };
+  }
+
+  return {
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+  };
+};
+
+const getFloorPlanImageOrientation = ({
+  imageWidth,
+  imageHeight,
+  houseWidth,
+  houseDepth,
+}: {
+  imageWidth: number;
+  imageHeight: number;
+  houseWidth?: number;
+  houseDepth?: number;
+}): FloorPlanImageOrientation => {
+  if (
+    !Number.isFinite(imageWidth) ||
+    !Number.isFinite(imageHeight) ||
+    !houseWidth ||
+    !houseDepth ||
+    houseWidth <= 0 ||
+    houseDepth <= 0
+  ) {
+    return "default";
+  }
+
+  const imageAspect = imageWidth / imageHeight;
+  const houseAspect = houseWidth / houseDepth;
+
+  if (!Number.isFinite(imageAspect) || !Number.isFinite(houseAspect)) {
+    return "default";
+  }
+
+  const directScore = Math.abs(Math.log(imageAspect / houseAspect));
+  const quarterTurnScore = Math.abs(Math.log(imageAspect * houseAspect));
+
+  return quarterTurnScore + 0.12 < directScore
+    ? "quarter-turn-ccw"
+    : "default";
+};
+
 const getFloorPlanImageCoordinates = (
-  ring: [[number, number], [number, number], [number, number], [number, number]]
+  ring: [[number, number], [number, number], [number, number], [number, number]],
+  orientation: FloorPlanImageOrientation = "default"
 ): [[number, number], [number, number], [number, number], [number, number]] => {
   // Floorplan assets are authored with the frontage along the bottom edge,
   // but their handedness is mirrored relative to the lot ring.
-  return [
+  const base: [[number, number], [number, number], [number, number], [number, number]] = [
     ring[2], // TL
     ring[3], // TR
     ring[0], // BR
     ring[1], // BL
   ];
+
+  if (orientation === "quarter-turn-ccw") {
+    return [
+      base[3], // TL
+      base[0], // TR
+      base[1], // BR
+      base[2], // BL
+    ];
+  }
+
+  return base;
 };
 
 type HouseDimensionMeasurement = {
@@ -957,7 +1414,37 @@ interface MapLayersProps {
   showFloorPlanModal: boolean;
   showFacadeModal: boolean;
   setSValuesMarkers: (markers: mapboxgl.Marker[]) => void;
+  onPlacementWarningChange?: (message: string | null) => void;
 }
+
+const getFloorPlanFitWarning = ({
+  houseBoundary,
+  lotBoundary,
+  setbackBoundary,
+}: {
+  houseBoundary: GeoJSON.Feature<GeoJSON.Polygon>;
+  lotBoundary: GeoJSON.Feature<GeoJSON.Polygon>;
+  setbackBoundary: GeoJSON.Feature<GeoJSON.Polygon> | null;
+}) => {
+  const fitsLotBoundary = turf.booleanWithin(houseBoundary, lotBoundary);
+  const fitsSetbackBoundary = setbackBoundary
+    ? turf.booleanWithin(houseBoundary, setbackBoundary)
+    : true;
+
+  if (fitsLotBoundary && fitsSetbackBoundary) {
+    return null;
+  }
+
+  if (!fitsLotBoundary && !fitsSetbackBoundary) {
+    return "This floor plan extends outside the lot boundary and the buildable setback area.";
+  }
+
+  if (!fitsLotBoundary) {
+    return "This floor plan extends outside the lot boundary.";
+  }
+
+  return "This floor plan does not fit within the buildable setback area for this lot.";
+};
 
 // Calculate distances and compare, auto-rotate if needed
 const calculateAndCompareDistances = (
@@ -1129,10 +1616,20 @@ export const MapLayers = ({
   showFloorPlanModal,
   showFacadeModal,
   setSValuesMarkers,
+  onPlacementWarningChange,
 }: MapLayersProps) => {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   // Track and manage concurrent floorplan renders so only the latest can affect loader state
   const floorplanRunIdRef = useRef(0);
+  const floorPlanImageOrientationRef = useRef<FloorPlanImageOrientation>("default");
+  const floorPlanImageMetricsRef = useRef<{
+    naturalWidth: number;
+    naturalHeight: number;
+    contentWidth: number | null;
+    contentHeight: number | null;
+  } | null>(null);
+  const floorPlanFitWarningRef = useRef<string | null>(null);
+  const debugSignatureRef = useRef<string>("");
 
   // Manual rotation state from Zustand
   const {
@@ -1146,6 +1643,179 @@ export const MapLayers = ({
 
   // Track previous FSR violation state to show toast only once
   const prevExceedsFSRRef = useRef(false);
+
+  const removeFloorPlanOverlay = useCallback(
+    (targetMap: mapboxgl.Map | null) => {
+      if (!targetMap) {
+        return;
+      }
+
+      if (targetMap.getLayer(FLOORPLAN_LAYER_ID)) {
+        targetMap.removeLayer(FLOORPLAN_LAYER_ID);
+      }
+      if (targetMap.getSource(FLOORPLAN_SOURCE_ID)) {
+        targetMap.removeSource(FLOORPLAN_SOURCE_ID);
+      }
+    },
+    []
+  );
+
+  const updatePlacementWarning = useCallback(
+    (message: string | null) => {
+      floorPlanFitWarningRef.current = message;
+      onPlacementWarningChange?.(message);
+      if (message) {
+        removeFloorPlanOverlay(map);
+      }
+    },
+    [map, onPlacementWarningChange, removeFloorPlanOverlay]
+  );
+
+  const publishPlacementDebug = useCallback(
+    ({
+      phase,
+      placementRing,
+      setbackRing,
+      houseBoundaryRing,
+      warning,
+      frontageAligned,
+      imageOrientation,
+    }: {
+      phase: "placement" | "rotation";
+      placementRing: Pt[] | null;
+      setbackRing: Pt[] | null;
+      houseBoundaryRing: Pt[] | null;
+      warning: string | null;
+      frontageAligned: boolean;
+      imageOrientation: FloorPlanImageOrientation;
+    }) => {
+      if (!selectedLot || !selectedFloorPlan || !houseBoundaryRing || !placementRing) {
+        return;
+      }
+
+      const frontageLine = parseFrontageLineCoordinates(
+        selectedLot.properties.frontageCoordinate
+      );
+      const lotEdges = getRingEdgeMetrics(placementRing);
+      const setbackEdges = getRingEdgeMetrics(setbackRing);
+      const houseEdges = getRingEdgeMetrics(houseBoundaryRing);
+      const lotFrontEdge = lotEdges[0] ?? null;
+      const lotSideEdge = lotEdges[1] ?? null;
+      const houseFrontEdge = houseEdges[0] ?? null;
+      const houseSideEdge = houseEdges[1] ?? null;
+      const lotLongestEdge = getLongestEdgeMetric(lotEdges);
+      const houseLongestEdge = getLongestEdgeMetric(houseEdges);
+      const imageMetrics = floorPlanImageMetricsRef.current;
+      const snapshot = {
+        timestamp: new Date().toISOString(),
+        phase,
+        lot: {
+          id: selectedLot.properties.ID?.toString() ?? null,
+          blockKey: selectedLot.properties.BLOCK_KEY ?? null,
+          blockNumber: selectedLot.properties.BLOCK_NUMBER ?? null,
+          frontageAligned,
+          frontageCoordinate: selectedLot.properties.frontageCoordinate ?? null,
+          frontageLine: toDebugRing(frontageLine ?? null),
+          placementRing: toDebugRing(placementRing),
+          setbackRing: toDebugRing(setbackRing),
+          lotEdges,
+          setbackEdges,
+          lotLongestEdge,
+        },
+        floorPlan: {
+          url: selectedFloorPlan.url,
+          houseArea: roundDebugNumber(selectedFloorPlan.houseArea ?? null, 2),
+          houseWidth: roundDebugNumber(selectedFloorPlan.houseWidth ?? null, 2),
+          houseDepth: roundDebugNumber(selectedFloorPlan.houseDepth ?? null, 2),
+          imageOrientation,
+          imageMetrics,
+          manualRotation,
+          pendingRotation,
+          warning,
+        },
+        houseBoundary: {
+          ring: toDebugRing(houseBoundaryRing),
+          edges: houseEdges,
+          houseFrontEdge,
+          houseSideEdge,
+          houseLongestEdge,
+        },
+        deltas: {
+          frontEdgeDeg: roundDebugNumber(
+            lotFrontEdge?.bearingDeg !== null &&
+              lotFrontEdge?.bearingDeg !== undefined &&
+              houseFrontEdge?.bearingDeg !== null &&
+              houseFrontEdge?.bearingDeg !== undefined
+              ? getParallelBearingDifference(
+                  lotFrontEdge.bearingDeg,
+                  houseFrontEdge.bearingDeg
+                )
+              : null,
+            2
+          ),
+          sideEdgeDeg: roundDebugNumber(
+            lotSideEdge?.bearingDeg !== null &&
+              lotSideEdge?.bearingDeg !== undefined &&
+              houseSideEdge?.bearingDeg !== null &&
+              houseSideEdge?.bearingDeg !== undefined
+              ? getParallelBearingDifference(
+                  lotSideEdge.bearingDeg,
+                  houseSideEdge.bearingDeg
+                )
+              : null,
+            2
+          ),
+          longestEdgeDeg: roundDebugNumber(
+            lotLongestEdge?.bearingDeg !== null &&
+              lotLongestEdge?.bearingDeg !== undefined &&
+              houseLongestEdge?.bearingDeg !== null &&
+              houseLongestEdge?.bearingDeg !== undefined
+              ? getParallelBearingDifference(
+                  lotLongestEdge.bearingDeg,
+                  houseLongestEdge.bearingDeg
+                )
+              : null,
+            2
+          ),
+        },
+      };
+
+      const signature = JSON.stringify({
+        phase,
+        lotId: snapshot.lot.id,
+        url: snapshot.floorPlan.url,
+        manualRotation: snapshot.floorPlan.manualRotation,
+        pendingRotation: snapshot.floorPlan.pendingRotation,
+        warning: snapshot.floorPlan.warning,
+        imageOrientation: snapshot.floorPlan.imageOrientation,
+        frontEdgeDeg: snapshot.deltas.frontEdgeDeg,
+        sideEdgeDeg: snapshot.deltas.sideEdgeDeg,
+        longestEdgeDeg: snapshot.deltas.longestEdgeDeg,
+        houseBoundary: snapshot.houseBoundary.ring,
+      });
+
+      if (debugSignatureRef.current === signature) {
+        return;
+      }
+      debugSignatureRef.current = signature;
+
+      if (typeof window !== "undefined") {
+        window.__lotlogicPlacementDebug = snapshot;
+        const history = window.__lotlogicPlacementDebugHistory ?? [];
+        history.push(snapshot);
+        window.__lotlogicPlacementDebugHistory = history.slice(
+          -FLOORPLAN_DEBUG_HISTORY_LIMIT
+        );
+      }
+
+      console.groupCollapsed(
+        `[LotLogic placement debug] ${phase} lot=${snapshot.lot.blockKey ?? snapshot.lot.id ?? "unknown"} frontΔ=${snapshot.deltas.frontEdgeDeg ?? "n/a"} sideΔ=${snapshot.deltas.sideEdgeDeg ?? "n/a"}`
+      );
+      console.log(snapshot);
+      console.groupEnd();
+    },
+    [manualRotation, pendingRotation, selectedFloorPlan, selectedLot]
+  );
 
   // Reset manual rotation when switching lots or floorplans
   useEffect(() => {
@@ -1171,12 +1841,25 @@ export const MapLayers = ({
     prevExceedsFSRRef.current = false;
   }, [selectedLot?.properties?.ID, selectedFloorPlan?.url]);
 
+  useEffect(() => {
+    if (!selectedLot || !selectedFloorPlan) {
+      updatePlacementWarning(null);
+    }
+  }, [selectedFloorPlan, selectedLot, updatePlacementWarning]);
+
+  useEffect(() => {
+    floorPlanImageOrientationRef.current = "default";
+    floorPlanImageMetricsRef.current = null;
+    floorPlanFitWarningRef.current = null;
+    debugSignatureRef.current = "";
+  }, [selectedFloorPlan?.url, selectedLot?.properties?.ID]);
+
   // Separate useEffect for immediate rotation updates
   useEffect(() => {
     if (!map || !selectedFloorPlan) return;
 
-    const sourceId = "floorplan-image";
-    const layerId = "floorplan-layer";
+    const sourceId = FLOORPLAN_SOURCE_ID;
+    const layerId = FLOORPLAN_LAYER_ID;
 
     // Check if layer exists, if not, store pending rotation and show loader
     // console.log("🔍 Checking if floorplan layer exists:", map.getLayer(layerId));
@@ -1245,7 +1928,7 @@ export const MapLayers = ({
           rCoords[1],
           rCoords[2],
           rCoords[3],
-        ]);
+        ], floorPlanImageOrientationRef.current);
 
         // Update the existing source
         if (map.getSource(sourceId)) {
@@ -1296,6 +1979,7 @@ export const MapLayers = ({
             getPlacementRing(selectedLot)?.ring ??
             normalizeClosedRing(coordinates);
           if (!setbackRing) {
+            updatePlacementWarning(null);
             return;
           }
 
@@ -1308,6 +1992,7 @@ export const MapLayers = ({
 
           if (innerLL && innerLL.length >= 5) {
             const innerPoly = turf.polygon([innerLL]);
+            const lotPoly = turf.polygon([setbackRing]);
             const innerArea = turf.area(innerPoly);
             const desired = fsrBuildableArea
               ? Math.min(fsrBuildableArea, innerArea)
@@ -1322,6 +2007,26 @@ export const MapLayers = ({
             const exceedsFSR = !turf.booleanWithin(rotated, fsrBoundary);
             // Update previous state
             prevExceedsFSRRef.current = exceedsFSR;
+            const warning = getFloorPlanFitWarning({
+              houseBoundary: rotated,
+              lotBoundary: lotPoly,
+              setbackBoundary: innerPoly,
+            });
+            updatePlacementWarning(warning);
+            publishPlacementDebug({
+              phase: "rotation",
+              placementRing: setbackRing,
+              setbackRing: innerLL,
+              houseBoundaryRing:
+                (rotated.geometry.coordinates[0] as Pt[] | undefined) ?? null,
+              warning,
+              frontageAligned: Boolean(getPlacementRing(selectedLot)?.frontageAligned),
+              imageOrientation: floorPlanImageOrientationRef.current,
+            });
+          } else {
+            updatePlacementWarning(
+              "This floor plan does not fit within the buildable setback area for this lot."
+            );
           }
         }
       }
@@ -1337,6 +2042,8 @@ export const MapLayers = ({
     setPendingRotation,
     applyPendingRotation,
     setManualRotation,
+    updatePlacementWarning,
+    publishPlacementDebug,
   ]);
 
   // Handle pending rotations when layer becomes available
@@ -1351,17 +2058,19 @@ export const MapLayers = ({
 
   // Floorplan overlay
   useEffect(() => {
-    if (!map || !selectedFloorPlan) return;
+    if (!map || !selectedFloorPlan) {
+      updatePlacementWarning(null);
+      return;
+    }
 
     // Start a new render run; only this run is allowed to clear the loader
     const myRunId = ++floorplanRunIdRef.current;
     setIsCalculating(true);
 
-    const sourceId = "floorplan-image";
-    const layerId = "floorplan-layer";
+    const sourceId = FLOORPLAN_SOURCE_ID;
+    const layerId = FLOORPLAN_LAYER_ID;
 
-    if (map.getLayer(layerId)) map.removeLayer(layerId);
-    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    removeFloorPlanOverlay(map);
 
     // Delay floorplan creation to allow rotation calculations to complete
     const createFloorplan = () => {
@@ -1371,6 +2080,20 @@ export const MapLayers = ({
       img.crossOrigin = "anonymous";
 
       img.onload = () => {
+        const contentDimensions = getFloorPlanContentDimensions(img);
+        floorPlanImageMetricsRef.current = {
+          naturalWidth: img.naturalWidth,
+          naturalHeight: img.naturalHeight,
+          contentWidth: contentDimensions?.width ?? null,
+          contentHeight: contentDimensions?.height ?? null,
+        };
+        floorPlanImageOrientationRef.current = getFloorPlanImageOrientation({
+          imageWidth: contentDimensions?.width ?? img.naturalWidth,
+          imageHeight: contentDimensions?.height ?? img.naturalHeight,
+          houseWidth: selectedFloorPlan.houseWidth,
+          houseDepth: selectedFloorPlan.houseDepth,
+        });
+
         // Use the house boundary coordinates for the floorplan if available
         const houseBoundarySource = map.getSource("house-area-boundary-source");
 
@@ -1421,15 +2144,18 @@ export const MapLayers = ({
                 rCoords[1],
                 rCoords[2],
                 rCoords[3],
-              ]);
+              ], floorPlanImageOrientationRef.current);
+
+              if (floorPlanFitWarningRef.current) {
+                removeFloorPlanOverlay(map);
+                if (floorplanRunIdRef.current === myRunId) {
+                  setIsCalculating(false);
+                }
+                return;
+              }
 
               // Remove existing layer and source if they exist
-              if (map.getLayer(layerId)) {
-                map.removeLayer(layerId);
-              }
-              if (map.getSource(sourceId)) {
-                map.removeSource(sourceId);
-              }
+              removeFloorPlanOverlay(map);
 
               map.addSource(sourceId, {
                 type: "image",
@@ -1504,16 +2230,20 @@ export const MapLayers = ({
     return () => {
       clearTimeout(timeoutId);
       clearTimeout(safetyId);
-      if (map) {
-        if (map.getLayer(layerId)) map.removeLayer(layerId);
-        if (map.getSource(sourceId)) map.removeSource(sourceId);
-      }
+      removeFloorPlanOverlay(map);
       // If this run is still the active one, clear the loader on cleanup
       if (floorplanRunIdRef.current === myRunId) {
         setIsCalculating(false);
       }
     };
-  }, [map, selectedFloorPlan, manualRotation]);
+  }, [
+    map,
+    selectedFloorPlan,
+    manualRotation,
+    removeFloorPlanOverlay,
+    setIsCalculating,
+    updatePlacementWarning,
+  ]);
 
   // S values + Setbacks + FSR boundary
   useEffect(() => {
@@ -1521,7 +2251,10 @@ export const MapLayers = ({
     markersRef.current = [];
     setSValuesMarkers([]);
 
-    if (!map || !selectedLot) return;
+    if (!map || !selectedLot) {
+      updatePlacementWarning(null);
+      return;
+    }
 
     const geometry = selectedLot.geometry as GeoJSON.Polygon;
     const coordinates = geometry.coordinates[0] as [number, number][];
@@ -1544,6 +2277,7 @@ export const MapLayers = ({
 
     if (innerLL && innerLL.length >= 5) {
       const innerPoly = turf.polygon([innerLL]);
+      const lotPoly = turf.polygon([setbackRing]);
 
       // Draw setback boundary
       if (map.getLayer("setback-boundary-layer"))
@@ -1718,8 +2452,26 @@ export const MapLayers = ({
         }
 
         if (!houseBoundary) {
+          updatePlacementWarning(null);
           return;
         }
+
+        const warning = getFloorPlanFitWarning({
+          houseBoundary: houseBoundary as GeoJSON.Feature<GeoJSON.Polygon>,
+          lotBoundary: lotPoly,
+          setbackBoundary: innerPoly,
+        });
+        updatePlacementWarning(warning);
+        publishPlacementDebug({
+          phase: "placement",
+          placementRing: setbackRing,
+          setbackRing: innerLL,
+          houseBoundaryRing:
+            (houseBoundary.geometry.coordinates[0] as Pt[] | undefined) ?? null,
+          warning,
+          frontageAligned: Boolean(placementResult?.frontageAligned),
+          imageOrientation: floorPlanImageOrientationRef.current,
+        });
 
         // Keep the rendered footprint at true size; if it overflows the
         // envelope, that should be visible rather than silently shrinking it.
@@ -1808,6 +2560,12 @@ export const MapLayers = ({
           newMarkers.push(houseAreaLabel);
         }
       }
+    } else if (selectedFloorPlan) {
+      updatePlacementWarning(
+        "This floor plan does not fit within the buildable setback area for this lot."
+      );
+    } else {
+      updatePlacementWarning(null);
     }
 
     // S labels on sides - Map s-values correctly to coordinates
@@ -1920,6 +2678,8 @@ export const MapLayers = ({
     showFloorPlanModal,
     showFacadeModal,
     setSValuesMarkers,
+    updatePlacementWarning,
+    publishPlacementDebug,
   ]);
 
   return null;
