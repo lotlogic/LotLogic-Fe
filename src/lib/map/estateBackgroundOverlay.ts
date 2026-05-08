@@ -29,8 +29,6 @@ const DEFAULT_LOT_FILL_OPACITY = [
   "case",
   ["boolean", ["feature-state", "selected"], false],
   1,
-  ["==", ["get", "isRed"], true],
-  1,
   1,
 ];
 const BACKGROUND_VISIBLE_LOT_FILL_OPACITY = [
@@ -140,10 +138,32 @@ const removeEstateBackgroundOverlay = (map: Map) => {
   ];
 };
 
+const refreshEstateBackgroundOverlay = (map: Map, rasterOpacity: number) => {
+  if (!map.getLayer(ESTATE_BACKGROUND_LAYER_ID)) {
+    return;
+  }
+
+  const refreshOpacity =
+    rasterOpacity > 0.0001 ? rasterOpacity - 0.0001 : rasterOpacity + 0.0001;
+
+  map.setPaintProperty(
+    ESTATE_BACKGROUND_LAYER_ID,
+    "raster-opacity",
+    refreshOpacity
+  );
+  map.setPaintProperty(
+    ESTATE_BACKGROUND_LAYER_ID,
+    "raster-opacity",
+    rasterOpacity
+  );
+  map.triggerRepaint();
+};
+
 export const syncEstateBackgroundOverlay = (
   map: Map,
   overlay: EstateBackgroundOverlayInput | null | undefined,
-  beforeLayerId = "demo-lot-layer"
+  beforeLayerId = "demo-lot-layer",
+  opacity = 1
 ) => {
   if (!map.isStyleLoaded()) {
     return;
@@ -152,6 +172,7 @@ export const syncEstateBackgroundOverlay = (
   const normalized = normalizeEstateBackgroundOverlay(overlay);
   if (!normalized) {
     removeEstateBackgroundOverlay(map);
+    map.triggerRepaint();
     return;
   }
 
@@ -167,6 +188,7 @@ export const syncEstateBackgroundOverlay = (
   const mapWithSyncState = map as Map & {
     [ESTATE_BACKGROUND_SYNC_KEY]?: string;
   };
+  const rasterOpacity = Math.min(Math.max(opacity, 0), 1);
 
   const existingSource = map.getSource(ESTATE_BACKGROUND_SOURCE_ID) as
     | {
@@ -174,6 +196,9 @@ export const syncEstateBackgroundOverlay = (
           url: string;
           coordinates: NormalizedEstateBackgroundOverlay["coordinates"];
         }) => void;
+        setCoordinates?: (
+          coordinates: NormalizedEstateBackgroundOverlay["coordinates"]
+        ) => void;
       }
     | undefined;
 
@@ -182,6 +207,7 @@ export const syncEstateBackgroundOverlay = (
     map.getLayer(ESTATE_BACKGROUND_LAYER_ID) &&
     existingSource
   ) {
+    refreshEstateBackgroundOverlay(map, rasterOpacity);
     return;
   }
 
@@ -190,6 +216,7 @@ export const syncEstateBackgroundOverlay = (
       url: normalized.imageUrl,
       coordinates: normalized.coordinates,
     });
+    existingSource.setCoordinates?.(normalized.coordinates);
   } else {
     removeEstateBackgroundOverlay(map);
     map.addSource(ESTATE_BACKGROUND_SOURCE_ID, {
@@ -205,7 +232,7 @@ export const syncEstateBackgroundOverlay = (
       type: "raster" as const,
       source: ESTATE_BACKGROUND_SOURCE_ID,
       paint: {
-        "raster-opacity": 1,
+        "raster-opacity": rasterOpacity,
         "raster-resampling": "linear" as const,
       },
     };
@@ -220,6 +247,14 @@ export const syncEstateBackgroundOverlay = (
       map.moveLayer(ESTATE_BACKGROUND_LAYER_ID, beforeLayerId);
     }
   }
+
+  refreshEstateBackgroundOverlay(map, rasterOpacity);
+  map.once("idle", () => {
+    refreshEstateBackgroundOverlay(map, rasterOpacity);
+  });
+  requestAnimationFrame(() => {
+    refreshEstateBackgroundOverlay(map, rasterOpacity);
+  });
 
   setLotFillOpacityForBackground(map, true);
   mapWithSyncState[ESTATE_BACKGROUND_SYNC_KEY] = syncKey;

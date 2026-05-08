@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { EnquiryJourneyValue } from "@/constants/enquiry";
 export interface HouseDesignImage {
   facadeId?: string;
   src: string;
@@ -80,6 +81,7 @@ export interface GetYourQuoteSidebarProps {
   onBack?: () => void;
   selectedHouseDesign: HouseDesignItem | null;
   selectedFacade?: SelectedFacadeOption | null;
+  initialJourneyType?: EnquiryJourneyValue | null;
   lotDetails: {
     id: string | number;
     estateId?: string | number;

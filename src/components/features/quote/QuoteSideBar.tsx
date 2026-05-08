@@ -96,7 +96,7 @@ const JOURNEY_OPTIONS: Array<{
   },
   {
     value: "pricing_enquiry",
-    title: "I just want pricing for now",
+    title: "I want pricing first",
     description: "Send a qualified pricing request to the builder.",
   },
 ];
@@ -107,6 +107,7 @@ export const GetYourQuoteSidebar = ({
   onBack,
   selectedHouseDesign,
   selectedFacade,
+  initialJourneyType = null,
   lotDetails,
 }: GetYourQuoteSidebarProps) => {
   const [showThankYou, setShowThankYou] = useState(false);
@@ -174,9 +175,9 @@ export const GetYourQuoteSidebar = ({
     setErrors({});
     setShowThankYou(false);
     setAgreeToTerms(false);
-    setJourneyType(null);
+    setJourneyType(initialJourneyType);
     setFinishesLevel(null);
-  }, [open]);
+  }, [initialJourneyType, open]);
 
   if (!open) return null;
 
@@ -187,8 +188,13 @@ export const GetYourQuoteSidebar = ({
   const isPricingJourney = journeyType === "pricing_enquiry";
   const submitLabel =
     journeyType === "secure_block"
-      ? "Secure this block"
+      ? "Secure this lot"
       : "Request detailed quote";
+  const selectedDesignImageSrc = selectedHouseDesign?.floorPlanImage
+    ? getImageUrl(selectedHouseDesign.floorPlanImage)
+    : selectedHouseDesign?.image
+    ? getImageUrl(selectedHouseDesign.image)
+    : null;
 
   const handleInputChange = (field: keyof QuoteFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -344,20 +350,18 @@ export const GetYourQuoteSidebar = ({
         {showThankYou ? (
           <div className="p-6 space-y-6">
             <div className="rounded-2xl border border-brand bg-brand-accent p-4 flex gap-4 items-center">
-              <img
-                src={
-                  selectedHouseDesign?.floorPlanImage
-                    ? getImageUrl(selectedHouseDesign.floorPlanImage)
-                    : selectedHouseDesign?.image
-                }
-                alt="Selected design"
-                width={56}
-                height={56}
-                className="rounded-lg object-cover"
-              />
+              {selectedDesignImageSrc && (
+                <img
+                  src={selectedDesignImageSrc}
+                  alt="Selected design"
+                  width={56}
+                  height={56}
+                  className="rounded-lg object-cover"
+                />
+              )}
               <div className="flex-1">
                 <div className="font-bold text-brand">
-                  {selectedHouseDesign?.title || "Selected design"}
+                  {selectedHouseDesign?.title || "Selected lot"}
                 </div>
                 <div className="text-sm text-brand-muted">{`Lot ${lotDisplayId}`}</div>
                 <div className="text-sm text-brand-muted">
@@ -394,20 +398,18 @@ export const GetYourQuoteSidebar = ({
           <form onSubmit={handleSubmit}>
             <div className="space-y-5 p-6">
               <div className="rounded-2xl border border-brand bg-brand-accent p-4 flex gap-4 items-center">
-                <img
-                  src={
-                    selectedHouseDesign?.floorPlanImage
-                      ? getImageUrl(selectedHouseDesign.floorPlanImage)
-                      : selectedHouseDesign?.image
-                  }
-                  alt="Selected design"
-                  width={56}
-                  height={56}
-                  className="rounded-lg object-cover"
-                />
+                {selectedDesignImageSrc && (
+                  <img
+                    src={selectedDesignImageSrc}
+                    alt="Selected design"
+                    width={56}
+                    height={56}
+                    className="rounded-lg object-cover"
+                  />
+                )}
                 <div className="flex-1">
                   <div className="font-bold text-brand">
-                    {selectedHouseDesign?.title || "Selected design"}
+                    {selectedHouseDesign?.title || "Selected lot"}
                   </div>
                   <div className="text-sm text-brand-muted">{selectedLotSummary}</div>
                   <div className="text-sm text-brand-muted">

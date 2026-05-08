@@ -6,6 +6,7 @@ import { useMobileNavigationStore } from "@/stores/mobileNavigationStore";
 import type { LotProperties } from "@/types/lot";
 import {
   focusMapOnLot,
+  getSelectedLotFocusPadding,
   isLotSelectable,
   setHoveredLotOverlayFeature,
   setSelectedLotFeatureState,
@@ -396,7 +397,12 @@ export const MapControls = ({
       trackLotSelected(id, f.properties as Record<string, unknown>);
 
       try {
-        focusMapOnLot(map, f.geometry, [e.lngLat.lng, e.lngLat.lat]);
+        focusMapOnLot(map, f.geometry, [e.lngLat.lng, e.lngLat.lat], {
+          padding: getSelectedLotFocusPadding(map, isMobile),
+          maxZoom: 18.4,
+          duration: 1500,
+          fallbackZoomIncrement: 0.55,
+        });
       } catch (error) {
         console.error("Error during lot zoom:", error);
         showToast({
@@ -404,7 +410,12 @@ export const MapControls = ({
           type: "error",
           options: { autoClose: 4000 },
         });
-        focusMapOnLot(map, undefined, [e.lngLat.lng, e.lngLat.lat]);
+        focusMapOnLot(map, undefined, [e.lngLat.lng, e.lngLat.lat], {
+          padding: getSelectedLotFocusPadding(map, isMobile),
+          maxZoom: 18.4,
+          duration: 1500,
+          fallbackZoomIncrement: 0.55,
+        });
       }
     };
 
@@ -426,6 +437,7 @@ export const MapControls = ({
     sidebarOpenRef,
     setSelectedLot,
     closeAllPanels,
+    isMobile,
     showFacadeModal,
     showFloorPlanModal,
     lotFeatureLookup,

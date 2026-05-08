@@ -9,6 +9,7 @@ export interface LotSidebarProps {
   lot: LotData;
   geometry?: GeoJSON.Geometry;
   onSelectFloorPlan?: (data: FloorPlan | null) => void;
+  onFocusLot?: () => void;
   onZoningDataUpdate?: (zoning: {
     fsr?: number;
     frontSetback?: number;

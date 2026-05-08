@@ -43,10 +43,9 @@ export const useMapInitialization = (
     mapRef.current = map;
 
     map.on("load", () => {
-      const brandPrimary =
-        getComputedStyle(document.documentElement)
-          .getPropertyValue("--color-primary")
-          .trim() || "#EF7B6C";
+      const availableLotFillColor = "#DCEBDD";
+      const availableLotOutlineColor = "#2F6B45";
+      const activeLotOutlineColor = "#1F5A36";
 
       //set the source for the map
       map.addSource("demo-lot-source", {
@@ -113,15 +112,11 @@ export const useMapInitialization = (
             "#e5e7eb",
             ["==", ["get", "lifecycleStage"], "reserved"],
             "#fcd8a8",
-            ["==", ["get", "isRed"], true],
-            "#b3bda8",
-            "#d09b9a",
+            availableLotFillColor,
           ],
           "fill-opacity": [
             "case",
             ["boolean", ["feature-state", "selected"], false],
-            1,
-            ["==", ["get", "isRed"], true],
             1,
             1,
           ],
@@ -134,12 +129,12 @@ export const useMapInitialization = (
               ["boolean", ["feature-state", "hovered"], false],
               ["!=", ["get", "lifecycleStage"], "sold"],
             ],
-            brandPrimary,
+            activeLotOutlineColor,
             ["==", ["get", "lifecycleStage"], "sold"],
             "#7f1d1d",
             ["==", ["get", "lifecycleStage"], "reserved"],
             "#9a3412",
-            "#1B4D1B",
+            availableLotOutlineColor,
           ],
         },
       });
@@ -162,10 +157,10 @@ export const useMapInitialization = (
               ["boolean", ["feature-state", "hovered"], false],
               ["!=", ["get", "lifecycleStage"], "sold"],
             ],
-            brandPrimary,
+            activeLotOutlineColor,
             ["==", ["get", "lifecycleStage"], "sold"],
             "#7f1d1d",
-            "#2B3D48",
+            availableLotOutlineColor,
           ],
           "line-opacity": [
             "case",
@@ -208,7 +203,7 @@ export const useMapInitialization = (
           "line-cap": "round",
         },
         paint: {
-          "line-color": brandPrimary,
+          "line-color": activeLotOutlineColor,
           "line-width": 9,
           "line-opacity": 0.18,
           "line-blur": 1.2,
@@ -224,7 +219,7 @@ export const useMapInitialization = (
           "line-cap": "round",
         },
         paint: {
-          "line-color": brandPrimary,
+          "line-color": activeLotOutlineColor,
           "line-width": 4.5,
           "line-opacity": 0.96,
         },

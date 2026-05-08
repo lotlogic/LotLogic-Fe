@@ -47,7 +47,11 @@ import type { FloorPlan } from "@/types/houseDesign";
 import type { LotProperties } from "@/types/lot";
 import type { SavedProperty } from "@/types/ui";
 import "../map/MapControls.css";
-import { focusMapOnLot, setSelectedLotFeatureState } from "./lotMapUtils";
+import {
+  focusMapOnLot,
+  getSelectedLotFocusPadding,
+  setSelectedLotFeatureState,
+} from "./lotMapUtils";
 import { MapControls } from "./MapControls";
 import { MapLayers, MapLoader } from "./MapLayers";
 
@@ -545,6 +549,19 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
     [mapRef]
   );
 
+  const handleFocusSelectedLot = useCallback(() => {
+    if (!mapRef || !selectedLot) {
+      return;
+    }
+
+    focusMapOnLot(mapRef, selectedLot.geometry, undefined, {
+      padding: getSelectedLotFocusPadding(mapRef, isMobile),
+      maxZoom: 18.4,
+      duration: 1600,
+      fallbackZoomIncrement: 0.55,
+    });
+  }, [isMobile, mapRef, selectedLot]);
+
   // Add event listeners for mobile search and recenter
   useEffect(() => {
     const handleMobileSearchResult = (event: CustomEvent) => {
@@ -772,6 +789,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
           }}
           geometry={selectedLot.geometry}
           onSelectFloorPlan={setSelectedFloorPlan}
+          onFocusLot={handleFocusSelectedLot}
           onZoningDataUpdate={handleZoningDataUpdate}
         />
       )}

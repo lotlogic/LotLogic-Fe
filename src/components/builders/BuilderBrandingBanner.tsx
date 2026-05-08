@@ -11,12 +11,13 @@ type BuilderBrandingBannerProps = {
 const normalizeText = (value: unknown): string => String(value ?? "").trim();
 
 export const hasBuilderBranding = (values: {
+  name?: string | null;
   logoUrl?: string | null;
   backgroundColor?: string | null;
   textColor?: string | null;
 }) =>
   Boolean(
-    normalizeText(values.logoUrl) &&
+    (normalizeText(values.logoUrl) || normalizeText(values.name)) &&
       normalizeText(values.backgroundColor) &&
       normalizeText(values.textColor),
   );
@@ -32,10 +33,11 @@ export const BuilderBrandingBanner = ({
   const normalizedLogoUrl = normalizeText(logoUrl);
   const normalizedBackgroundColor = normalizeText(backgroundColor);
   const normalizedTextColor = normalizeText(textColor);
+  const hasLogo = Boolean(normalizedLogoUrl);
 
   if (
-    !normalizedName ||
     !hasBuilderBranding({
+      name: normalizedName,
       logoUrl: normalizedLogoUrl,
       backgroundColor: normalizedBackgroundColor,
       textColor: normalizedTextColor,
@@ -52,17 +54,18 @@ export const BuilderBrandingBanner = ({
         color: normalizedTextColor,
       }}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center">
+      <div className="flex min-w-0 items-center">
+        {hasLogo ? (
           <img
             src={getImageUrl(normalizedLogoUrl)}
-            alt={`${normalizedName} logo`}
+            alt={normalizedName ? `${normalizedName} logo` : "Builder logo"}
             className="max-h-10 max-w-[140px] object-contain"
           />
-        </div>
-        <div className="min-w-0 text-right text-sm font-semibold leading-tight">
-          {normalizedName}
-        </div>
+        ) : (
+          <div className="min-w-0 text-sm font-semibold leading-tight">
+            {normalizedName}
+          </div>
+        )}
       </div>
     </div>
   );

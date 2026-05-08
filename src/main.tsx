@@ -33,7 +33,8 @@ const resolveBrandQuery = (): BrandQueryParams | undefined => {
   }
 
   const { pathname, search } = window.location;
-  const isPrototypeRoute = pathname.startsWith("/prototype");
+  const isRootRoute = pathname === "/";
+  const isPrototypeRoute = isRootRoute || pathname.startsWith("/prototype");
   const isEmbedRoute = pathname.startsWith("/embed");
 
   if (!isPrototypeRoute && !isEmbedRoute) {

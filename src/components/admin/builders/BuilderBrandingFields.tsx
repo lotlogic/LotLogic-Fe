@@ -74,12 +74,13 @@ export const BuilderBrandingFields = ({
   onBrandingTextColorChange,
   disabled = false,
 }: BuilderBrandingFieldsProps) => {
+  const previewName = builderName.trim() || "Builder name";
   const hasPreview = hasBuilderBranding({
+    name: previewName,
     logoUrl,
     backgroundColor: brandingBgColor,
     textColor: brandingTextColor,
   });
-  const previewName = builderName.trim() || "Builder name";
 
   return (
     <div className="grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -88,8 +89,9 @@ export const BuilderBrandingFields = ({
           Branding
         </h3>
         <p className="m-0 mt-1 text-sm text-muted-foreground">
-          This banner is shown on public house design cards when logo, background
-          colour, and text colour are all set.
+          This banner is shown on public house design cards when branding
+          colours are set, using the logo when one exists and the builder name
+          otherwise.
         </p>
       </div>
 
@@ -131,8 +133,7 @@ export const BuilderBrandingFields = ({
           />
         ) : (
           <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-muted-foreground">
-            Add a logo, background colour, and text colour to preview the card
-            banner.
+            Add background and text colours to preview the card banner.
           </div>
         )}
       </div>

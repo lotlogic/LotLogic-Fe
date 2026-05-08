@@ -101,6 +101,7 @@ const getBuilderCardBranding = (house: HouseDesignItem) => {
   if (
     !name ||
     !hasBuilderBranding({
+      name,
       logoUrl,
       backgroundColor,
       textColor,
@@ -418,7 +419,7 @@ export const HouseDesignList = ({
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-brand mb-2">
-                Unable to Load House Designs
+                Unable to load house designs
               </h3>
               <p className="text-brand-muted mb-4">
                 We encountered an issue while loading the house designs for this
@@ -427,12 +428,12 @@ export const HouseDesignList = ({
             </div>
             <div className="space-y-3">
               <Button
-                label="Try Again"
+                label="Try again"
                 onClick={() => window.location.reload()}
                 className="w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
               />
               <Button
-                label="Adjust Filters"
+                label="Adjust filters"
                 variant="outline"
                 onClick={onShowFilter}
                 className="w-full border border-brand text-brand py-2 px-4 rounded-lg font-medium hover:bg-brand-muted transition-colors"
@@ -471,8 +472,8 @@ export const HouseDesignList = ({
               </div>
               <h3 className="text-lg font-semibold text-brand mb-2">
                 {canShowAllDesigns
-                  ? "No Exact Design Matches"
-                  : "No House Designs Found"}
+                  ? "No exact design matches"
+                  : "No house designs found"}
               </h3>
               <p className="text-brand-muted mb-4">
                 {canShowAllDesigns
@@ -489,7 +490,7 @@ export const HouseDesignList = ({
                 />
               )}
               <Button
-                label={canShowAllDesigns ? "Adjust preferences" : "Adjust Filters"}
+                label={canShowAllDesigns ? "Adjust preferences" : "Adjust filters"}
                 onClick={onShowFilter}
                 variant={canShowAllDesigns ? "outline" : undefined}
                 className={
@@ -504,7 +505,6 @@ export const HouseDesignList = ({
                   <li>• Increase the number of bedrooms or bathrooms</li>
                   <li>• Adjust the size range</li>
                   <li>• Change the number of car spaces</li>
-                  <li>• Clear some filters to see all available designs</li>
                 </ul>
               </div>
             </div>
@@ -516,21 +516,7 @@ export const HouseDesignList = ({
 
   return (
     <div className="p-6 overflow-y-auto h-full">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <div className="text-xl font-bold text-brand">
-            {showingAllDesigns ? "All Compatible Designs" : "Design Matches"}
-          </div>
-          <div className="text-sm text-brand-muted">
-            {showingAllDesigns
-              ? `${filteredHouses.length} design${
-                  filteredHouses.length === 1 ? "" : "s"
-                } available on this block`
-              : `${filteredHouses.length} design${
-                  filteredHouses.length === 1 ? "" : "s"
-                } match your preferences`}
-          </div>
-        </div>
+      <div className="mb-4 flex justify-end">
         <Button
           label={filterContent.title}
           leftIcon={<Funnel className="h-4 w-4" />}
@@ -676,13 +662,28 @@ export const HouseDesignList = ({
               )}
 
               {builderCardBranding && (
-                <BuilderBrandingBanner
-                  name={builderCardBranding.name}
-                  logoUrl={builderCardBranding.logoUrl}
-                  backgroundColor={builderCardBranding.backgroundColor}
-                  textColor={builderCardBranding.textColor}
-                  className="mt-4"
-                />
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <BuilderBrandingBanner
+                      name={builderCardBranding.name}
+                      logoUrl={builderCardBranding.logoUrl}
+                      backgroundColor={builderCardBranding.backgroundColor}
+                      textColor={builderCardBranding.textColor}
+                    />
+                  </div>
+                  <div className="rounded-full border border-brand bg-white px-3 py-1.5 text-xs font-semibold text-brand">
+                    {isSelected
+                      ? "Selected for lot preview"
+                      : "Tap to preview on your block"}
+                  </div>
+                </div>
+              )}
+              {!builderCardBranding && (
+                <div className="mt-4 inline-flex rounded-full border border-brand bg-white px-3 py-1.5 text-xs font-semibold text-brand">
+                  {isSelected
+                    ? "Selected for lot preview"
+                    : "Tap to preview on your block"}
+                </div>
               )}
 
               <div className="mt-4 flex items-start justify-between gap-3">
@@ -691,7 +692,7 @@ export const HouseDesignList = ({
                     {normalizedTitle}
                   </div>
                   <div className="mt-1 text-sm text-brand-muted">{areaLabel}</div>
-                  <div className="mt-2 text-sm font-semibold text-brand-primary">
+                  <div className="mt-2 text-sm font-semibold text-brand">
                     {pricingText}
                   </div>
                 </div>
@@ -741,7 +742,7 @@ export const HouseDesignList = ({
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <Button
-                  label="View Floor plan"
+                  label="View floor plan"
                   onClick={(event) => {
                     event.stopPropagation();
                     if (onViewFloorPlan) {
@@ -762,10 +763,11 @@ export const HouseDesignList = ({
                       builder: house.builder,
                     });
                   }}
-                  className="cursor-pointer rounded-lg bg-brand-primary py-2 px-4 font-medium text-white transition-colors hover:bg-[var(--color-primary-hover)]"
+                  variant="ghost"
+                  className="cursor-pointer rounded-lg border-brand-primary bg-white py-2 px-4 font-medium text-brand transition-colors hover:bg-brand-accent hover:text-brand"
                 />
                 <Button
-                  label="View Facades"
+                  label="View facades"
                   onClick={(event) => {
                     event.stopPropagation();
                     if (onViewFacades) {
@@ -786,7 +788,8 @@ export const HouseDesignList = ({
                       builder: house.builder,
                     });
                   }}
-                  className="cursor-pointer rounded-lg bg-brand-primary py-2 px-4 font-medium text-white transition-colors hover:bg-[var(--color-primary-hover)]"
+                  variant="ghost"
+                  className="cursor-pointer rounded-lg border-brand-primary bg-white py-2 px-4 font-medium text-brand transition-colors hover:bg-brand-accent hover:text-brand"
                 />
               </div>
 
@@ -794,7 +797,6 @@ export const HouseDesignList = ({
                 <div className="mt-3">
                   <Button
                     label="Get a detailed quote"
-                    variant="outline"
                     onClick={(event) => {
                       event.stopPropagation();
                       onEnquireNow(house);
@@ -813,16 +815,10 @@ export const HouseDesignList = ({
                         builder: house.builder,
                       });
                     }}
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-brand bg-brand py-3 px-4 font-medium text-brand transition-colors hover:border-primary hover:bg-primary hover:text-white"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-brand-primary py-3 px-4 font-semibold text-white transition-colors hover:bg-[var(--color-primary-hover)]"
                   />
                 </div>
               )}
-
-              <div className="mt-3 text-xs text-brand-muted">
-                {isSelected
-                  ? "Selected for lot preview."
-                  : "Tap to preview on your block"}
-              </div>
             </div>
           );
         })}

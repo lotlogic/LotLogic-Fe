@@ -12,7 +12,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
 } from "react";
 import type { EstateLotRecord } from "./EstateLotsCrud";
 
@@ -38,12 +37,37 @@ type DraftState = {
   bottomRightLat: string;
 };
 
+type BoundsDraftState = Pick<
+  DraftState,
+  "topLeftLng" | "topLeftLat" | "bottomRightLng" | "bottomRightLat"
+>;
+
 type PickMode = "topLeft" | "bottomRight" | null;
 
+type OverlayDragState = {
+  startLng: number;
+  startLat: number;
+  west: number;
+  north: number;
+  east: number;
+  south: number;
+};
+
+type OverlayDragEvent = mapboxgl.MapMouseEvent | mapboxgl.MapTouchEvent;
+
+type PreviewCanvasOverlay = {
+  imageUrl: string;
+  canvas: HTMLCanvasElement;
+};
+
+const PREVIEW_BACKGROUND_SOURCE_ID = "admin-estate-background-preview-source";
+const PREVIEW_BACKGROUND_LAYER_ID = "admin-estate-background-preview-layer";
 const LOT_SOURCE_ID = "admin-estate-background-lots-source";
 const LOT_FILL_LAYER_ID = "admin-estate-background-lots-fill";
 const LOT_OUTLINE_LAYER_ID = "admin-estate-background-lots-outline";
 const LOT_LABEL_LAYER_ID = "admin-estate-background-lots-labels";
+const DEFAULT_COORDINATE_INCREMENT = "0.00001";
+const OVERLAY_DRAG_REFRESH_MS = 100;
 
 const formatCoordinate = (value: number | null | undefined) =>
   typeof value === "number" && Number.isFinite(value) ? value.toFixed(6) : "";
@@ -56,6 +80,26 @@ const parseCoordinate = (value: string): number | null => {
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : null;
 };
+
+const formatEditableCoordinate = (value: number) =>
+  Number.isFinite(value) ? Number(value.toFixed(8)).toString() : "";
+
+const getCoordinateInputStep = (value: string) => {
+  const trimmed = value.trim();
+  const parsed = Number(trimmed);
+  return trimmed && Number.isFinite(parsed) && parsed > 0
+    ? trimmed
+    : DEFAULT_COORDINATE_INCREMENT;
+};
+
+const isLngLatInsideOverlay = (
+  lngLat: mapboxgl.LngLat,
+  overlay: NonNullable<ReturnType<typeof normalizeEstateBackgroundOverlay>>
+) =>
+  lngLat.lng >= overlay.west &&
+  lngLat.lng <= overlay.east &&
+  lngLat.lat >= overlay.south &&
+  lngLat.lat <= overlay.north;
 
 const toDraft = (
   value?: EstateBackgroundPlacementValue | null
@@ -114,6 +158,155 @@ const buildLotsFeatureCollection = (
     }, []),
 });
 
+const refreshLotPreviewLayers = (map: mapboxgl.Map) => {
+  if (map.getLayer(LOT_OUTLINE_LAYER_ID)) {
+    map.setPaintProperty(LOT_OUTLINE_LAYER_ID, "line-opacity", 0.879);
+    map.setPaintProperty(LOT_OUTLINE_LAYER_ID, "line-opacity", 0.88);
+  }
+
+  if (map.getLayer(LOT_FILL_LAYER_ID)) {
+    map.setPaintProperty(LOT_FILL_LAYER_ID, "fill-opacity", 0.119);
+    map.setPaintProperty(LOT_FILL_LAYER_ID, "fill-opacity", 0.12);
+  }
+
+  map.triggerRepaint();
+};
+
+const syncLotPreviewData = (
+  map: mapboxgl.Map,
+  lotsGeoJson: GeoJSON.FeatureCollection<
+    GeoJSON.Polygon | GeoJSON.MultiPolygon
+  >
+) => {
+  const source = map.getSource(LOT_SOURCE_ID) as
+    | mapboxgl.GeoJSONSource
+    | undefined;
+
+  if (!source) {
+    return false;
+  }
+
+  source.setData(lotsGeoJson);
+  refreshLotPreviewLayers(map);
+  return true;
+};
+
+const removePreviewCanvasOverlay = (map: mapboxgl.Map) => {
+  if (map.getLayer(PREVIEW_BACKGROUND_LAYER_ID)) {
+    map.removeLayer(PREVIEW_BACKGROUND_LAYER_ID);
+  }
+
+  if (map.getSource(PREVIEW_BACKGROUND_SOURCE_ID)) {
+    map.removeSource(PREVIEW_BACKGROUND_SOURCE_ID);
+  }
+
+  map.triggerRepaint();
+};
+
+const refreshPreviewCanvasOverlay = (
+  map: mapboxgl.Map,
+  rasterOpacity: number
+) => {
+  if (!map.getLayer(PREVIEW_BACKGROUND_LAYER_ID)) {
+    return;
+  }
+
+  const refreshOpacity =
+    rasterOpacity > 0.0001 ? rasterOpacity - 0.0001 : rasterOpacity + 0.0001;
+
+  map.setPaintProperty(
+    PREVIEW_BACKGROUND_LAYER_ID,
+    "raster-opacity",
+    refreshOpacity
+  );
+  map.setPaintProperty(
+    PREVIEW_BACKGROUND_LAYER_ID,
+    "raster-opacity",
+    rasterOpacity
+  );
+  map.triggerRepaint();
+};
+
+const syncPreviewCanvasOverlay = ({
+  map,
+  overlay,
+  canvasOverlay,
+  beforeLayerId,
+  opacity,
+}: {
+  map: mapboxgl.Map;
+  overlay: NonNullable<ReturnType<typeof normalizeEstateBackgroundOverlay>> | null;
+  canvasOverlay: PreviewCanvasOverlay | null;
+  beforeLayerId: string;
+  opacity: number;
+}) => {
+  if (!map.isStyleLoaded()) {
+    return false;
+  }
+
+  if (!overlay) {
+    removePreviewCanvasOverlay(map);
+    return true;
+  }
+
+  if (!canvasOverlay || canvasOverlay.imageUrl !== overlay.imageUrl) {
+    return false;
+  }
+
+  const rasterOpacity = Math.min(Math.max(opacity, 0), 1);
+  const existingSource = map.getSource(PREVIEW_BACKGROUND_SOURCE_ID) as
+    | mapboxgl.CanvasSource
+    | undefined;
+
+  if (existingSource?.getCanvas() !== canvasOverlay.canvas) {
+    removePreviewCanvasOverlay(map);
+    const canvasSourceConfig = {
+      type: "canvas",
+      canvas: canvasOverlay.canvas,
+      coordinates: overlay.coordinates,
+      animate: false,
+    } as unknown as mapboxgl.AnySourceData;
+
+    map.addSource(PREVIEW_BACKGROUND_SOURCE_ID, canvasSourceConfig);
+  } else {
+    existingSource.setCoordinates(overlay.coordinates);
+  }
+
+  if (!map.getLayer(PREVIEW_BACKGROUND_LAYER_ID)) {
+    const layerConfig = {
+      id: PREVIEW_BACKGROUND_LAYER_ID,
+      type: "raster" as const,
+      source: PREVIEW_BACKGROUND_SOURCE_ID,
+      paint: {
+        "raster-opacity": rasterOpacity,
+        "raster-resampling": "linear" as const,
+      },
+    };
+
+    if (beforeLayerId && map.getLayer(beforeLayerId)) {
+      map.addLayer(layerConfig, beforeLayerId);
+    } else {
+      map.addLayer(layerConfig);
+    }
+  } else if (beforeLayerId && map.getLayer(beforeLayerId)) {
+    map.moveLayer(PREVIEW_BACKGROUND_LAYER_ID, beforeLayerId);
+  }
+
+  const source = map.getSource(PREVIEW_BACKGROUND_SOURCE_ID) as
+    | mapboxgl.CanvasSource
+    | undefined;
+  source?.play();
+  requestAnimationFrame(() => {
+    if (source && map.getSource(PREVIEW_BACKGROUND_SOURCE_ID) === source) {
+      source.pause();
+    }
+    refreshPreviewCanvasOverlay(map, rasterOpacity);
+  });
+  refreshPreviewCanvasOverlay(map, rasterOpacity);
+
+  return true;
+};
+
 const createMarkerElement = (label: string, color: string) => {
   const element = document.createElement("div");
   element.style.display = "flex";
@@ -148,10 +341,11 @@ export const EstateBackgroundPlacementCard = ({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
   const [previewOpacity, setPreviewOpacity] = useState(90);
-  const [previewOverlayStyle, setPreviewOverlayStyle] =
-    useState<CSSProperties>({
-      display: "none",
-    });
+  const [previewCanvasOverlay, setPreviewCanvasOverlay] =
+    useState<PreviewCanvasOverlay | null>(null);
+  const [coordinateIncrement, setCoordinateIncrement] = useState(
+    DEFAULT_COORDINATE_INCREMENT
+  );
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -159,6 +353,15 @@ export const EstateBackgroundPlacementCard = ({
   const bottomRightMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const initialFitDoneRef = useRef(false);
   const pickModeRef = useRef<PickMode>(null);
+  const overlayDragRef = useRef<OverlayDragState | null>(null);
+  const overlayDragLastRenderAtRef = useRef(0);
+  const overlayDragPendingDraftRef = useRef<BoundsDraftState | null>(null);
+  const overlayDragTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(
+    null
+  );
+  const normalizedPreviewOverlayRef = useRef<
+    NonNullable<ReturnType<typeof normalizeEstateBackgroundOverlay>> | null
+  >(null);
 
   useEffect(() => {
     setDraft(toDraft(initialValue));
@@ -169,15 +372,14 @@ export const EstateBackgroundPlacementCard = ({
   }, [pickMode]);
 
   const lotsGeoJson = useMemo(() => buildLotsFeatureCollection(lots), [lots]);
-  const normalizedPreviewOverlay = useMemo(
-    () =>
-      normalizeEstateBackgroundOverlay({
-        backgroundImageUrl: draft.imageUrl,
-        backgroundImageNorth: draft.topLeftLat,
-        backgroundImageSouth: draft.bottomRightLat,
-        backgroundImageEast: draft.bottomRightLng,
-        backgroundImageWest: draft.topLeftLng,
-      }),
+  const previewOverlayInput = useMemo(
+    () => ({
+      backgroundImageUrl: draft.imageUrl,
+      backgroundImageNorth: draft.topLeftLat,
+      backgroundImageSouth: draft.bottomRightLat,
+      backgroundImageEast: draft.bottomRightLng,
+      backgroundImageWest: draft.topLeftLng,
+    }),
     [
       draft.bottomRightLat,
       draft.bottomRightLng,
@@ -186,6 +388,69 @@ export const EstateBackgroundPlacementCard = ({
       draft.topLeftLng,
     ]
   );
+  const normalizedPreviewOverlay = useMemo(
+    () => normalizeEstateBackgroundOverlay(previewOverlayInput),
+    [previewOverlayInput]
+  );
+  const coordinateInputStep = useMemo(
+    () => getCoordinateInputStep(coordinateIncrement),
+    [coordinateIncrement]
+  );
+
+  useEffect(() => {
+    normalizedPreviewOverlayRef.current = normalizedPreviewOverlay;
+  }, [normalizedPreviewOverlay]);
+
+  useEffect(() => {
+    if (!normalizedPreviewOverlay?.imageUrl) {
+      setPreviewCanvasOverlay(null);
+      return;
+    }
+
+    let isActive = true;
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    const handleImageReady = () => {
+      if (!isActive) {
+        return;
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth || image.width;
+      canvas.height = image.naturalHeight || image.height;
+
+      const context = canvas.getContext("2d");
+      if (!context || canvas.width === 0 || canvas.height === 0) {
+        return;
+      }
+
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      setPreviewCanvasOverlay({
+        imageUrl: normalizedPreviewOverlay.imageUrl,
+        canvas,
+      });
+    };
+
+    image.onload = handleImageReady;
+    image.onerror = () => {
+      if (isActive) {
+        setPreviewCanvasOverlay(null);
+      }
+    };
+    image.src = normalizedPreviewOverlay.imageUrl;
+
+    if (image.complete) {
+      handleImageReady();
+    }
+
+    return () => {
+      isActive = false;
+      image.onload = null;
+      image.onerror = null;
+    };
+  }, [normalizedPreviewOverlay?.imageUrl]);
+
   const hasCompleteBounds =
     parseCoordinate(draft.topLeftLng) !== null &&
     parseCoordinate(draft.topLeftLat) !== null &&
@@ -250,46 +515,6 @@ export const EstateBackgroundPlacementCard = ({
     lotsGeoJson.features,
   ]);
 
-  const updatePreviewOverlayPosition = useCallback(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady || !normalizedPreviewOverlay) {
-      setPreviewOverlayStyle({ display: "none" });
-      return;
-    }
-
-    const topLeft = map.project([
-      normalizedPreviewOverlay.west,
-      normalizedPreviewOverlay.north,
-    ]);
-    const bottomRight = map.project([
-      normalizedPreviewOverlay.east,
-      normalizedPreviewOverlay.south,
-    ]);
-
-    const left = Math.min(topLeft.x, bottomRight.x);
-    const top = Math.min(topLeft.y, bottomRight.y);
-    const width = Math.abs(bottomRight.x - topLeft.x);
-    const height = Math.abs(bottomRight.y - topLeft.y);
-
-    if (width < 1 || height < 1) {
-      setPreviewOverlayStyle({ display: "none" });
-      return;
-    }
-
-    setPreviewOverlayStyle({
-      display: "block",
-      position: "absolute",
-      left,
-      top,
-      width,
-      height,
-      objectFit: "fill",
-      pointerEvents: "none",
-      opacity: previewOpacity / 100,
-      userSelect: "none",
-    });
-  }, [mapReady, normalizedPreviewOverlay, previewOpacity]);
-
   useEffect(() => {
     let isMounted = true;
 
@@ -342,8 +567,149 @@ export const EstateBackgroundPlacementCard = ({
 
     mapRef.current = map;
 
+    const setDefaultCursor = () => {
+      map.getCanvas().style.cursor = pickModeRef.current ? "crosshair" : "";
+    };
+
+    const isMultiTouch = (event: OverlayDragEvent) =>
+      "points" in event && event.points.length > 1;
+
+    const isShiftDragEvent = (event: OverlayDragEvent) =>
+      event.originalEvent.shiftKey;
+
+    const applyOverlayDragDraft = (nextBounds: BoundsDraftState) => {
+      overlayDragPendingDraftRef.current = null;
+      setDraft((prev) => ({
+        ...prev,
+        ...nextBounds,
+      }));
+    };
+
+    const clearOverlayDragTimer = () => {
+      if (!overlayDragTimerRef.current) {
+        return;
+      }
+
+      window.clearTimeout(overlayDragTimerRef.current);
+      overlayDragTimerRef.current = null;
+    };
+
+    const flushOverlayDragDraft = () => {
+      clearOverlayDragTimer();
+      const pendingDraft = overlayDragPendingDraftRef.current;
+      if (!pendingDraft) {
+        return;
+      }
+
+      overlayDragLastRenderAtRef.current = window.performance.now();
+      applyOverlayDragDraft(pendingDraft);
+    };
+
+    const scheduleOverlayDragDraft = (nextBounds: BoundsDraftState) => {
+      const now = window.performance.now();
+      const elapsed = now - overlayDragLastRenderAtRef.current;
+
+      if (elapsed >= OVERLAY_DRAG_REFRESH_MS) {
+        clearOverlayDragTimer();
+        overlayDragLastRenderAtRef.current = now;
+        applyOverlayDragDraft(nextBounds);
+        return;
+      }
+
+      overlayDragPendingDraftRef.current = nextBounds;
+      if (overlayDragTimerRef.current) {
+        return;
+      }
+
+      overlayDragTimerRef.current = window.setTimeout(() => {
+        overlayDragTimerRef.current = null;
+        flushOverlayDragDraft();
+      }, OVERLAY_DRAG_REFRESH_MS - elapsed);
+    };
+
+    const finishOverlayDrag = () => {
+      if (!overlayDragRef.current) {
+        return;
+      }
+
+      flushOverlayDragDraft();
+      overlayDragRef.current = null;
+      map.dragPan.enable();
+      setDefaultCursor();
+    };
+
+    const startOverlayDrag = (event: OverlayDragEvent) => {
+      const overlay = normalizedPreviewOverlayRef.current;
+
+      if (
+        !overlay ||
+        pickModeRef.current ||
+        !isShiftDragEvent(event) ||
+        isMultiTouch(event) ||
+        !isLngLatInsideOverlay(event.lngLat, overlay)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      event.originalEvent.preventDefault();
+      event.originalEvent.stopPropagation();
+
+      map.dragPan.disable();
+      overlayDragRef.current = {
+        startLng: event.lngLat.lng,
+        startLat: event.lngLat.lat,
+        west: overlay.west,
+        north: overlay.north,
+        east: overlay.east,
+        south: overlay.south,
+      };
+      overlayDragLastRenderAtRef.current = 0;
+      overlayDragPendingDraftRef.current = null;
+      clearOverlayDragTimer();
+      map.getCanvas().style.cursor = "grabbing";
+      setSaveError(null);
+      setSaveSuccess(null);
+    };
+
+    const moveOverlayDrag = (event: OverlayDragEvent) => {
+      const dragState = overlayDragRef.current;
+
+      if (!dragState) {
+        const overlay = normalizedPreviewOverlayRef.current;
+        map.getCanvas().style.cursor =
+          !pickModeRef.current &&
+          isShiftDragEvent(event) &&
+          overlay &&
+          isLngLatInsideOverlay(event.lngLat, overlay)
+            ? "grab"
+            : pickModeRef.current
+            ? "crosshair"
+            : "";
+        return;
+      }
+
+      if (!isShiftDragEvent(event)) {
+        finishOverlayDrag();
+        return;
+      }
+
+      event.preventDefault();
+      event.originalEvent.preventDefault();
+      event.originalEvent.stopPropagation();
+
+      const deltaLng = event.lngLat.lng - dragState.startLng;
+      const deltaLat = event.lngLat.lat - dragState.startLat;
+
+      scheduleOverlayDragDraft({
+        topLeftLng: formatEditableCoordinate(dragState.west + deltaLng),
+        topLeftLat: formatEditableCoordinate(dragState.north + deltaLat),
+        bottomRightLng: formatEditableCoordinate(dragState.east + deltaLng),
+        bottomRightLat: formatEditableCoordinate(dragState.south + deltaLat),
+      });
+    };
+
     map.on("load", () => {
-      setMapReady(true);
       map.addSource(LOT_SOURCE_ID, {
         type: "geojson",
         data: {
@@ -417,10 +783,25 @@ export const EstateBackgroundPlacementCard = ({
 
         setPickMode(null);
       });
+
+      map.on("mousedown", startOverlayDrag);
+      map.on("touchstart", startOverlayDrag);
+      map.on("mousemove", moveOverlayDrag);
+      map.on("touchmove", moveOverlayDrag);
+      map.on("mouseup", finishOverlayDrag);
+      map.on("touchend", finishOverlayDrag);
+      map.on("mouseleave", finishOverlayDrag);
+      window.addEventListener("mouseup", finishOverlayDrag);
+      window.addEventListener("touchend", finishOverlayDrag);
+      refreshLotPreviewLayers(map);
+      setMapReady(true);
     });
 
     return () => {
       setMapReady(false);
+      window.removeEventListener("mouseup", finishOverlayDrag);
+      window.removeEventListener("touchend", finishOverlayDrag);
+      clearOverlayDragTimer();
       topLeftMarkerRef.current?.remove();
       bottomRightMarkerRef.current?.remove();
       map.remove();
@@ -430,23 +811,73 @@ export const EstateBackgroundPlacementCard = ({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!mapReady || !map?.isStyleLoaded()) {
+    if (!mapReady || !map) {
       return;
     }
 
-    const source = map.getSource(LOT_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
-    if (source) {
-      source.setData(lotsGeoJson);
+    const syncLots = () => {
+      if (!map.isStyleLoaded() || !syncLotPreviewData(map, lotsGeoJson)) {
+        return;
+      }
+
+      if (
+        !initialFitDoneRef.current &&
+        (lotsGeoJson.features.length > 0 || hasCompleteBounds)
+      ) {
+        fitMapToContent();
+        initialFitDoneRef.current = true;
+      }
+    };
+
+    if (map.isStyleLoaded() && map.getSource(LOT_SOURCE_ID)) {
+      syncLots();
+      return;
     }
 
-    if (
-      !initialFitDoneRef.current &&
-      (lotsGeoJson.features.length > 0 || hasCompleteBounds)
-    ) {
-      fitMapToContent();
-      initialFitDoneRef.current = true;
-    }
+    map.once("idle", syncLots);
+    map.once("styledata", syncLots);
+    map.once("sourcedata", syncLots);
+
+    return () => {
+      map.off("idle", syncLots);
+      map.off("styledata", syncLots);
+      map.off("sourcedata", syncLots);
+    };
   }, [fitMapToContent, hasCompleteBounds, lotsGeoJson, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) {
+      return;
+    }
+
+    const syncPreviewOverlay = () => {
+      if (
+        !syncPreviewCanvasOverlay({
+          map,
+          overlay: normalizedPreviewOverlay,
+          canvasOverlay: previewCanvasOverlay,
+          beforeLayerId: LOT_FILL_LAYER_ID,
+          opacity: previewOpacity / 100,
+        })
+      ) {
+        return;
+      }
+    };
+
+    if (map.isStyleLoaded()) {
+      syncPreviewOverlay();
+      return;
+    }
+
+    map.once("idle", syncPreviewOverlay);
+    map.once("styledata", syncPreviewOverlay);
+
+    return () => {
+      map.off("idle", syncPreviewOverlay);
+      map.off("styledata", syncPreviewOverlay);
+    };
+  }, [mapReady, normalizedPreviewOverlay, previewCanvasOverlay, previewOpacity]);
 
   useEffect(() => {
     if (!mapReady || hasCompleteBounds) {
@@ -461,33 +892,12 @@ export const EstateBackgroundPlacementCard = ({
   }, [fitMapToContent, hasCompleteBounds, lotsGeoJson.features.length, mapReady]);
 
   useEffect(() => {
-    if (!mapReady || !normalizedPreviewOverlay) {
+    if (!mapReady || !normalizedPreviewOverlay || overlayDragRef.current) {
       return;
     }
 
     fitMapToContent();
   }, [fitMapToContent, mapReady, normalizedPreviewOverlay]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!mapReady || !map) {
-      setPreviewOverlayStyle({ display: "none" });
-      return;
-    }
-
-    const refresh = () => {
-      updatePreviewOverlayPosition();
-    };
-
-    refresh();
-    map.on("move", refresh);
-    map.on("resize", refresh);
-
-    return () => {
-      map.off("move", refresh);
-      map.off("resize", refresh);
-    };
-  }, [mapReady, updatePreviewOverlayPosition]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -584,6 +994,16 @@ export const EstateBackgroundPlacementCard = ({
     setSaveError(null);
     setSaveSuccess(null);
     setPickMode(null);
+    overlayDragRef.current = null;
+    overlayDragPendingDraftRef.current = null;
+    if (overlayDragTimerRef.current) {
+      window.clearTimeout(overlayDragTimerRef.current);
+      overlayDragTimerRef.current = null;
+    }
+    mapRef.current?.dragPan.enable();
+    if (mapRef.current) {
+      mapRef.current.getCanvas().style.cursor = "";
+    }
     setDraft((prev) => ({
       ...prev,
       topLeftLng: "",
@@ -721,48 +1141,74 @@ export const EstateBackgroundPlacementCard = ({
 
           <div className="grid gap-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
             <div className="grid gap-2">
+              <span className="text-sm font-medium">Nudge increment</span>
+              <Input
+                type="number"
+                value={coordinateIncrement}
+                min="0.000001"
+                step="0.000001"
+                onChange={(event) => setCoordinateIncrement(event.target.value)}
+                placeholder={DEFAULT_COORDINATE_INCREMENT}
+                className="w-full"
+              />
+            </div>
+            <div className="grid gap-2">
               <span className="text-sm font-medium">Top-left longitude</span>
               <Input
+                type="number"
                 value={draft.topLeftLng}
+                step={coordinateInputStep}
                 onChange={(event) =>
                   handleDraftChange("topLeftLng", event.target.value)
                 }
                 placeholder="151.203000"
+                className="w-full"
               />
             </div>
             <div className="grid gap-2">
               <span className="text-sm font-medium">Top-left latitude</span>
               <Input
+                type="number"
                 value={draft.topLeftLat}
+                step={coordinateInputStep}
                 onChange={(event) =>
                   handleDraftChange("topLeftLat", event.target.value)
                 }
                 placeholder="-33.870000"
+                className="w-full"
               />
             </div>
             <div className="grid gap-2">
               <span className="text-sm font-medium">Bottom-right longitude</span>
               <Input
+                type="number"
                 value={draft.bottomRightLng}
+                step={coordinateInputStep}
                 onChange={(event) =>
                   handleDraftChange("bottomRightLng", event.target.value)
                 }
                 placeholder="151.214000"
+                className="w-full"
               />
             </div>
             <div className="grid gap-2">
               <span className="text-sm font-medium">Bottom-right latitude</span>
               <Input
+                type="number"
                 value={draft.bottomRightLat}
+                step={coordinateInputStep}
                 onChange={(event) =>
                   handleDraftChange("bottomRightLat", event.target.value)
                 }
                 placeholder="-33.876000"
+                className="w-full"
               />
             </div>
             <p className="m-0 text-xs text-muted-foreground">
               Use the map buttons to click the two corners, or type coordinates
-              directly. The `TL` and `BR` markers can also be dragged once placed.
+              directly. The `TL` and `BR` markers can also be dragged once placed,
+              and holding Shift while dragging the preview image moves all bounds
+              together.
             </p>
           </div>
 
@@ -805,15 +1251,6 @@ export const EstateBackgroundPlacementCard = ({
 
           <div className="relative overflow-hidden rounded-xl border border-slate-200">
             <div ref={mapContainerRef} className="h-[520px] w-full bg-slate-50" />
-            {normalizedPreviewOverlay?.imageUrl && (
-              <img
-                src={normalizedPreviewOverlay.imageUrl}
-                alt="Estate background overlay preview"
-                draggable={false}
-                style={previewOverlayStyle}
-                className="select-none"
-              />
-            )}
           </div>
 
           {lotsError && (

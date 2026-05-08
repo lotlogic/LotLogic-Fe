@@ -19,7 +19,7 @@ import type { FloorPlan } from "@/types/houseDesign";
 import type { LotProperties } from "@/types/lot";
 import * as turf from "@turf/turf";
 import mapboxgl from "mapbox-gl";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface HouseBoundaryData {
   center: [number, number];
@@ -2459,6 +2459,48 @@ export const MapLayers = ({
 
 export default MapLayers;
 
+const getSelectedLotLoaderAnchor = (
+  selectedLot:
+    | (mapboxgl.MapboxGeoJSONFeature & { properties: LotProperties })
+    | null
+): [number, number] | null => {
+  const geometry = selectedLot?.geometry as GeoJSON.Geometry | undefined;
+  if (!geometry) {
+    return null;
+  }
+
+  try {
+    const feature: GeoJSON.Feature<GeoJSON.Geometry> = {
+      type: "Feature",
+      geometry,
+      properties: {},
+    };
+    const coordinates = turf.pointOnFeature(feature).geometry.coordinates;
+    return [coordinates[0], coordinates[1]];
+  } catch {
+    return null;
+  }
+};
+
+const getSelectedLotLoaderPosition = (
+  map: mapboxgl.Map | null,
+  selectedLot:
+    | (mapboxgl.MapboxGeoJSONFeature & { properties: LotProperties })
+    | null
+) => {
+  if (!map || !selectedLot) {
+    return null;
+  }
+
+  const anchor = getSelectedLotLoaderAnchor(selectedLot);
+  if (!anchor) {
+    return null;
+  }
+
+  const point = map.project(anchor);
+  return { x: point.x, y: point.y };
+};
+
 // Separate loader component that overlays the map
 export const MapLoader = ({
   isCalculating,
@@ -2467,9 +2509,41 @@ export const MapLoader = ({
 }: {
   isCalculating: boolean;
   map: mapboxgl.Map | null;
-  selectedLot: any;
+  selectedLot:
+    | (mapboxgl.MapboxGeoJSONFeature & { properties: LotProperties })
+    | null;
 }) => {
+  const [screenPosition, setScreenPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!isCalculating || !map || !selectedLot) {
+      setScreenPosition(null);
+      return;
+    }
+
+    const updatePosition = () => {
+      setScreenPosition(getSelectedLotLoaderPosition(map, selectedLot));
+    };
+
+    updatePosition();
+    map.on("move", updatePosition);
+    map.on("resize", updatePosition);
+
+    return () => {
+      map.off("move", updatePosition);
+      map.off("resize", updatePosition);
+    };
+  }, [isCalculating, map, selectedLot]);
+
   if (!isCalculating || !map || !selectedLot) return null;
+
+  const loaderPosition =
+    screenPosition ?? getSelectedLotLoaderPosition(map, selectedLot);
+
+  if (!loaderPosition) return null;
 
   return (
     <>
@@ -2484,8 +2558,8 @@ export const MapLoader = ({
       <div
         style={{
           position: "absolute",
-          top: "50%",
-          left: "50%",
+          top: `${loaderPosition.y}px`,
+          left: `${loaderPosition.x}px`,
           transform: "translate(-50%, -50%)",
           zIndex: 9999,
           pointerEvents: "none",

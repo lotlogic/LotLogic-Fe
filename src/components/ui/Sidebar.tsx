@@ -55,7 +55,6 @@ export const Sidebar = ({
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isMobile || !isDragging) return;
-    e.preventDefault();
 
     const currentY = e.touches[0].clientY;
     const deltaY = startY - currentY;
@@ -147,70 +146,74 @@ export const Sidebar = ({
         <Box
           ref={drawerRef}
           className="h-full flex flex-col"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
         >
-          {/* Drawer Handle */}
           <Box
-            className="flex justify-center pt-2 pb-1 cursor-pointer"
-            onClick={() =>
-              setDrawerHeight((current) => {
-                if (current === "collapsed") {
-                  return "50vh";
-                }
-                return current === "50vh" ? "100vh" : "50vh";
-              })
-            }
+            sx={{ touchAction: "none" }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
-            <Box className="w-12 h-1 bg-brand-muted rounded-full" />
-          </Box>
-
-          {/* Header */}
-          <Box
-            className={clsx(
-              "flex border-b border-brand bg-brand rounded-t-2xl",
-              isMinimized ? "items-center p-3" : "items-start p-4 pb-3"
-            )}
-          >
-            {showBackButton && onBack && (
-              <IconButton
-                onClick={onBack}
-                className="p-1 rounded-full hover:bg-brand-muted text-brand-muted hover:text-brand mr-3"
-                aria-label={sidebar.back}
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </IconButton>
-            )}
-            <Box className="flex-grow min-w-0">
-              {isMinimized ? (
-                <div className="truncate text-sm font-semibold text-brand">
-                  {minimizedLabel ?? "Panel"}
-                </div>
-              ) : (
-                headerContent
-              )}
-            </Box>
-            {minimizable && (
-              <IconButton
-                onClick={handleToggleMinimize}
-                className="p-2 rounded-full hover:bg-brand-muted text-brand hover:text-brand"
-                aria-label={isMinimized ? "Expand sidebar" : "Minimize sidebar"}
-              >
-                {isMinimized ? (
-                  <Maximize2 className="h-5 w-5" />
-                ) : (
-                  <Minimize2 className="h-5 w-5" />
-                )}
-              </IconButton>
-            )}
-            <IconButton
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-brand-muted text-brand hover:text-brand"
-              aria-label={sidebar.close}
+            {/* Drawer Handle */}
+            <Box
+              className="flex justify-center pt-2 pb-1 cursor-pointer"
+              onClick={() =>
+                setDrawerHeight((current) => {
+                  if (current === "collapsed") {
+                    return "50vh";
+                  }
+                  return current === "50vh" ? "100vh" : "50vh";
+                })
+              }
             >
-              <X className="h-6 w-6" />
-            </IconButton>
+              <Box className="w-12 h-1 bg-brand-muted rounded-full" />
+            </Box>
+
+            {/* Header */}
+            <Box
+              className={clsx(
+                "flex border-b border-brand bg-brand rounded-t-2xl",
+                isMinimized ? "items-center p-3" : "items-start p-4 pb-3"
+              )}
+            >
+              {showBackButton && onBack && (
+                <IconButton
+                  onClick={onBack}
+                  className="p-1 rounded-full hover:bg-brand-muted text-brand-muted hover:text-brand mr-3"
+                  aria-label={sidebar.back}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </IconButton>
+              )}
+              <Box className="flex-grow min-w-0">
+                {isMinimized ? (
+                  <div className="truncate text-sm font-semibold text-brand">
+                    {minimizedLabel ?? "Panel"}
+                  </div>
+                ) : (
+                  headerContent
+                )}
+              </Box>
+              {minimizable && (
+                <IconButton
+                  onClick={handleToggleMinimize}
+                  className="p-2 rounded-full hover:bg-brand-muted text-brand hover:text-brand"
+                  aria-label={isMinimized ? "Expand sidebar" : "Minimize sidebar"}
+                >
+                  {isMinimized ? (
+                    <Maximize2 className="h-5 w-5" />
+                  ) : (
+                    <Minimize2 className="h-5 w-5" />
+                  )}
+                </IconButton>
+              )}
+              <IconButton
+                onClick={onClose}
+                className="p-2 rounded-full hover:bg-brand-muted text-brand hover:text-brand"
+                aria-label={sidebar.close}
+              >
+                <X className="h-6 w-6" />
+              </IconButton>
+            </Box>
           </Box>
 
           {/* Content */}

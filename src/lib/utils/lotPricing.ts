@@ -91,7 +91,7 @@ export const estimateBuildCostRange = (
       ? `Estimated total incl. land: ${currencyFormatter.format(
           totalMin
         )} - ${currencyFormatter.format(totalMax)}`
-      : `Estimated build: ${currencyFormatter.format(min)} - ${currencyFormatter.format(max)}`,
+      : `Estimated build cost: ${currencyFormatter.format(min)} - ${currencyFormatter.format(max)}`,
   };
 };
 
@@ -113,6 +113,6 @@ export const getDesignCardPriceText = ({
 
   return (
     estimateBuildCostRange(designArea, lotPrice)?.text ??
-    "Estimated build: Price on request"
+    "Estimated build cost: Price on request"
   );
 };

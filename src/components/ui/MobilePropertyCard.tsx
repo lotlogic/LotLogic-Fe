@@ -145,7 +145,7 @@ export const MobilePropertyCard = ({
                 onClick={onViewFloorPlan}
                 className="flex-1 bg-gray-100 text-gray-700 text-xs font-medium py-2 px-3 rounded-lg hover:bg-gray-200 transition-colors"
               >
-                View Floor Plan
+                View floor plan
               </button>
             )}
             {onViewFacades && (
@@ -153,7 +153,7 @@ export const MobilePropertyCard = ({
                 onClick={onViewFacades}
                 className="flex-1 bg-gray-100 text-gray-700 text-xs font-medium py-2 px-3 rounded-lg hover:bg-gray-200 transition-colors"
               >
-                View Facades
+                View facades
               </button>
             )}
           </div>
@@ -176,7 +176,7 @@ export const MobilePropertyCard = ({
           className="w-full mt-3 bg-gray-800 text-white text-xs font-medium py-2 px-3 rounded-lg hover:bg-gray-900 transition-colors flex items-center justify-center gap-2"
         >
           <Eye className="h-3 w-3" />
-          View Details
+          View details
         </button>
       )}
     </div>

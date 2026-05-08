@@ -6,7 +6,7 @@ export const NotFoundPage = () => {
     <div className="bg-stone-50 font-body text-[var(--color-ink)]">
       <LandingHeader
         primaryAction={{
-          label: "Back to homepage",
+          label: "View demo",
           href: "/",
           variant: "primary",
         }}
@@ -25,14 +25,11 @@ export const NotFoundPage = () => {
           </h1>
           <p className="body-text-lg mx-auto mt-4 max-w-2xl !text-white/80">
             The page you&apos;re looking for isn&apos;t here. Head back to the
-            homepage to see LotCheck in action.
+            demo to see LotCheck in action.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link to="/" className="btn-primary px-8 py-3 text-base">
-              Back to homepage
-            </Link>
-            <Link to="/prototype" className="btn-secondary px-8 py-3 text-base">
-              View the prototype
+              View the demo
             </Link>
           </div>
         </div>

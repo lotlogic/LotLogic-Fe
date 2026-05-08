@@ -832,10 +832,10 @@ const AdminEstatePage = () => {
                       }
                       className="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                     />
-                    <span>Use this estate as the default for `/prototype`</span>
+                    <span>Use this estate as the default demo estate</span>
                   </label>
                   <p className="text-xs text-muted-foreground">
-                    Only one estate should be flagged as prototype.
+                    Only one estate should be flagged as the default demo estate.
                   </p>
                 </div>
               )}

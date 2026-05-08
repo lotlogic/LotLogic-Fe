@@ -1,8 +1,5 @@
 import Button from "@/components/ui/Button";
-import {
-  ImageCarouselModal,
-  SingleImageModal,
-} from "@/components/ui/DynamicModal";
+import { ImageCarouselModal } from "@/components/ui/DynamicModal";
 import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
 import Sidebar from "@/components/ui/Sidebar";
 import { useHouseDesigns } from "@/hooks/useHouseDesigns";
@@ -43,12 +40,43 @@ const getInitialFacadeSelection = (
   };
 };
 
+const buildDesignGalleryImages = (design: HouseDesignItem | null) => {
+  if (!design) {
+    return [];
+  }
+
+  const images = design.images.map((image, index) => ({
+    src: getImageUrl(image.src),
+    alt: `${design.title} ${image.faced || `Facade ${index + 1}`}`,
+    label: image.faced || `Facade ${index + 1}`,
+  }));
+
+  if (design.floorPlanImage) {
+    images.push({
+      src: getImageUrl(design.floorPlanImage),
+      alt: `${design.title} floor plan`,
+      label: "Floor plan",
+    });
+  }
+
+  if (images.length === 0 && design.image) {
+    images.push({
+      src: getImageUrl(design.image),
+      alt: `${design.title} facade`,
+      label: "Facade",
+    });
+  }
+
+  return images;
+};
+
 export const LotSidebar = ({
   open,
   onClose,
   lot,
   geometry,
   onSelectFloorPlan,
+  onFocusLot,
   onZoningDataUpdate,
 }: LotSidebarProps) => {
   const { setManualRotation } = useRotationStore();
@@ -59,7 +87,7 @@ export const LotSidebar = ({
     setShowFacadeModal,
   } = useModalStore();
 
-  const [showFilter, setShowFilter] = React.useState(true);
+  const [showFilter, setShowFilter] = React.useState(false);
   const [showHouseDesigns, setShowHouseDesigns] = React.useState(false);
   const [showAllDesigns, setShowAllDesigns] = React.useState(false);
   const [selectedHouseDesignForModals, setSelectedHouseDesignForModals] =
@@ -84,6 +112,9 @@ export const LotSidebar = ({
   );
   const [quoteSelectedFacade, setQuoteSelectedFacade] =
     React.useState<SelectedFacadeOption | null>(null);
+  const [initialQuoteJourneyType, setInitialQuoteJourneyType] = React.useState<
+    "secure_block" | null
+  >(null);
   const [currentModalFacadeIdx, setCurrentModalFacadeIdx] = useState(0);
 
   const lotId = lot.id?.toString() || null;
@@ -141,13 +172,14 @@ export const LotSidebar = ({
   );
 
   useEffect(() => {
-    setShowFilter(true);
+    setShowFilter(false);
     setShowHouseDesigns(false);
     setShowAllDesigns(false);
     setSelectedHouseDesignForModals(null);
     setSelectedFacadeByDesignId({});
     setQuoteDesign(null);
     setQuoteSelectedFacade(null);
+    setInitialQuoteJourneyType(null);
     setBedroom([]);
     setBathroom([]);
     setCar([]);
@@ -213,6 +245,7 @@ export const LotSidebar = ({
     setShowHouseDesigns(true);
     setShowFilter(false);
     setSelectedHouseDesignForModals(null);
+    onFocusLot?.();
   };
 
   const handleShowAllDesigns = () => {
@@ -296,6 +329,10 @@ export const LotSidebar = ({
 
   const handleViewFloorPlanClick = (selectedDesign: HouseDesignItem) => {
     setSelectedHouseDesignForModals(selectedDesign);
+    setCurrentModalFacadeIdx(
+      selectedDesign.floorPlanImage ? selectedDesign.images.length : 0
+    );
+    setShowFacadeModal(false);
     setShowFloorPlanModal(true);
   };
 
@@ -315,11 +352,13 @@ export const LotSidebar = ({
         },
       }));
     }
+    setShowFloorPlanModal(false);
     setShowFacadeModal(true);
   };
 
   const handleEnquireNow = (selectedDesign: HouseDesignItem) => {
     setQuoteDesign(selectedDesign);
+    setInitialQuoteJourneyType(null);
     setQuoteSelectedFacade(
       selectedFacadeByDesignId[selectedDesign.id] ??
         getInitialFacadeSelection(selectedDesign)
@@ -327,14 +366,21 @@ export const LotSidebar = ({
     setShowQuoteSidebar(true);
   };
 
+  const handleSecureLot = () => {
+    setQuoteDesign(null);
+    setQuoteSelectedFacade(null);
+    setInitialQuoteJourneyType("secure_block");
+    setShowQuoteSidebar(true);
+  };
+
   const showBackArrow = showFilter || showHouseDesigns || showQuoteSidebar;
   const designMatchCount = houseDesignsData?.houseDesigns?.length ?? 0;
   const minimizedLabel = showFilter
-    ? "Set Preferences"
+    ? "Set preferences"
     : showHouseDesigns
     ? showAllDesigns
-      ? "All Designs"
-      : "Design Matches"
+      ? "All designs"
+      : "Design matches"
     : `Lot ${displayLotId}`;
 
   const headerContent = (
@@ -342,17 +388,16 @@ export const LotSidebar = ({
       {showFilter ? (
         <>
           <h2 className="text-2xl font-medium text-brand">
-            Set your preferences
+            What&apos;s your dream home?
           </h2>
           <div className="text-brand-muted mt-1 text-base font-normal">
-            Choose what matters for Lot {displayLotId}, then we&apos;ll show
-            matching designs.
+            We&apos;ll find the designs that fit Lot {displayLotId}.
           </div>
         </>
       ) : showHouseDesigns ? (
         <>
           <h2 className="text-2xl font-medium text-brand">
-            {showAllDesigns ? "All Compatible Designs" : "Design Matches"}
+            {showAllDesigns ? "All compatible designs" : "Design matches"}
           </h2>
           <div className="text-brand-muted mt-1 text-base font-normal">
             {showAllDesigns
@@ -481,15 +526,22 @@ export const LotSidebar = ({
               <div className="bg-white rounded-xl shadow border border-brand p-6">
                 <div className="text-left mb-4">
                   <p className="text-brand-muted text-base font-medium">
-                    Choose your preferences before viewing matching designs
+                    Find homes that fit this lot, or secure it now if you&apos;re ready.
                   </p>
                 </div>
 
                 <Button
-                  label="Set preferences"
+                  label="Show me matching homes"
                   rightIcon={<ArrowRight className="h-6 w-8" />}
                   className="w-full text-base py-4 rounded-xl font-semibold animated-gradient-button transition-all duration-300 shadow-md cursor-pointer"
                   onClick={openPreferencesView}
+                  disabled={isSold}
+                />
+                <Button
+                  label="Secure this lot"
+                  variant="ghost"
+                  className="mt-3 w-full rounded-xl border-brand-primary bg-white py-4 text-base font-semibold text-brand hover:bg-brand-accent hover:text-brand"
+                  onClick={handleSecureLot}
                   disabled={isSold}
                 />
               </div>
@@ -498,7 +550,7 @@ export const LotSidebar = ({
         </Sidebar>
       )}
 
-      {showQuoteSidebar && quoteDesign && (
+      {showQuoteSidebar && (
         <React.Suspense fallback={<div>Loading...</div>}>
           <GetYourQuoteSidebar
             open={showQuoteSidebar}
@@ -506,15 +558,24 @@ export const LotSidebar = ({
               setShowQuoteSidebar(false);
               setQuoteDesign(null);
               setQuoteSelectedFacade(null);
+              setInitialQuoteJourneyType(null);
             }}
             onBack={() => {
               setShowQuoteSidebar(false);
+              const hadQuoteDesign = !!quoteDesign;
               setQuoteDesign(null);
               setQuoteSelectedFacade(null);
-              setShowHouseDesigns(true);
+              setInitialQuoteJourneyType(null);
+              if (hadQuoteDesign) {
+                setShowHouseDesigns(true);
+                setShowFilter(false);
+              } else {
+                openSummaryView();
+              }
             }}
             selectedHouseDesign={quoteDesign}
             selectedFacade={quoteSelectedFacade}
+            initialJourneyType={initialQuoteJourneyType}
             lotDetails={{
               id: String(lot.id || ""),
               estateId: lot.estateId || "",
@@ -536,48 +597,19 @@ export const LotSidebar = ({
         </React.Suspense>
       )}
 
-      <SingleImageModal
-        key={`floorplan-${lot.id}-${selectedHouseDesignForModals?.id ?? "none"}`}
-        open={showFloorPlanModal && !!selectedHouseDesignForModals}
-        onClose={() => setShowFloorPlanModal(false)}
-        title={`Lot ${displayLotId}, ${selectedHouseDesignForModals?.title || ""}`}
-        imageSrc={
-          selectedHouseDesignForModals?.floorPlanImage
-            ? getImageUrl(selectedHouseDesignForModals.floorPlanImage)
-            : ""
-        }
-        imageAlt="Floor Plan"
-      />
-
       <ImageCarouselModal
-        key={`facades-${lot.id}-${selectedHouseDesignForModals?.id ?? "none"}`}
-        open={showFacadeModal && !!selectedHouseDesignForModals}
+        key={`gallery-${lot.id}-${selectedHouseDesignForModals?.id ?? "none"}`}
+        open={
+          (showFacadeModal || showFloorPlanModal) &&
+          !!selectedHouseDesignForModals
+        }
         onClose={() => {
           setShowFacadeModal(false);
+          setShowFloorPlanModal(false);
           setCurrentModalFacadeIdx(0);
         }}
-        title={`${selectedHouseDesignForModals?.title || ""} - Facades`}
-        images={(() => {
-          const images = (selectedHouseDesignForModals?.images || []).map(
-            (image, index) => ({
-              src: getImageUrl(image.src),
-              alt: `Facade ${index + 1}`,
-              label: image.faced || `Facade ${index + 1}`,
-            })
-          );
-
-          if (images.length === 0 && selectedHouseDesignForModals?.image) {
-            return [
-              {
-                src: getImageUrl(selectedHouseDesignForModals.image),
-                alt: "Facade 1",
-                label: "Facade",
-              },
-            ];
-          }
-
-          return images;
-        })()}
+        title={`${selectedHouseDesignForModals?.title || ""} gallery`}
+        images={buildDesignGalleryImages(selectedHouseDesignForModals)}
         currentIndex={currentModalFacadeIdx}
         onIndexChange={(nextIndex) => {
           setCurrentModalFacadeIdx(nextIndex);

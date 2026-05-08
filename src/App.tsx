@@ -7,7 +7,6 @@ import {
 } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useEffect } from "react";
-import HomePage from "./pages/Home";
 import NotFoundPage from "./pages/NotFoundPage";
 import PrototypePage from "./pages/PrototypePage";
 import EmbedPage from "./pages/EmbedPage";
@@ -71,13 +70,23 @@ const DashboardGate = ({ children }: { children: ReactNode }) => (
   </PortalShell>
 );
 
+const PrototypeRedirect = () => {
+  const location = useLocation();
+  return (
+    <Navigate
+      to={{ pathname: "/", search: location.search, hash: location.hash }}
+      replace
+    />
+  );
+};
+
 function App() {
   return (
     <Router>
       <BrandThemeController />
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/prototype" element={<PrototypePage />} />
+        <Route path="/" element={<PrototypePage />} />
+        <Route path="/prototype" element={<PrototypeRedirect />} />
         <Route path="/embed" element={<EmbedPage />} />
         <Route path="/embed/:estateId" element={<EmbedPage />} />
         <Route path="*" element={<NotFoundPage />} />

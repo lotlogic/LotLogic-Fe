@@ -9,7 +9,7 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 
 const APP_MODAL_Z_INDEX = 1700;
 
@@ -150,6 +150,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const handlePrevious = useCallback(() => {
     onIndexChange((currentIndex - 1 + images.length) % images.length);
@@ -158,6 +159,48 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
   const handleNext = useCallback(() => {
     onIndexChange((currentIndex + 1) % images.length);
   }, [currentIndex, images.length, onIndexChange]);
+
+  const handleTouchStart = useCallback((event: React.TouchEvent) => {
+    if (event.touches.length !== 1) {
+      touchStartRef.current = null;
+      return;
+    }
+
+    const touch = event.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback(
+    (event: React.TouchEvent) => {
+      const start = touchStartRef.current;
+      touchStartRef.current = null;
+
+      if (!start || event.changedTouches.length !== 1 || images.length <= 1) {
+        return;
+      }
+
+      const touch = event.changedTouches[0];
+      const deltaX = touch.clientX - start.x;
+      const deltaY = touch.clientY - start.y;
+      const horizontalDistance = Math.abs(deltaX);
+      const verticalDistance = Math.abs(deltaY);
+
+      if (
+        horizontalDistance < 44 ||
+        verticalDistance > 48 ||
+        verticalDistance > horizontalDistance
+      ) {
+        return;
+      }
+
+      if (deltaX < 0) {
+        handleNext();
+      } else {
+        handlePrevious();
+      }
+    },
+    [handleNext, handlePrevious, images.length]
+  );
 
   const currentImage = images[currentIndex];
   const hasMultipleImages = images.length > 1;
@@ -212,7 +255,7 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
             }}
           >
             <Typography variant="body1" color="text.secondary">
-              No facade images available.
+              No images available.
             </Typography>
           </Box>
         ) : (
@@ -235,6 +278,8 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
                 justifyContent: "center",
                 flexShrink: 0,
               }}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
             >
               <img
                 src={currentImage.src}
@@ -306,6 +351,8 @@ export const ImageCarouselModal: React.FC<ImageCarouselModalProps> = ({
                   justifyContent: "center",
                   gap: "8px",
                   flexShrink: 0,
+                  overflowX: "auto",
+                  paddingBottom: "4px",
                 }}
               >
                 {images.map((image, index) => (

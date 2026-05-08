@@ -222,7 +222,7 @@ const AdminBrandSettingsPage = () => {
     <div className="container py-8 max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Embed Brand Settings</h1>
       <p className="text-sm text-slate-600 -mt-3 mb-5">
-        These settings are applied to client-facing <code>/prototype</code> and{" "}
+        These settings are applied to the client-facing demo root and{" "}
         <code>/embed</code> routes only.
       </p>
       <AdminNav />

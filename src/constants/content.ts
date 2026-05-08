@@ -32,7 +32,7 @@ export const APP_CONTENT = {
   // Lot sidebar content
   lotSidebar: {
     buildYourSite: "What can I build here?",
-    houseDesigns: "Design Matches",
+    houseDesigns: "Design matches",
     planningRules: "Planning Rules",
     showMeWhatICanBuild: "What can I build here?",
     lotId: "Lot ID",
@@ -47,10 +47,10 @@ export const APP_CONTENT = {
 
   // House design content
   houseDesign: {
-    title: "Design Matches",
+    title: "Design matches",
     filter: "Filter",
     reset: "Reset",
-    showHouseDesign: "Show me the designs",
+    showHouseDesign: "Show me matching homes",
     enquireNow: "Get a detailed quote",
     bedrooms: "Bedrooms",
     bathrooms: "Bathrooms",
@@ -95,7 +95,7 @@ export const APP_CONTENT = {
     noSavedProperties: "No saved properties",
     noSavedPropertiesDescription:
       "Start exploring properties and save them to your shortlist.",
-    viewDetails: "View Details",
+    viewDetails: "View details",
     floorplanRotation: "Floorplan Rotation",
   },
 
