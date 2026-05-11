@@ -435,19 +435,26 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
       return;
     }
 
-    const bounds = new mapboxgl.LngLatBounds();
-    let hasBounds = false;
+    const lotBounds = new mapboxgl.LngLatBounds();
+    const overlayBounds = new mapboxgl.LngLatBounds();
+    let hasLotBounds = false;
+    let hasOverlayBounds = false;
 
-    const extendCoordinate = (coordinate: [number, number]) => {
+    const extendBoundsCoordinate = (
+      targetBounds: mapboxgl.LngLatBounds,
+      coordinate: unknown
+    ) => {
       if (
         Array.isArray(coordinate) &&
         coordinate.length >= 2 &&
-        Number.isFinite(coordinate[0]) &&
-        Number.isFinite(coordinate[1])
+        Number.isFinite(Number(coordinate[0])) &&
+        Number.isFinite(Number(coordinate[1]))
       ) {
-        bounds.extend(coordinate);
-        hasBounds = true;
+        targetBounds.extend([Number(coordinate[0]), Number(coordinate[1])]);
+        return true;
       }
+
+      return false;
     };
 
     const extendPolygonCoordinates = (coordinates: unknown) => {
@@ -461,13 +468,8 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
         }
 
         ring.forEach((coordinate) => {
-          if (
-            Array.isArray(coordinate) &&
-            coordinate.length >= 2 &&
-            Number.isFinite(Number(coordinate[0])) &&
-            Number.isFinite(Number(coordinate[1]))
-          ) {
-            extendCoordinate([Number(coordinate[0]), Number(coordinate[1])]);
+          if (extendBoundsCoordinate(lotBounds, coordinate)) {
+            hasLotBounds = true;
           }
         });
       });
@@ -492,14 +494,20 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
     });
 
     const normalizedOverlay = normalizeEstateBackgroundOverlay(estateData);
-    normalizedOverlay?.coordinates.forEach((coordinate) => {
-      extendCoordinate(coordinate);
-    });
+    if (!hasLotBounds) {
+      normalizedOverlay?.coordinates.forEach((coordinate) => {
+        if (extendBoundsCoordinate(overlayBounds, coordinate)) {
+          hasOverlayBounds = true;
+        }
+      });
+    }
 
-    if (!hasBounds) {
+    if (!hasLotBounds && !hasOverlayBounds) {
       return;
     }
 
+    const bounds = hasLotBounds ? lotBounds : overlayBounds;
+    const viewSource = hasLotBounds ? "lots" : "overlay";
     const southWest = bounds.getSouthWest();
     const northEast = bounds.getNorthEast();
     const nextViewKey = [
@@ -508,7 +516,7 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
       southWest.lat.toFixed(6),
       northEast.lng.toFixed(6),
       northEast.lat.toFixed(6),
-      normalizedOverlay ? "overlay" : "lots",
+      viewSource,
     ].join("|");
 
     if (initialViewKeyRef.current === nextViewKey) {
