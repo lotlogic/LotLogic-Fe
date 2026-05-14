@@ -61,6 +61,52 @@ export const getLotPriceText = ({
   return `For Sale - ${formattedPrice}`;
 };
 
+export const getHouseAndLandPriceBreakdown = ({
+  lifecycleStage,
+  salesMode,
+  floorPlanId,
+  blockPrice,
+  buildPrice,
+}: {
+  lifecycleStage: unknown;
+  salesMode: unknown;
+  floorPlanId?: string | number | null;
+  blockPrice?: number | null;
+  buildPrice?: number | null;
+}) => {
+  const lifecycle = normalizeLotLifecycle(lifecycleStage);
+  const normalizedSalesMode = normalizeLotSalesMode(salesMode);
+  const hasConfiguredPackage =
+    normalizedSalesMode === "house_and_land" &&
+    floorPlanId !== undefined &&
+    floorPlanId !== null &&
+    String(floorPlanId).trim().length > 0;
+
+  if (!hasConfiguredPackage || lifecycle === "sold" || lifecycle === "reserved") {
+    return null;
+  }
+
+  const blockPriceText = formatLotCurrency(blockPrice) ?? "Price on request";
+  const buildPriceText = formatLotCurrency(buildPrice) ?? "Price on request";
+  const hasBlockPrice =
+    typeof blockPrice === "number" && Number.isFinite(blockPrice);
+  const hasBuildPrice =
+    typeof buildPrice === "number" && Number.isFinite(buildPrice);
+  const totalPriceText =
+    hasBlockPrice && hasBuildPrice
+      ? formatLotCurrency(blockPrice + buildPrice)
+      : null;
+
+  return [
+    { label: "Block price", value: blockPriceText },
+    { label: "Build price", value: buildPriceText },
+    {
+      label: "House & Land total",
+      value: totalPriceText ?? "Price on request",
+    },
+  ];
+};
+
 export const estimateBuildCostRange = (
   areaValue: unknown,
   lotPrice?: number | null
@@ -115,4 +161,39 @@ export const getDesignCardPriceText = ({
     estimateBuildCostRange(designArea, lotPrice)?.text ??
     "Estimated build cost: Price on request"
   );
+};
+
+export const getDesignCardPriceLines = ({
+  lotSalesMode,
+  lotPrice,
+  designArea,
+}: {
+  lotSalesMode: LotSalesModeValue | null;
+  lotPrice?: number | null;
+  designArea?: string | number | null;
+}) => {
+  if (lotSalesMode === "house_and_land") {
+    return [getDesignCardPriceText({ lotSalesMode, lotPrice, designArea })];
+  }
+
+  const estimate = estimateBuildCostRange(designArea, lotPrice);
+  if (!estimate) {
+    return ["Estimated build cost: Price on request"];
+  }
+
+  const buildLine = `Estimated build cost: ${currencyFormatter.format(
+    estimate.buildMin
+  )} - ${currencyFormatter.format(estimate.buildMax)}`;
+  const hasLotPrice = typeof lotPrice === "number" && Number.isFinite(lotPrice);
+
+  if (!hasLotPrice) {
+    return [buildLine];
+  }
+
+  return [
+    buildLine,
+    `Estimated total incl. land: ${currencyFormatter.format(
+      estimate.min
+    )} - ${currencyFormatter.format(estimate.max)}`,
+  ];
 };

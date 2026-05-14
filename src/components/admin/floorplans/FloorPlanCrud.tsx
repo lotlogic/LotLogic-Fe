@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import Checkbox from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { adminApi } from "@/lib/api/adminApi";
+import type { FloorPlanDocumentRecord } from "./FloorPlanDocumentCrud";
 
 export type FloorPlanRecord = {
   id: string;
@@ -27,6 +28,7 @@ export type FloorPlanRecord = {
   architecturalStyle?: string | null;
   hasFrontFacingServiceAreas?: boolean | null;
   builderId?: string | null;
+  documents?: FloorPlanDocumentRecord[];
   createdAt?: string | null;
   updatedAt?: string | null;
 };

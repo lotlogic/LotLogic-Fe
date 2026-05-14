@@ -1,11 +1,14 @@
 import Button from "@/components/ui/Button";
-import { ImageCarouselModal } from "@/components/ui/DynamicModal";
+import { ImageCarouselModal, TextModal } from "@/components/ui/DynamicModal";
 import { FilterSectionWithSingleLineSliders } from "@/components/ui/HouseDesignFilter";
 import Sidebar from "@/components/ui/Sidebar";
 import { useHouseDesigns } from "@/hooks/useHouseDesigns";
 import { setAnalyticsContext } from "@/lib/analytics/mixpanel";
 import { getImageUrl } from "@/lib/api/lotApi";
-import { getLotPriceText } from "@/lib/utils/lotPricing";
+import {
+  getHouseAndLandPriceBreakdown,
+  getLotPriceText,
+} from "@/lib/utils/lotPricing";
 import { getZoningColor, hexToRgba } from "@/lib/utils/zoning";
 import { useModalStore } from "@/stores/modalStore";
 import { useRotationStore } from "@/stores/rotationStore";
@@ -51,14 +54,6 @@ const buildDesignGalleryImages = (design: HouseDesignItem | null) => {
     label: image.faced || `Facade ${index + 1}`,
   }));
 
-  if (design.floorPlanImage) {
-    images.push({
-      src: getImageUrl(design.floorPlanImage),
-      alt: `${design.title} floor plan`,
-      label: "Floor plan",
-    });
-  }
-
   if (images.length === 0 && design.image) {
     images.push({
       src: getImageUrl(design.image),
@@ -68,6 +63,34 @@ const buildDesignGalleryImages = (design: HouseDesignItem | null) => {
   }
 
   return images;
+};
+
+const formatDocumentSize = (bytes: number | null | undefined) => {
+  if (typeof bytes !== "number" || !Number.isFinite(bytes) || bytes < 0) {
+    return "";
+  }
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  const units = ["KB", "MB", "GB"];
+  let value = bytes / 1024;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  const digits = value >= 10 ? 0 : 1;
+  return `${value.toFixed(digits)} ${units[unitIndex]}`;
+};
+
+const getDocumentLabel = (
+  document: NonNullable<HouseDesignItem["documents"]>[number]
+) => {
+  const documentName = String(document.documentName ?? "").trim();
+  if (documentName) {
+    return documentName;
+  }
+  return String(document.fileName ?? "").trim() || "Document";
 };
 
 export const LotSidebar = ({
@@ -92,6 +115,9 @@ export const LotSidebar = ({
   const [showAllDesigns, setShowAllDesigns] = React.useState(false);
   const [selectedHouseDesignForModals, setSelectedHouseDesignForModals] =
     React.useState<HouseDesignItem | null>(null);
+  const [selectedHouseDesignId, setSelectedHouseDesignId] = React.useState<
+    string | null
+  >(null);
   const [selectedFacadeByDesignId, setSelectedFacadeByDesignId] =
     React.useState<Record<string, SelectedFacadeOption>>({});
 
@@ -176,6 +202,7 @@ export const LotSidebar = ({
     setShowHouseDesigns(false);
     setShowAllDesigns(false);
     setSelectedHouseDesignForModals(null);
+    setSelectedHouseDesignId(null);
     setSelectedFacadeByDesignId({});
     setQuoteDesign(null);
     setQuoteSelectedFacade(null);
@@ -225,6 +252,13 @@ export const LotSidebar = ({
     salesMode: lot.salesMode,
     price: lot.price,
   });
+  const houseAndLandPriceBreakdown = getHouseAndLandPriceBreakdown({
+    lifecycleStage: lot.lifecycleStage,
+    salesMode: lot.salesMode,
+    floorPlanId: lot.houseAndLandFloorPlanId,
+    blockPrice: lot.price,
+    buildPrice: lot.houseAndLandBuildPrice,
+  });
   const isSold = lot.lifecycleStage === "sold";
 
   const openSummaryView = () => {
@@ -232,12 +266,14 @@ export const LotSidebar = ({
     setShowHouseDesigns(false);
     setShowAllDesigns(false);
     setSelectedHouseDesignForModals(null);
+    setSelectedHouseDesignId(null);
   };
 
   const openPreferencesView = () => {
     setShowFilter(true);
     setShowHouseDesigns(false);
     setSelectedHouseDesignForModals(null);
+    setSelectedHouseDesignId(null);
   };
 
   const handleShowHouseDesign = () => {
@@ -245,6 +281,7 @@ export const LotSidebar = ({
     setShowHouseDesigns(true);
     setShowFilter(false);
     setSelectedHouseDesignForModals(null);
+    setSelectedHouseDesignId(null);
     onFocusLot?.();
   };
 
@@ -253,6 +290,7 @@ export const LotSidebar = ({
     setShowHouseDesigns(true);
     setShowFilter(false);
     setSelectedHouseDesignForModals(null);
+    setSelectedHouseDesignId(null);
   };
 
   const handleBackClick = () => {
@@ -269,6 +307,7 @@ export const LotSidebar = ({
     setShowFloorPlanModal(false);
     setShowFacadeModal(false);
     setSelectedHouseDesignForModals(null);
+    setSelectedHouseDesignId(null);
   };
 
   const handleDesignSelectedInList = (selectedDesign: HouseDesignItem | null) => {
@@ -327,11 +366,8 @@ export const LotSidebar = ({
     }
   };
 
-  const handleViewFloorPlanClick = (selectedDesign: HouseDesignItem) => {
+  const handleViewDocumentsClick = (selectedDesign: HouseDesignItem) => {
     setSelectedHouseDesignForModals(selectedDesign);
-    setCurrentModalFacadeIdx(
-      selectedDesign.floorPlanImage ? selectedDesign.images.length : 0
-    );
     setShowFacadeModal(false);
     setShowFloorPlanModal(true);
   };
@@ -371,6 +407,19 @@ export const LotSidebar = ({
     setQuoteSelectedFacade(null);
     setInitialQuoteJourneyType("secure_block");
     setShowQuoteSidebar(true);
+  };
+
+  const handleExploreAvailableBlocks = () => {
+    setShowQuoteSidebar(false);
+    setQuoteDesign(null);
+    setQuoteSelectedFacade(null);
+    setInitialQuoteJourneyType(null);
+    setShowFloorPlanModal(false);
+    setShowFacadeModal(false);
+    setSelectedHouseDesignForModals(null);
+    setSelectedHouseDesignId(null);
+    onSelectFloorPlan?.(null);
+    onClose();
   };
 
   const showBackArrow = showFilter || showHouseDesigns || showQuoteSidebar;
@@ -428,9 +477,31 @@ export const LotSidebar = ({
       ) : (
         <>
           <h2 className="text-2xl font-medium text-brand">{`Lot ${displayLotId}`}</h2>
-          <div className="text-brand-primary mt-1 text-base font-semibold">
-            {priceText}
-          </div>
+          {houseAndLandPriceBreakdown ? (
+            <div className="mt-2 grid gap-0.5 text-sm">
+              {houseAndLandPriceBreakdown.map((line) => (
+                <div
+                  key={line.label}
+                  className="flex items-baseline justify-between gap-3 text-brand"
+                >
+                  <span className="text-brand-muted">{line.label}</span>
+                  <span
+                    className={
+                      line.label === "House & Land total"
+                        ? "font-semibold text-brand-primary"
+                        : "font-medium text-brand"
+                    }
+                  >
+                    {line.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-brand-primary mt-1 text-base font-semibold">
+              {priceText}
+            </div>
+          )}
           <div className="text-brand-muted mt-1 text-base font-normal">
             {[
               toTitleCase(lot.suburb),
@@ -492,8 +563,10 @@ export const LotSidebar = ({
               }
               onDesignClick={handleDesignSelectedInList}
               onEnquireNow={handleEnquireNow}
-              onViewFloorPlan={handleViewFloorPlanClick}
+              onViewDocuments={handleViewDocumentsClick}
               onViewFacades={handleViewFacadesClick}
+              selectedDesignId={selectedHouseDesignId}
+              onSelectedDesignIdChange={setSelectedHouseDesignId}
               hasActiveFilters={hasAnyFilters}
               showingAllDesigns={showAllDesigns}
             />
@@ -526,12 +599,13 @@ export const LotSidebar = ({
               <div className="bg-white rounded-xl shadow border border-brand p-6">
                 <div className="text-left mb-4">
                   <p className="text-brand-muted text-base font-medium">
-                    Find homes that fit this lot, or secure it now if you&apos;re ready.
+                    Find floor plans that fit this lot, or secure it now if
+                    you&apos;re ready.
                   </p>
                 </div>
 
                 <Button
-                  label="Show me matching homes"
+                  label="Show me matching floor plans"
                   rightIcon={<ArrowRight className="h-6 w-8" />}
                   className="w-full text-base py-4 rounded-xl font-semibold animated-gradient-button transition-all duration-300 shadow-md cursor-pointer"
                   onClick={openPreferencesView}
@@ -576,6 +650,7 @@ export const LotSidebar = ({
             selectedHouseDesign={quoteDesign}
             selectedFacade={quoteSelectedFacade}
             initialJourneyType={initialQuoteJourneyType}
+            onExploreAvailableBlocks={handleExploreAvailableBlocks}
             lotDetails={{
               id: String(lot.id || ""),
               estateId: lot.estateId || "",
@@ -597,15 +672,49 @@ export const LotSidebar = ({
         </React.Suspense>
       )}
 
+      <TextModal
+        open={showFloorPlanModal && !!selectedHouseDesignForModals}
+        onClose={() => {
+          setShowFloorPlanModal(false);
+        }}
+        title={`${selectedHouseDesignForModals?.title || ""} documents`}
+        content={
+          <div className="grid gap-3">
+            {selectedHouseDesignForModals?.documents?.length ? (
+              selectedHouseDesignForModals.documents.map((document) => {
+                const size = formatDocumentSize(document.fileSizeBytes);
+                return (
+                  <a
+                    key={document.id}
+                    href={document.documentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-lg border border-brand bg-white px-4 py-3 text-sm font-medium text-brand transition hover:border-brand-primary hover:bg-brand-accent"
+                  >
+                    {getDocumentLabel(document)}
+                    {size ? (
+                      <span className="font-normal text-brand-muted">
+                        {" "}
+                        ({size})
+                      </span>
+                    ) : null}
+                  </a>
+                );
+              })
+            ) : (
+              <p className="m-0 text-sm text-brand-muted">
+                No documents are available for this floor plan yet.
+              </p>
+            )}
+          </div>
+        }
+      />
+
       <ImageCarouselModal
         key={`gallery-${lot.id}-${selectedHouseDesignForModals?.id ?? "none"}`}
-        open={
-          (showFacadeModal || showFloorPlanModal) &&
-          !!selectedHouseDesignForModals
-        }
+        open={showFacadeModal && !!selectedHouseDesignForModals}
         onClose={() => {
           setShowFacadeModal(false);
-          setShowFloorPlanModal(false);
           setCurrentModalFacadeIdx(0);
         }}
         title={`${selectedHouseDesignForModals?.title || ""} gallery`}

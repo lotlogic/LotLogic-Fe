@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { normalizeLotSalesMode } from "@/constants/lotSalesMode";
-import { getDesignCardPriceText } from "@/lib/utils/lotPricing";
+import { getDesignCardPriceLines } from "@/lib/utils/lotPricing";
 import { normalizeFloorPlanTitle } from "@/utils/text";
 
 type DesignMediaItem = {
@@ -125,12 +125,20 @@ export const HouseDesignList = ({
   onShowAllDesigns,
   onDesignClick,
   onEnquireNow,
-  onViewFloorPlan,
+  onViewDocuments,
   onViewFacades,
+  selectedDesignId: controlledSelectedDesignId,
+  onSelectedDesignIdChange,
   hasActiveFilters = false,
   showingAllDesigns = false,
 }: HouseDesignListProps) => {
-  const [selectedDesignId, setSelectedDesignId] = useState<string | null>(null);
+  const [internalSelectedDesignId, setInternalSelectedDesignId] = useState<
+    string | null
+  >(null);
+  const selectedDesignId =
+    controlledSelectedDesignId === undefined
+      ? internalSelectedDesignId
+      : controlledSelectedDesignId;
   const [mediaIndexByDesignId, setMediaIndexByDesignId] = useState<
     Record<string, number>
   >({});
@@ -145,6 +153,11 @@ export const HouseDesignList = ({
 
   // Use Zustand store for saved properties
   const { isDesignSaved, toggleSaved } = useSavedPropertiesStore();
+
+  const updateSelectedDesignId = (designId: string | null) => {
+    setInternalSelectedDesignId(designId);
+    onSelectedDesignIdChange?.(designId);
+  };
 
   // Handle toast display with useEffect
   useEffect(() => {
@@ -191,7 +204,7 @@ export const HouseDesignList = ({
       (house) => house.id === selectedDesignId
     );
     if (!selectedStillExists) {
-      setSelectedDesignId(null);
+      updateSelectedDesignId(null);
       onDesignClick(null);
     }
   }, [filteredHouses, onDesignClick, selectedDesignId]);
@@ -256,12 +269,12 @@ export const HouseDesignList = ({
 
   const handleSelectDesign = (house: HouseDesignItem) => {
     if (selectedDesignId === house.id) {
-      setSelectedDesignId(null);
+      updateSelectedDesignId(null);
       onDesignClick(null);
       return;
     }
 
-    setSelectedDesignId(house.id);
+    updateSelectedDesignId(house.id);
     const houseWithOverlayOnly = { ...house, overlayOnly: true };
     onDesignClick(houseWithOverlayOnly);
 
@@ -293,11 +306,11 @@ export const HouseDesignList = ({
     }
 
     if (media.kind === "floorplan") {
-      if (onViewFloorPlan) {
-        onViewFloorPlan(house);
+      if (onViewDocuments) {
+        onViewDocuments(house);
       }
 
-      trackHouseDesignInteraction("Floor Plan Viewed", {
+      trackHouseDesignInteraction("Documents Viewed", {
         id: house.id,
         title: house.title,
         estateId: lot.estateId,
@@ -552,7 +565,7 @@ export const HouseDesignList = ({
           const areaLabel =
             homeSizeLabel ||
             `${lotSidebar.singleStorey} ${houseDesign.area}: ${house.area} ${houseDesign.m2}`;
-          const pricingText = getDesignCardPriceText({
+          const pricingLines = getDesignCardPriceLines({
             lotSalesMode: normalizeLotSalesMode(lot.salesMode),
             lotPrice: lot.price,
             designArea: house.area,
@@ -671,18 +684,18 @@ export const HouseDesignList = ({
                       textColor={builderCardBranding.textColor}
                     />
                   </div>
-                  <div className="rounded-full border border-brand bg-white px-3 py-1.5 text-xs font-semibold text-brand">
+                  <div className="rounded-full border border-brand-primary bg-white px-3 py-1.5 text-xs font-semibold text-brand transition-colors hover:bg-brand-accent hover:text-brand-primary">
                     {isSelected
                       ? "Selected for lot preview"
-                      : "Tap to preview on your block"}
+                      : "Click to preview on your block"}
                   </div>
                 </div>
               )}
               {!builderCardBranding && (
-                <div className="mt-4 inline-flex rounded-full border border-brand bg-white px-3 py-1.5 text-xs font-semibold text-brand">
+                <div className="mt-4 inline-flex rounded-full border border-brand-primary bg-white px-3 py-1.5 text-xs font-semibold text-brand transition-colors hover:bg-brand-accent hover:text-brand-primary">
                   {isSelected
                     ? "Selected for lot preview"
-                    : "Tap to preview on your block"}
+                    : "Click to preview on your block"}
                 </div>
               )}
 
@@ -692,8 +705,10 @@ export const HouseDesignList = ({
                     {normalizedTitle}
                   </div>
                   <div className="mt-1 text-sm text-brand-muted">{areaLabel}</div>
-                  <div className="mt-2 text-sm font-semibold text-brand">
-                    {pricingText}
+                  <div className="mt-2 space-y-0.5 text-sm font-semibold text-brand">
+                    {pricingLines.map((line) => (
+                      <div key={line}>{line}</div>
+                    ))}
                   </div>
                 </div>
                 <button
@@ -742,14 +757,14 @@ export const HouseDesignList = ({
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <Button
-                  label="View floor plan"
+                  label="View documents"
                   onClick={(event) => {
                     event.stopPropagation();
-                    if (onViewFloorPlan) {
-                      onViewFloorPlan(house);
+                    if (onViewDocuments) {
+                      onViewDocuments(house);
                     }
 
-                    trackHouseDesignInteraction("Floor Plan Viewed", {
+                    trackHouseDesignInteraction("Documents Viewed", {
                       id: house.id,
                       title: house.title,
                       estateId: lot.estateId,

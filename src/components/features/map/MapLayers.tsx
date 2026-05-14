@@ -4,7 +4,6 @@ import {
   createLocalProjectionFromRing,
   createSValueLabel,
   intersectLines,
-  mapSValuesToSides,
   polygonOrientation,
   projectPointToLocal,
   projectRingToLocal,
@@ -2042,14 +2041,40 @@ export const MapLayers = ({
     const geometry = selectedLot.geometry as GeoJSON.Polygon;
     const coordinates = geometry.coordinates[0] as [number, number][];
     if (!coordinates || coordinates.length < 4) return;
+    const lotBoundaryRing = normalizeClosedRing(coordinates);
     const placementResult = getPlacementRing(selectedLot);
     const setbackRing =
-      placementResult?.ring ?? normalizeClosedRing(coordinates);
+      placementResult?.ring ?? lotBoundaryRing;
     if (!setbackRing) return;
     const dimensionRing = toClosedQuadRing(setbackRing);
 
     const { s1, s2, s3, s4 } = selectedLot.properties;
     const newMarkers: mapboxgl.Marker[] = [];
+    const lotPoly = turf.polygon([lotBoundaryRing ?? setbackRing]);
+    const lotArea =
+      typeof selectedLot.properties.areaSqm === "number"
+        ? selectedLot.properties.areaSqm
+        : Number.parseFloat(
+            String(selectedLot.properties.BLOCK_DERIVED_AREA ?? "")
+          );
+
+    if (
+      Number.isFinite(lotArea) &&
+      lotArea > 0 &&
+      !selectedFloorPlan &&
+      !showFloorPlanModal &&
+      !showFacadeModal
+    ) {
+      const lotAreaPoint = turf.pointOnFeature(lotPoly).geometry
+        .coordinates as [number, number];
+      const lotAreaLabel = new mapboxgl.Marker({
+        element: createSValueLabel(`${Math.round(lotArea)} m²`, "center"),
+        anchor: "center",
+      })
+        .setLngLat(lotAreaPoint)
+        .addTo(map);
+      newMarkers.push(lotAreaLabel);
+    }
 
     // Per-side setbacks ring
     const innerLL = getPlacementInsetRing(setbackRing, {
@@ -2060,7 +2085,6 @@ export const MapLayers = ({
 
     if (innerLL && innerLL.length >= 5) {
       const innerPoly = turf.polygon([innerLL]);
-      const lotPoly = turf.polygon([setbackRing]);
 
       // Draw setback boundary
       if (map.getLayer("setback-boundary-layer"))
@@ -2130,22 +2154,6 @@ export const MapLayers = ({
       //   const fsrDepthM = turf.distance(south, north, { units: 'meters' });
       //   console.log('[FSR] Width (m):', fsrWidthM.toFixed(2), 'Depth (m):', fsrDepthM.toFixed(2));
       // } catch {}
-
-      // FSR area label - only show when we have a valid FSR value
-      if (
-        fsrBuildableArea &&
-        !selectedFloorPlan &&
-        !showFloorPlanModal &&
-        !showFacadeModal
-      ) {
-        const fsrAreaLabel = new mapboxgl.Marker({
-          element: createSValueLabel(`${Math.round(desired)} m²`, "center"),
-          anchor: "center",
-        })
-          .setLngLat(innerCenter.geometry.coordinates as [number, number])
-          .addTo(map);
-        newMarkers.push(fsrAreaLabel);
-      }
 
       // House Design Area Boundary
       if (
@@ -2341,59 +2349,69 @@ export const MapLayers = ({
       updatePlacementWarning(null);
     }
 
-    // S labels on sides - Map s-values correctly to coordinates
+    // S labels on sides
     const mid = (a: Pt, b: Pt): Pt => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const openCoordinates = coordinates.slice(0, -1);
+    const lotCenter: Pt = [
+      openCoordinates.reduce((sum, point) => sum + point[0], 0) /
+        openCoordinates.length,
+      openCoordinates.reduce((sum, point) => sum + point[1], 0) /
+        openCoordinates.length,
+    ];
+    const getEdgeLabelPosition = (
+      midpoint: Pt
+    ): "top" | "right" | "bottom" | "left" => {
+      const deltaLng = midpoint[0] - lotCenter[0];
+      const deltaLat = midpoint[1] - lotCenter[1];
 
-    // Calculate actual distances for debugging
-    // const actualDistances = [
-    //   turf.distance(coordinates[0], coordinates[1], { units: 'meters' }),
-    //   turf.distance(coordinates[1], coordinates[2], { units: 'meters' }),
-    //   turf.distance(coordinates[2], coordinates[3], { units: 'meters' }),
-    //   turf.distance(coordinates[3], coordinates[0], { units: 'meters' })
-    // ];
+      if (Math.abs(deltaLng) > Math.abs(deltaLat)) {
+        return deltaLng >= 0 ? "right" : "left";
+      }
 
-    // Map s-values to the correct sides based on distance matching
-    const sValues = [s1 ?? 0, s2 ?? 0, s3 ?? 0, s4 ?? 0];
-    const mappedSValues = mapSValuesToSides(coordinates, sValues);
-
+      return deltaLat >= 0 ? "top" : "bottom";
+    };
+    const formatEdgeLength = (value: number) =>
+      Number(value.toFixed(2)).toString();
+    const suppliedSideValues = [s1, s2, s3, s4];
     const sides: Array<{
       a: Pt;
       b: Pt;
-      val: number | null | undefined;
+      val: number;
       pos: "top" | "right" | "bottom" | "left";
-    }> = [
-      {
-        a: coordinates[0],
-        b: coordinates[1],
-        val: mappedSValues.s1,
-        pos: "top",
-      },
-      {
-        a: coordinates[1],
-        b: coordinates[2],
-        val: mappedSValues.s2,
-        pos: "right",
-      },
-      {
-        a: coordinates[2],
-        b: coordinates[3],
-        val: mappedSValues.s3,
-        pos: "bottom",
-      },
-      {
-        a: coordinates[3],
-        b: coordinates[0],
-        val: mappedSValues.s4,
-        pos: "left",
-      },
-    ];
+    }> = coordinates.slice(0, -1).flatMap((start, index) => {
+      const a = start;
+      const b = coordinates[index + 1];
+      const suppliedValue = suppliedSideValues[index];
+      const val =
+        typeof suppliedValue === "number" && Number.isFinite(suppliedValue)
+          ? suppliedValue
+          : turf.distance(a, b, { units: "meters" });
+      const midpoint = mid(a, b);
+
+      return a && b && Number.isFinite(val) && val > 0.1
+        ? [
+            {
+              a,
+              b,
+              val,
+              pos: getEdgeLabelPosition(midpoint),
+            },
+          ]
+        : [];
+    });
 
     sides.forEach((side) => {
-      if (side.val == null) return;
+      if (
+        typeof side.val !== "number" ||
+        !Number.isFinite(side.val) ||
+        side.val <= 0
+      ) {
+        return;
+      }
       if (!showFloorPlanModal && !showFacadeModal) {
         const mpt = mid(side.a, side.b);
         const marker = new mapboxgl.Marker({
-          element: createSValueLabel(`${side.val}m`, side.pos),
+          element: createSValueLabel(`${formatEdgeLength(side.val)}m`, side.pos),
           anchor: "center",
         })
           .setLngLat(mpt)

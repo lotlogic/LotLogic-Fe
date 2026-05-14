@@ -78,7 +78,7 @@ export const MobileQuoteForm = ({
             </button>
           )}
           <h1 className="text-xl font-bold text-gray-900">
-            Almost there
+            What would you like to do?
           </h1>
         </div>
         <button

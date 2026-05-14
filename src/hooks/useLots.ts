@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { lotApi, type DatabaseLot } from "../lib/api/lotApi";
-import { normalizeLotLifecycle } from "@/constants/lotLifecycle";
+import {
+  getLotLifecycleLabel,
+  normalizeLotLifecycle,
+  type LotLifecycleValue,
+} from "@/constants/lotLifecycle";
 
 const compactCurrencyFormatter = new Intl.NumberFormat("en-AU", {
   style: "currency",
@@ -32,14 +36,20 @@ const buildDetailedLotLabel = ({
   lotNumber,
   areaSqm,
   price,
+  lifecycleStage,
 }: {
   lotNumber: string;
   areaSqm?: number | null;
   price?: number | null;
+  lifecycleStage?: LotLifecycleValue | null;
 }) => {
   const sizeLabel = formatLotLabelSize(areaSqm);
   const priceLabel = formatLotLabelPrice(price);
-  const metadataLines = [sizeLabel, priceLabel].filter(Boolean);
+  const statusLabel =
+    lifecycleStage === "reserved" || lifecycleStage === "sold"
+      ? getLotLifecycleLabel(lifecycleStage)
+      : null;
+  const metadataLines = [statusLabel, sizeLabel, priceLabel].filter(Boolean);
 
   return metadataLines.length > 0
     ? `${lotNumber}\n${metadataLines.join("\n")}`
@@ -66,6 +76,7 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
         lotNumber,
         areaSqm: lot.areaSqm,
         price: lot.price,
+        lifecycleStage,
       });
 
       // ---- Extract s1..s4 and check exact match ----
@@ -107,6 +118,9 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
           SECTION_NUMBER: lot.sectionNumber ?? null,
           salesMode: lot.salesMode,
           price: lot.price,
+          houseAndLandFloorPlanId: lot.houseAndLandFloorPlanId ?? null,
+          houseAndLandFloorPlanName: lot.houseAndLandFloorPlanName ?? null,
+          houseAndLandBuildPrice: lot.houseAndLandBuildPrice ?? null,
           selectable,
           DISTRICT_CODE: 1,
           OBJECTID: lotId,

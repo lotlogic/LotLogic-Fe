@@ -11,6 +11,11 @@ import {
   type FacadePayload,
   type FacadeRecord,
 } from "@/components/admin/facades/FacadeCrud";
+import {
+  FloorPlanDocumentCrud,
+  type FloorPlanDocumentPayload,
+  type FloorPlanDocumentRecord,
+} from "@/components/admin/floorplans/FloorPlanDocumentCrud";
 import { BuilderBrandingFields } from "@/components/admin/builders/BuilderBrandingFields";
 import { BuilderPerformancePanel } from "@/components/admin/builders/BuilderPerformancePanel";
 import { BuilderLeadsPanel } from "@/components/admin/builders/BuilderLeadsPanel";
@@ -155,6 +160,22 @@ type FacadePanelProps = {
   deleteFacade: (floorPlanId: string, id: string) => Promise<unknown>;
 };
 
+type DocumentPanelProps = {
+  floorPlanId: string;
+  floorPlanOptions: Array<{ id: string; label: string }>;
+  loadDocuments: (floorPlanId: string) => Promise<FloorPlanDocumentRecord[]>;
+  createDocument: (
+    floorPlanId: string,
+    payload: FloorPlanDocumentPayload,
+  ) => Promise<unknown>;
+  updateDocument: (
+    floorPlanId: string,
+    id: string,
+    payload: FloorPlanDocumentPayload,
+  ) => Promise<unknown>;
+  deleteDocument: (floorPlanId: string, id: string) => Promise<unknown>;
+};
+
 const FacadePanel = ({
   floorPlanId,
   floorPlanOptions,
@@ -199,6 +220,56 @@ const FacadePanel = ({
           floorPlanOptions={[option]}
           initialFloorPlanId={floorPlanId}
           filterPlaceholder="Filter by label or id"
+        />
+      )}
+    </div>
+  );
+};
+
+const DocumentPanel = ({
+  floorPlanId,
+  floorPlanOptions,
+  loadDocuments,
+  createDocument,
+  updateDocument,
+  deleteDocument,
+}: DocumentPanelProps) => {
+  const [showDocuments, setShowDocuments] = useState(false);
+
+  useEffect(() => {
+    setShowDocuments(false);
+  }, [floorPlanId]);
+
+  const option = floorPlanOptions.find((item) => item.id === floorPlanId) ?? {
+    id: floorPlanId,
+    label: floorPlanId,
+  };
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <h3 className="text-lg font-semibold m-0">Documents</h3>
+          <p className="text-sm text-muted-foreground m-0">
+            Manage PDFs and other sales documents for this floor plan.
+          </p>
+        </div>
+        <Button
+          onClick={() => setShowDocuments((prev) => !prev)}
+          variant="outline"
+          className="h-8 text-xs"
+          label={showDocuments ? "Hide documents" : "Manage documents"}
+        />
+      </div>
+      {showDocuments && (
+        <FloorPlanDocumentCrud
+          loadDocuments={loadDocuments}
+          createDocument={createDocument}
+          updateDocument={updateDocument}
+          deleteDocument={deleteDocument}
+          floorPlanOptions={[option]}
+          initialFloorPlanId={floorPlanId}
+          filterPlaceholder="Filter by name, file, or id"
         />
       )}
     </div>
@@ -535,6 +606,61 @@ const DashboardBuilderPage = () => {
       );
     }
   }, []);
+
+  const loadDocuments = useCallback(async (floorPlanId: string) => {
+    try {
+      return await adminApi.getFloorPlanDocuments<FloorPlanDocumentRecord>(
+        floorPlanId,
+      );
+    } catch (error) {
+      throw new Error(
+        getAdminApiErrorMessage(error, "Failed to load documents."),
+      );
+    }
+  }, []);
+
+  const createDocument = useCallback(
+    async (floorPlanId: string, payload: FloorPlanDocumentPayload) => {
+      try {
+        return await adminApi.createFloorPlanDocument(floorPlanId, payload);
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to create document."),
+        );
+      }
+    },
+    [],
+  );
+
+  const updateDocument = useCallback(
+    async (
+      floorPlanId: string,
+      id: string,
+      payload: FloorPlanDocumentPayload,
+    ) => {
+      try {
+        return await adminApi.updateFloorPlanDocument(floorPlanId, id, payload);
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to update document."),
+        );
+      }
+    },
+    [],
+  );
+
+  const deleteDocument = useCallback(
+    async (floorPlanId: string, id: string) => {
+      try {
+        return await adminApi.deleteFloorPlanDocument(floorPlanId, id);
+      } catch (error) {
+        throw new Error(
+          getAdminApiErrorMessage(error, "Failed to delete document."),
+        );
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!hasAccess) {
@@ -1691,14 +1817,24 @@ const DashboardBuilderPage = () => {
             );
           }}
           renderEditPanel={(floorPlanId) => (
-            <FacadePanel
-              floorPlanId={floorPlanId}
-              floorPlanOptions={floorPlanOptions}
-              loadFacades={loadFacades}
-              createFacade={createFacade}
-              updateFacade={updateFacade}
-              deleteFacade={deleteFacade}
-            />
+            <div className="grid gap-6">
+              <FacadePanel
+                floorPlanId={floorPlanId}
+                floorPlanOptions={floorPlanOptions}
+                loadFacades={loadFacades}
+                createFacade={createFacade}
+                updateFacade={updateFacade}
+                deleteFacade={deleteFacade}
+              />
+              <DocumentPanel
+                floorPlanId={floorPlanId}
+                floorPlanOptions={floorPlanOptions}
+                loadDocuments={loadDocuments}
+                createDocument={createDocument}
+                updateDocument={updateDocument}
+                deleteDocument={deleteDocument}
+              />
+            </div>
           )}
         />
       </section>

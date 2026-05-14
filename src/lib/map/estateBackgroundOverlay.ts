@@ -25,6 +25,9 @@ export type NormalizedEstateBackgroundOverlay = {
 const ESTATE_BACKGROUND_SOURCE_ID = "estate-background-image-source";
 const ESTATE_BACKGROUND_LAYER_ID = "estate-background-image-layer";
 const ESTATE_BACKGROUND_SYNC_KEY = "__estateBackgroundOverlaySyncKey";
+const BACKGROUND_FADE_START_ZOOM = 17;
+const BACKGROUND_FADE_MID_ZOOM = 18.25;
+const BACKGROUND_FADE_END_ZOOM = 19.75;
 const DEFAULT_LOT_FILL_OPACITY = [
   "case",
   ["boolean", ["feature-state", "selected"], false],
@@ -58,6 +61,19 @@ const parseOverlayCoordinate = (
   }
   return null;
 };
+
+const getSoftenedBackgroundOpacity = (rasterOpacity: number) =>
+  [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    BACKGROUND_FADE_START_ZOOM,
+    rasterOpacity,
+    BACKGROUND_FADE_MID_ZOOM,
+    rasterOpacity * 0.72,
+    BACKGROUND_FADE_END_ZOOM,
+    rasterOpacity * 0.42,
+  ] as any;
 
 export const normalizeEstateBackgroundOverlay = (
   value: EstateBackgroundOverlayInput | null | undefined
@@ -149,12 +165,12 @@ const refreshEstateBackgroundOverlay = (map: Map, rasterOpacity: number) => {
   map.setPaintProperty(
     ESTATE_BACKGROUND_LAYER_ID,
     "raster-opacity",
-    refreshOpacity
+    getSoftenedBackgroundOpacity(refreshOpacity)
   );
   map.setPaintProperty(
     ESTATE_BACKGROUND_LAYER_ID,
     "raster-opacity",
-    rasterOpacity
+    getSoftenedBackgroundOpacity(rasterOpacity)
   );
   map.triggerRepaint();
 };
@@ -232,7 +248,7 @@ export const syncEstateBackgroundOverlay = (
       type: "raster" as const,
       source: ESTATE_BACKGROUND_SOURCE_ID,
       paint: {
-        "raster-opacity": rasterOpacity,
+        "raster-opacity": getSoftenedBackgroundOpacity(rasterOpacity),
         "raster-resampling": "linear" as const,
       },
     };

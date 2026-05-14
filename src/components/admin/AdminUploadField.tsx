@@ -12,10 +12,17 @@ type UploadResponse = {
   maxBytes?: number;
 };
 
+export type AdminUploadMetadata = UploadResponse & {
+  fileName: string;
+  fileSizeBytes: number;
+  contentType: string;
+};
+
 type AdminUploadFieldProps = {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  onUploaded?: (metadata: AdminUploadMetadata) => void;
   placeholder?: string;
   required?: boolean;
   folder: string;
@@ -30,6 +37,7 @@ export const AdminUploadField = ({
   label,
   value,
   onChange,
+  onUploaded,
   placeholder,
   required,
   folder,
@@ -93,6 +101,12 @@ export const AdminUploadField = ({
       }
 
       onChange(upload.assetUrl);
+      onUploaded?.({
+        ...upload,
+        fileName: file.name,
+        fileSizeBytes: file.size,
+        contentType,
+      });
       setSuccessMessage("Upload complete.");
     } catch (error) {
       setErrorMessage(

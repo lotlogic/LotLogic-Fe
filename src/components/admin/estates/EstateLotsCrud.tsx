@@ -40,6 +40,7 @@ export type EstateLotRecord = {
   areaSqm?: number | null;
   salesMode?: string | null;
   price?: number | null;
+  houseAndLandFloorPlanId?: string | null;
   lifecycleStage?: string | null;
   lotNumber?: number | null;
   status?: string | null;
@@ -55,6 +56,24 @@ export type EstateLotRecord = {
   [key: string]: unknown;
 };
 
+type ApprovedLotFloorPlanOption = {
+  designOnLotId?: string;
+  floorPlanId: string;
+  floorPlan?: {
+    id?: string;
+    name?: string | null;
+    price?: number | null;
+    areaSqm?: number | null;
+    bedrooms?: number | null;
+    bathrooms?: number | null;
+    garages?: number | null;
+    builder?: {
+      id?: string;
+      name?: string | null;
+    } | null;
+  } | null;
+};
+
 type LotForm = {
   blockKey: string;
   blockNumber: string;
@@ -62,6 +81,7 @@ type LotForm = {
   areaSqm: string;
   salesMode: string;
   price: string;
+  houseAndLandFloorPlanId: string;
   zoning: string;
   address: string;
   district: string;
@@ -168,6 +188,7 @@ const createEmptyLotForm = (estateIdValue: string): LotForm => ({
   areaSqm: "",
   salesMode: "land_sale",
   price: "",
+  houseAndLandFloorPlanId: "",
   zoning: "",
   address: "",
   district: "",
@@ -616,6 +637,7 @@ const buildLotForm = (lot: EstateLotRecord, estateIdValue: string): LotForm => {
     salesMode:
       normalizeLotSalesMode(lot.salesMode) ?? createEmptyLotForm("").salesMode,
     price: stringifyValue(lot.price),
+    houseAndLandFloorPlanId: stringifyValue(lot.houseAndLandFloorPlanId),
     zoning: stringifyValue(lot.zoning),
     address: stringifyValue(lot.address),
     district: stringifyValue(lot.district),
@@ -733,6 +755,20 @@ const getLotPrice = (lot: EstateLotRecord) => {
   return "--";
 };
 
+const formatApprovedFloorPlanOption = (option: ApprovedLotFloorPlanOption) => {
+  const plan = option.floorPlan;
+  const title = plan?.name?.trim() || `Floor plan ${option.floorPlanId}`;
+  const builder = plan?.builder?.name?.trim();
+  const details = [
+    typeof plan?.bedrooms === "number" ? `${plan.bedrooms} bed` : null,
+    typeof plan?.bathrooms === "number" ? `${plan.bathrooms} bath` : null,
+    typeof plan?.garages === "number" ? `${plan.garages} car` : null,
+    typeof plan?.areaSqm === "number" ? `${Math.round(plan.areaSqm)}sqm` : null,
+  ].filter(Boolean);
+
+  return [title, builder, details.join(", ")].filter(Boolean).join(" | ");
+};
+
 const getLotBlockKey = (lot: EstateLotRecord) =>
   formatLotValue(lot.blockKey ?? (lot as { BLOCK_KEY?: string }).BLOCK_KEY);
 
@@ -811,6 +847,14 @@ export const EstateLotsCrud = ({
   const [lotBulkDeleteLoading, setLotBulkDeleteLoading] = useState(false);
   const [lotFormError, setLotFormError] = useState<string | null>(null);
   const [lotFormSuccess, setLotFormSuccess] = useState<string | null>(null);
+  const [approvedFloorPlanOptions, setApprovedFloorPlanOptions] = useState<
+    ApprovedLotFloorPlanOption[]
+  >([]);
+  const [approvedFloorPlansLoading, setApprovedFloorPlansLoading] =
+    useState(false);
+  const [approvedFloorPlansError, setApprovedFloorPlansError] = useState<
+    string | null
+  >(null);
   const [lotSaveRecompute, setLotSaveRecompute] = useState<
     Record<string, unknown> | null
   >(null);
@@ -1040,6 +1084,46 @@ export const EstateLotsCrud = ({
     }
   }, [estateId, handleLoadLots, recomputeEstateDesignOnLot]);
 
+  const loadApprovedFloorPlansForLot = useCallback(async (lotId: string) => {
+    if (!lotId) {
+      setApprovedFloorPlanOptions([]);
+      setApprovedFloorPlansLoading(false);
+      setApprovedFloorPlansError(null);
+      return;
+    }
+
+    setApprovedFloorPlansLoading(true);
+    setApprovedFloorPlansError(null);
+    try {
+      const options =
+        await adminApi.getApprovedFloorPlansForLot<ApprovedLotFloorPlanOption>(
+          lotId
+        );
+      setApprovedFloorPlanOptions(options);
+    } catch (error) {
+      setApprovedFloorPlanOptions([]);
+      setApprovedFloorPlansError(
+        getAdminApiErrorMessage(error, "Failed to load approved floor plans.")
+      );
+    } finally {
+      setApprovedFloorPlansLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (
+      !editingLotId ||
+      normalizeLotSalesMode(lotForm.salesMode) !== "house_and_land"
+    ) {
+      setApprovedFloorPlanOptions([]);
+      setApprovedFloorPlansLoading(false);
+      setApprovedFloorPlansError(null);
+      return;
+    }
+
+    void loadApprovedFloorPlansForLot(editingLotId);
+  }, [editingLotId, loadApprovedFloorPlansForLot, lotForm.salesMode]);
+
   const resetConstraintForm = useCallback(() => {
     setEditingConstraintId(null);
     setConstraintName("");
@@ -1201,6 +1285,9 @@ export const EstateLotsCrud = ({
     setLotGeometry(null);
     setLotFormError(null);
     setLotFormSuccess(null);
+    setApprovedFloorPlanOptions([]);
+    setApprovedFloorPlansLoading(false);
+    setApprovedFloorPlansError(null);
     setLotSaveRecompute(null);
     setShowLotConstraints(false);
     setLotConstraints([]);
@@ -1251,6 +1338,9 @@ export const EstateLotsCrud = ({
     setLotGeometry(null);
     setLotFormError(null);
     setLotFormSuccess(null);
+    setApprovedFloorPlanOptions([]);
+    setApprovedFloorPlansLoading(false);
+    setApprovedFloorPlansError(null);
     setLotSaveRecompute(null);
     setShowLotConstraints(false);
     setLotConstraints([]);
@@ -1443,6 +1533,9 @@ export const EstateLotsCrud = ({
     );
     setLotFormError(null);
     setLotFormSuccess(null);
+    setApprovedFloorPlanOptions([]);
+    setApprovedFloorPlansLoading(false);
+    setApprovedFloorPlansError(null);
     setLotSaveRecompute(null);
     setShowLotConstraints(false);
     resetConstraintForm();
@@ -1490,6 +1583,20 @@ export const EstateLotsCrud = ({
     const normalizedSalesMode = normalizeLotSalesMode(lotForm.salesMode.trim());
     if (!normalizedSalesMode) {
       setLotFormError("Sales mode must be either Land Sale or House & Land.");
+      setLotSaving(false);
+      return;
+    }
+    const houseAndLandFloorPlanId = normalizeOptional(
+      lotForm.houseAndLandFloorPlanId
+    );
+    if (
+      editingLotId &&
+      normalizedSalesMode === "house_and_land" &&
+      !houseAndLandFloorPlanId
+    ) {
+      setLotFormError(
+        "Select an approved floor plan before saving a House & Land lot."
+      );
       setLotSaving(false);
       return;
     }
@@ -1669,6 +1776,12 @@ export const EstateLotsCrud = ({
           }
         : null,
     };
+    if (editingLotId) {
+      payload.houseAndLandFloorPlanId =
+        normalizedSalesMode === "house_and_land"
+          ? houseAndLandFloorPlanId
+          : null;
+    }
 
     if (geojsonValue.data === null) {
       if (hasGeojsonExtras) {
@@ -2529,6 +2642,11 @@ export const EstateLotsCrud = ({
                     setLotForm((prev) => ({
                       ...prev,
                       salesMode: event.target.value,
+                      houseAndLandFloorPlanId:
+                        normalizeLotSalesMode(event.target.value) ===
+                        "house_and_land"
+                          ? prev.houseAndLandFloorPlanId
+                          : "",
                     }))
                   }
                   className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -2540,6 +2658,65 @@ export const EstateLotsCrud = ({
                   ))}
                 </select>
               </div>
+              {normalizeLotSalesMode(lotForm.salesMode) ===
+                "house_and_land" && (
+                <div className="grid gap-2 md:col-span-2 lg:col-span-2">
+                  <span className="text-sm font-medium">
+                    House &amp; Land floor plan *
+                  </span>
+                  <select
+                    value={lotForm.houseAndLandFloorPlanId}
+                    onChange={(event) =>
+                      setLotForm((prev) => ({
+                        ...prev,
+                        houseAndLandFloorPlanId: event.target.value,
+                      }))
+                    }
+                    disabled={!editingLotId || approvedFloorPlansLoading}
+                    className="h-10 rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <option value="">
+                      {approvedFloorPlansLoading
+                        ? "Loading approved floor plans..."
+                        : "Select approved floor plan"}
+                    </option>
+                    {lotForm.houseAndLandFloorPlanId &&
+                      !approvedFloorPlanOptions.some(
+                        (option) =>
+                          option.floorPlanId === lotForm.houseAndLandFloorPlanId
+                      ) && (
+                        <option value={lotForm.houseAndLandFloorPlanId}>
+                          Selected floor plan unavailable
+                        </option>
+                      )}
+                    {approvedFloorPlanOptions.map((option) => (
+                      <option key={option.floorPlanId} value={option.floorPlanId}>
+                        {formatApprovedFloorPlanOption(option)}
+                      </option>
+                    ))}
+                  </select>
+                  {!editingLotId && (
+                    <span className="text-xs text-slate-500">
+                      Save the lot first, then choose from approved compatible
+                      floor plans.
+                    </span>
+                  )}
+                  {editingLotId &&
+                    !approvedFloorPlansLoading &&
+                    !approvedFloorPlansError &&
+                    approvedFloorPlanOptions.length === 0 && (
+                      <span className="text-xs text-amber-700">
+                        No approved compatible floor plans are available for
+                        this lot.
+                      </span>
+                    )}
+                  {approvedFloorPlansError && (
+                    <span className="text-xs text-red-600">
+                      {approvedFloorPlansError}
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="grid gap-2">
                 <span className="text-sm font-medium">Price</span>
                 <Input

@@ -46,6 +46,9 @@ export type LotProperties = {
   LOT_NUMBER?: number;
   salesMode?: string | null;
   price?: number | null;
+  houseAndLandFloorPlanId?: string | null;
+  houseAndLandFloorPlanName?: string | null;
+  houseAndLandBuildPrice?: number | null;
   selectable?: boolean;
   databaseId?: string;
   areaSqm?: number;
@@ -104,6 +107,9 @@ export type LotData = {
   size?: string | number;
   salesMode?: string | null;
   price?: number | null;
+  houseAndLandFloorPlanId?: string | null;
+  houseAndLandFloorPlanName?: string | null;
+  houseAndLandBuildPrice?: number | null;
   lifecycleStage?: string | null;
   type?: string;
   overlays?: string;

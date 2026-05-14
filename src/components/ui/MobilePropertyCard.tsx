@@ -145,7 +145,7 @@ export const MobilePropertyCard = ({
                 onClick={onViewFloorPlan}
                 className="flex-1 bg-gray-100 text-gray-700 text-xs font-medium py-2 px-3 rounded-lg hover:bg-gray-200 transition-colors"
               >
-                View floor plan
+                View documents
               </button>
             )}
             {onViewFacades && (

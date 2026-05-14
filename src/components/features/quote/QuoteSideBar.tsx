@@ -22,7 +22,8 @@ import type {
   QuoteFormData,
 } from "@/types/houseDesign";
 import { quoteFormSchema } from "@/types/houseDesign";
-import React, { useMemo, useState } from "react";
+import { normalizeFloorPlanTitle } from "@/utils/text";
+import React, { useMemo, useRef, useState } from "react";
 
 const normalizeText = (value: unknown) => {
   if (typeof value !== "string") {
@@ -105,6 +106,7 @@ export const GetYourQuoteSidebar = ({
   open,
   onClose,
   onBack,
+  onExploreAvailableBlocks,
   selectedHouseDesign,
   selectedFacade,
   initialJourneyType = null,
@@ -118,6 +120,8 @@ export const GetYourQuoteSidebar = ({
   );
   const [finishesLevel, setFinishesLevel] =
     useState<EnquiryFinishesValue | null>(null);
+  const [showFinishesTooltip, setShowFinishesTooltip] = useState(false);
+  const finishesTooltipRef = useRef<HTMLDivElement | null>(null);
   const [errors, setErrors] = useState<
     Partial<Record<keyof QuoteFormData | "journeyType" | "finishesLevel", string>>
   >({});
@@ -177,7 +181,30 @@ export const GetYourQuoteSidebar = ({
     setAgreeToTerms(false);
     setJourneyType(initialJourneyType);
     setFinishesLevel(null);
+    setShowFinishesTooltip(false);
   }, [initialJourneyType, open]);
+
+  React.useEffect(() => {
+    if (!showFinishesTooltip) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (
+        target instanceof Node &&
+        finishesTooltipRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setShowFinishesTooltip(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [showFinishesTooltip]);
 
   if (!open) return null;
 
@@ -195,6 +222,27 @@ export const GetYourQuoteSidebar = ({
     : selectedHouseDesign?.image
     ? getImageUrl(selectedHouseDesign.image)
     : null;
+  const selectedFloorPlanName =
+    normalizeText(selectedHouseDesign?.title) !== undefined
+      ? normalizeFloorPlanTitle(selectedHouseDesign?.title || "")
+      : "your selected floor plan";
+  const selectedBuilderName = inferredBuilder.builderLabel || "the builder";
+
+  const handleKeepExploringDesigns = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
+    onClose();
+  };
+
+  const handleExploreAvailableBlocks = () => {
+    if (onExploreAvailableBlocks) {
+      onExploreAvailableBlocks();
+      return;
+    }
+    onClose();
+  };
 
   const handleInputChange = (field: keyof QuoteFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -328,14 +376,9 @@ export const GetYourQuoteSidebar = ({
   };
 
   const headerContent = (
-    <>
-      <h2 className="text-2xl font-medium text-brand">Almost there</h2>
-      {!showThankYou && (
-        <div className="text-brand-muted mt-1 text-base font-normal">
-          What would you like to do?
-        </div>
-      )}
-    </>
+    <h2 className="text-2xl font-medium text-brand">
+      {showThankYou ? "Sent!" : "What would you like to do?"}
+    </h2>
   );
 
   return (
@@ -348,32 +391,9 @@ export const GetYourQuoteSidebar = ({
         headerContent={headerContent}
       >
         {showThankYou ? (
-          <div className="p-6 space-y-6">
-            <div className="rounded-2xl border border-brand bg-brand-accent p-4 flex gap-4 items-center">
-              {selectedDesignImageSrc && (
-                <img
-                  src={selectedDesignImageSrc}
-                  alt="Selected design"
-                  width={56}
-                  height={56}
-                  className="rounded-lg object-cover"
-                />
-              )}
-              <div className="flex-1">
-                <div className="font-bold text-brand">
-                  {selectedHouseDesign?.title || "Selected lot"}
-                </div>
-                <div className="text-sm text-brand-muted">{`Lot ${lotDisplayId}`}</div>
-                <div className="text-sm text-brand-muted">
-                  {selectedFacadeLabel !== "N/A"
-                    ? `Facade: ${selectedFacadeLabel}`
-                    : "Facade not selected"}
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center space-y-3">
-              <div className="w-9 h-9 bg-brand-primary rounded-full flex items-center justify-center mx-auto">
+          <div className="p-6">
+            <div className="rounded-2xl border border-brand bg-brand-accent p-5">
+              <div className="w-9 h-9 bg-brand-primary rounded-full flex items-center justify-center">
                 <svg
                   className="w-7 h-7 text-white"
                   fill="none"
@@ -388,10 +408,37 @@ export const GetYourQuoteSidebar = ({
                   />
                 </svg>
               </div>
-              <h4 className="text-2xl font-bold text-brand">Thanks</h4>
-              <p className="text-brand-muted">
-                Thanks - you&apos;ll hear from us within 2 business days.
+              <h4 className="mt-4 text-2xl font-bold text-brand">Sent!</h4>
+              {selectedHouseDesign ? (
+                <p className="mt-3 text-brand-muted">
+                  Your selection of the {selectedFloorPlanName} for Lot{" "}
+                  {lotDisplayId} has been shared with the team at{" "}
+                  {selectedBuilderName}, with your enquiry also shared with the
+                  estate sales team. The builder will be in touch soon.
+                </p>
+              ) : (
+                <p className="mt-3 text-brand-muted">
+                  Your enquiry for Lot {lotDisplayId} has been shared with the
+                  estate sales team. They will be in touch soon.
+                </p>
+              )}
+              <p className="mt-3 text-brand-muted">
+                In the meantime, continue exploring home designs or discover
+                other opportunities across the estate.
               </p>
+              <div className="mt-5 grid gap-3">
+                <Button
+                  label="Keep exploring designs"
+                  className="w-full rounded-lg bg-brand-primary py-3 text-white hover:bg-[var(--color-primary-hover)]"
+                  onClick={handleKeepExploringDesigns}
+                />
+                <Button
+                  label="Explore available blocks"
+                  variant="ghost"
+                  className="w-full rounded-lg border-brand-primary bg-white py-3 text-brand hover:bg-brand-accent hover:text-brand"
+                  onClick={handleExploreAvailableBlocks}
+                />
+              </div>
             </div>
           </div>
         ) : (
@@ -473,9 +520,80 @@ export const GetYourQuoteSidebar = ({
                   {isPricingJourney && (
                     <>
                       <div>
-                        <label className="block text-sm font-medium text-brand mb-2">
-                          Level of finishes
-                        </label>
+                        <div
+                          ref={finishesTooltipRef}
+                          className="relative mb-2 inline-flex items-center gap-2"
+                          onMouseEnter={() => setShowFinishesTooltip(true)}
+                          onMouseLeave={() => setShowFinishesTooltip(false)}
+                          onFocusCapture={() => setShowFinishesTooltip(true)}
+                          onBlurCapture={(event) => {
+                            if (
+                              event.currentTarget.contains(
+                                event.relatedTarget
+                              )
+                            ) {
+                              return;
+                            }
+                            setShowFinishesTooltip(false);
+                          }}
+                        >
+                          <span className="block text-sm font-medium text-brand">
+                            Level of finishes
+                          </span>
+                          <button
+                            type="button"
+                            className="inline-flex size-5 items-center justify-center rounded-full border border-brand text-xs font-semibold text-brand transition hover:border-brand-primary hover:text-brand-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                            aria-label="Show finish level information"
+                            aria-describedby="finishes-level-tooltip"
+                            aria-expanded={showFinishesTooltip}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setShowFinishesTooltip((previous) => !previous);
+                            }}
+                          >
+                            ?
+                          </button>
+                          {showFinishesTooltip && (
+                            <div
+                              id="finishes-level-tooltip"
+                              role="tooltip"
+                              className="absolute left-0 top-full z-50 mt-2 max-h-[70vh] w-[min(22rem,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-brand bg-white p-4 text-xs leading-relaxed text-brand shadow-xl"
+                            >
+                              <p>
+                                Finishes describe the materials used across
+                                floors, walls, ceilings, cabinetry, and
+                                fixtures. They shape appearance, durability, and
+                                overall feel.
+                              </p>
+                              <p className="mt-3">
+                                Builders use these levels to prepare accurate
+                                quotes:
+                              </p>
+                              <p className="mt-3">
+                                <span className="font-semibold">Low:</span>{" "}
+                                Builder&apos;s range selections throughout.
+                                Standard fixtures, fittings and appliances.
+                                Functional and practical - common in investment
+                                properties or first homes.
+                              </p>
+                              <p className="mt-3">
+                                <span className="font-semibold">Medium:</span>{" "}
+                                Mid-range fixtures and finishes. Upgraded
+                                tapware, stone benchtops, quality floor
+                                coverings, standard inclusions above
+                                builder&apos;s range. Most common for
+                                owner-occupiers.
+                              </p>
+                              <p className="mt-3">
+                                <span className="font-semibold">High:</span>{" "}
+                                Premium selections. Engineered stone, high-end
+                                appliances, full-height tiling, quality window
+                                treatments, upgraded joinery and hardware
+                                throughout.
+                              </p>
+                            </div>
+                          )}
+                        </div>
                         <div className="grid grid-cols-3 gap-2">
                           {ENQUIRY_FINISHES_OPTIONS.map((option) => (
                             <button
@@ -521,10 +639,14 @@ export const GetYourQuoteSidebar = ({
                       htmlFor="yourName"
                       className="block text-sm font-medium text-brand mb-1"
                     >
-                      Your Name
+                      Your Name{" "}
+                      <span className="text-brand-primary" aria-hidden="true">
+                        *
+                      </span>
                     </label>
                     <Input
                       id="yourName"
+                      aria-required="true"
                       value={formData.yourName}
                       onChange={(event) =>
                         handleInputChange("yourName", event.target.value)
@@ -546,11 +668,15 @@ export const GetYourQuoteSidebar = ({
                       htmlFor="emailAddress"
                       className="block text-sm font-medium text-brand mb-1"
                     >
-                      Email Address
+                      Email Address{" "}
+                      <span className="text-brand-primary" aria-hidden="true">
+                        *
+                      </span>
                     </label>
                     <Input
                       type="email"
                       id="emailAddress"
+                      aria-required="true"
                       value={formData.emailAddress}
                       onChange={(event) =>
                         handleInputChange("emailAddress", event.target.value)
@@ -572,11 +698,15 @@ export const GetYourQuoteSidebar = ({
                       htmlFor="phoneNumber"
                       className="block text-sm font-medium text-brand mb-1"
                     >
-                      Phone Number
+                      Phone Number{" "}
+                      <span className="text-brand-primary" aria-hidden="true">
+                        *
+                      </span>
                     </label>
                     <Input
                       type="tel"
                       id="phoneNumber"
+                      aria-required="true"
                       value={formData.phoneNumber}
                       onChange={(event) =>
                         handleInputChange("phoneNumber", event.target.value)

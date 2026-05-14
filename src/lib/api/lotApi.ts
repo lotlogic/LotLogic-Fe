@@ -10,6 +10,9 @@ export interface DatabaseLot {
   areaSqm: number;
   salesMode: string | null;
   price: number | null;
+  houseAndLandFloorPlanId?: string | null;
+  houseAndLandFloorPlanName?: string | null;
+  houseAndLandBuildPrice?: number | null;
   zoning: string;
   address: string | null;
   district: string | null;
@@ -99,6 +102,14 @@ export interface HouseDesignItemResponse {
     facadeId?: string;
     src: string;
     faced: string;
+  }>;
+  documents?: Array<{
+    id: string;
+    documentName?: string | null;
+    fileName: string;
+    documentUrl: string;
+    fileSizeBytes?: number | null;
+    mimeType?: string | null;
   }>;
   bedrooms: number;
   bathrooms: number;

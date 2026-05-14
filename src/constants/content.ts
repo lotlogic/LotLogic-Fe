@@ -50,7 +50,7 @@ export const APP_CONTENT = {
     title: "Design matches",
     filter: "Filter",
     reset: "Reset",
-    showHouseDesign: "Show me matching homes",
+    showHouseDesign: "Show me matching floor plans",
     enquireNow: "Get a detailed quote",
     bedrooms: "Bedrooms",
     bathrooms: "Bathrooms",
@@ -65,7 +65,7 @@ export const APP_CONTENT = {
 
   // Quote sidebar content
   quote: {
-    title: "Almost there",
+    title: "What would you like to do?",
     subtitle: "What would you like to do?",
     yourName: "Your Name",
     emailAddress: "Email Address",

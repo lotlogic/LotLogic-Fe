@@ -290,6 +290,9 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
         lifecycleStage: lotData.lifecycleStage,
         salesMode: lotData.salesMode,
         price: lotData.price,
+        houseAndLandFloorPlanId: lotData.houseAndLandFloorPlanId ?? null,
+        houseAndLandFloorPlanName: lotData.houseAndLandFloorPlanName ?? null,
+        houseAndLandBuildPrice: lotData.houseAndLandBuildPrice ?? null,
         selectable: lotData.lifecycleStage !== "sold",
         ADDRESSES: property.address,
         DISTRICT_NAME: property.suburb,
@@ -758,6 +761,12 @@ export const ZoneMap = ({ estateId }: ZoneMapProps) => {
             size: selectedLot.properties.BLOCK_DERIVED_AREA,
             salesMode: selectedLot.properties.salesMode ?? undefined,
             price: selectedLot.properties.price ?? undefined,
+            houseAndLandFloorPlanId:
+              selectedLot.properties.houseAndLandFloorPlanId ?? undefined,
+            houseAndLandFloorPlanName:
+              selectedLot.properties.houseAndLandFloorPlanName ?? undefined,
+            houseAndLandBuildPrice:
+              selectedLot.properties.houseAndLandBuildPrice ?? undefined,
             lifecycleStage: selectedLot.properties.lifecycleStage ?? undefined,
             type: selectedLot.properties.TYPE ?? undefined,
             zoning: selectedLot.properties.LAND_USE_POLICY_ZONES ?? undefined,

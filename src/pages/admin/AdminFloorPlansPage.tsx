@@ -5,6 +5,11 @@ import {
   type FloorPlanPayload,
   type FloorPlanRecord,
 } from "@/components/admin/floorplans/FloorPlanCrud";
+import {
+  FloorPlanDocumentCrud,
+  type FloorPlanDocumentPayload,
+  type FloorPlanDocumentRecord,
+} from "@/components/admin/floorplans/FloorPlanDocumentCrud";
 import { adminApi } from "@/lib/api/adminApi";
 import { adminAuth } from "@/lib/auth/adminAuth";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +36,31 @@ const AdminFloorPlansPage = () => {
     []
   );
 
+  const loadDocuments = useCallback(async (floorPlanId: string) => {
+    return adminApi.getFloorPlanDocuments<FloorPlanDocumentRecord>(floorPlanId);
+  }, []);
+
+  const createDocument = useCallback(
+    async (floorPlanId: string, payload: FloorPlanDocumentPayload) =>
+      adminApi.createFloorPlanDocument(floorPlanId, payload),
+    []
+  );
+
+  const updateDocument = useCallback(
+    async (
+      floorPlanId: string,
+      id: string,
+      payload: FloorPlanDocumentPayload
+    ) => adminApi.updateFloorPlanDocument(floorPlanId, id, payload),
+    []
+  );
+
+  const deleteDocument = useCallback(
+    async (floorPlanId: string, id: string) =>
+      adminApi.deleteFloorPlanDocument(floorPlanId, id),
+    []
+  );
+
   const handleLogout = async () => {
     await adminAuth.logout();
   };
@@ -47,6 +77,25 @@ const AdminFloorPlansPage = () => {
         createFloorPlan={createFloorPlan}
         updateFloorPlan={updateFloorPlan}
         deleteFloorPlan={deleteFloorPlan}
+        renderEditPanel={(floorPlanId) => (
+          <div className="grid gap-3">
+            <div>
+              <h3 className="text-lg font-semibold m-0">Documents</h3>
+              <p className="text-sm text-muted-foreground m-0">
+                Manage PDFs and other sales documents for this floor plan.
+              </p>
+            </div>
+            <FloorPlanDocumentCrud
+              loadDocuments={loadDocuments}
+              createDocument={createDocument}
+              updateDocument={updateDocument}
+              deleteDocument={deleteDocument}
+              floorPlanOptions={[{ id: floorPlanId, label: floorPlanId }]}
+              initialFloorPlanId={floorPlanId}
+              filterPlaceholder="Filter by name, file, or id"
+            />
+          </div>
+        )}
       />
     </div>
   );

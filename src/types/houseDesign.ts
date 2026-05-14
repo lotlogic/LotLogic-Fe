@@ -6,6 +6,15 @@ export interface HouseDesignImage {
   faced: string;
 }
 
+export interface FloorPlanDocument {
+  id: string;
+  documentName?: string | null;
+  fileName: string;
+  documentUrl: string;
+  fileSizeBytes?: number | null;
+  mimeType?: string | null;
+}
+
 export interface SelectedFacadeOption {
   facadeId?: string;
   label: string;
@@ -32,6 +41,7 @@ export interface HouseDesignItem {
   depth?: number;
   image: string;
   images: HouseDesignImage[];
+  documents?: FloorPlanDocument[];
   bedrooms: number;
   bathrooms: number;
   cars: number;
@@ -69,8 +79,10 @@ export interface HouseDesignListProps {
   onShowAllDesigns?: () => void;
   onDesignClick: (design: HouseDesignItem | null) => void;
   onEnquireNow?: (design: HouseDesignItem) => void;
-  onViewFloorPlan?: (design: HouseDesignItem) => void;
+  onViewDocuments?: (design: HouseDesignItem) => void;
   onViewFacades?: (design: HouseDesignItem, initialIndex?: number) => void;
+  selectedDesignId?: string | null;
+  onSelectedDesignIdChange?: (designId: string | null) => void;
   hasActiveFilters?: boolean;
   showingAllDesigns?: boolean;
 }
@@ -79,6 +91,7 @@ export interface GetYourQuoteSidebarProps {
   open: boolean;
   onClose: () => void;
   onBack?: () => void;
+  onExploreAvailableBlocks?: () => void;
   selectedHouseDesign: HouseDesignItem | null;
   selectedFacade?: SelectedFacadeOption | null;
   initialJourneyType?: EnquiryJourneyValue | null;

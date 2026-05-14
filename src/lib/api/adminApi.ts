@@ -201,6 +201,12 @@ const floorPlanFacadesPath = (floorPlanId: AdminId) =>
 const floorPlanFacadePath = (floorPlanId: AdminId, id: AdminId) =>
   `${floorPlanFacadesPath(floorPlanId)}/${encodeId(id)}`;
 
+const floorPlanDocumentsPath = (floorPlanId: AdminId) =>
+  `${idPath("floor-plans", floorPlanId)}/documents`;
+
+const floorPlanDocumentPath = (floorPlanId: AdminId, id: AdminId) =>
+  `${floorPlanDocumentsPath(floorPlanId)}/${encodeId(id)}`;
+
 const stateRuleSetPath = (id: AdminId) =>
   `${basePath("state-rule-sets")}/${encodeId(id)}`;
 
@@ -387,6 +393,13 @@ export const adminApi = {
   ): Promise<T> {
     return data(adminApiClient.patch<T>(idPath("lots", id), payload));
   },
+  async getApprovedFloorPlansForLot<T = unknown>(
+    id: AdminId
+  ): Promise<T[]> {
+    return data(
+      adminApiClient.get<T[]>(`${idPath("lots", id)}/approved-floor-plans`)
+    );
+  },
   async deleteLot<T = unknown>(id: AdminId): Promise<T> {
     return data(adminApiClient.delete<T>(idPath("lots", id)));
   },
@@ -504,6 +517,45 @@ export const adminApi = {
   },
   async deleteFacade<T = unknown>(floorPlanId: AdminId, id: AdminId): Promise<T> {
     return data(adminApiClient.delete<T>(floorPlanFacadePath(floorPlanId, id)));
+  },
+
+  async getFloorPlanDocuments<T = unknown>(
+    floorPlanId: AdminId
+  ): Promise<T[]> {
+    return data(
+      adminApiClient.get<T[]>(floorPlanDocumentsPath(floorPlanId))
+    );
+  },
+  async createFloorPlanDocument<
+    T = unknown,
+    B extends Record<string, unknown> = Record<string, unknown>
+  >(
+    floorPlanId: AdminId,
+    payload: B
+  ): Promise<T> {
+    return data(
+      adminApiClient.post<T>(floorPlanDocumentsPath(floorPlanId), payload)
+    );
+  },
+  async updateFloorPlanDocument<
+    T = unknown,
+    B extends Record<string, unknown> = Record<string, unknown>
+  >(
+    floorPlanId: AdminId,
+    id: AdminId,
+    payload: B
+  ): Promise<T> {
+    return data(
+      adminApiClient.patch<T>(floorPlanDocumentPath(floorPlanId, id), payload)
+    );
+  },
+  async deleteFloorPlanDocument<T = unknown>(
+    floorPlanId: AdminId,
+    id: AdminId
+  ): Promise<T> {
+    return data(
+      adminApiClient.delete<T>(floorPlanDocumentPath(floorPlanId, id))
+    );
   },
 
   async getDesignsOnLots<T = unknown>(params?: AdminQuery): Promise<T[]> {
