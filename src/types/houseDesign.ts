@@ -74,6 +74,7 @@ export interface HouseDesignListProps {
     lifecycleStage?: string | null;
     salesMode?: string | null;
     price?: number | null;
+    houseAndLandBuildPrice?: number | null;
   };
   onShowFilter: () => void;
   onShowAllDesigns?: () => void;
@@ -83,6 +84,8 @@ export interface HouseDesignListProps {
   onViewFacades?: (design: HouseDesignItem, initialIndex?: number) => void;
   selectedDesignId?: string | null;
   onSelectedDesignIdChange?: (designId: string | null) => void;
+  lockedDesignId?: string | null;
+  hideFilterControl?: boolean;
   hasActiveFilters?: boolean;
   showingAllDesigns?: boolean;
 }

@@ -5,6 +5,8 @@ import {
   normalizeLotLifecycle,
   type LotLifecycleValue,
 } from "@/constants/lotLifecycle";
+import { normalizeLotSalesMode } from "@/constants/lotSalesMode";
+import { getHouseAndLandTotalPrice } from "@/lib/utils/lotPricing";
 
 const compactCurrencyFormatter = new Intl.NumberFormat("en-AU", {
   style: "currency",
@@ -75,7 +77,14 @@ export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
       const detailedLotLabel = buildDetailedLotLabel({
         lotNumber,
         areaSqm: lot.areaSqm,
-        price: lot.price,
+        price:
+          normalizeLotSalesMode(lot.salesMode) === "house_and_land" &&
+          lot.houseAndLandFloorPlanId
+            ? getHouseAndLandTotalPrice({
+                blockPrice: lot.price,
+                buildPrice: lot.houseAndLandBuildPrice,
+              }) ?? lot.price
+            : lot.price,
         lifecycleStage,
       });
 

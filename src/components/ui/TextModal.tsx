@@ -60,7 +60,6 @@ export const TextModal: React.FC<TextModalProps> = ({
         <DialogTitle
           sx={{
             padding: "20px",
-            borderBottom: "1px solid var(--color-border)",
           }}
         >
           <div>

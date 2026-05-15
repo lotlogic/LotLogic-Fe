@@ -129,6 +129,8 @@ export const HouseDesignList = ({
   onViewFacades,
   selectedDesignId: controlledSelectedDesignId,
   onSelectedDesignIdChange,
+  lockedDesignId,
+  hideFilterControl = false,
   hasActiveFilters = false,
   showingAllDesigns = false,
 }: HouseDesignListProps) => {
@@ -187,17 +189,19 @@ export const HouseDesignList = ({
     error,
   } = useHouseDesigns(
     lot.lotDbId?.toString() || lot.lotId?.toString() || null,
-    showingAllDesigns ? null : apiFilters,
+    lockedDesignId || showingAllDesigns ? null : apiFilters,
     true
   );
 
   // Safely extract house designs with fallback
   const houseDesigns = (apiResponse?.houseDesigns as HouseDesignItem[]) || [];
 
-  const filteredHouses = houseDesigns;
+  const filteredHouses = lockedDesignId
+    ? houseDesigns.filter((house) => house.id === lockedDesignId)
+    : houseDesigns;
 
   useEffect(() => {
-    if (!selectedDesignId) {
+    if (!selectedDesignId || isLoading) {
       return;
     }
     const selectedStillExists = filteredHouses.some(
@@ -207,7 +211,7 @@ export const HouseDesignList = ({
       updateSelectedDesignId(null);
       onDesignClick(null);
     }
-  }, [filteredHouses, onDesignClick, selectedDesignId]);
+  }, [filteredHouses, isLoading, onDesignClick, selectedDesignId]);
 
   const handleStarClick = (event: React.MouseEvent, clickedHouseId: string) => {
     event.stopPropagation();
@@ -269,6 +273,9 @@ export const HouseDesignList = ({
 
   const handleSelectDesign = (house: HouseDesignItem) => {
     if (selectedDesignId === house.id) {
+      if (lockedDesignId === house.id) {
+        return;
+      }
       updateSelectedDesignId(null);
       onDesignClick(null);
       return;
@@ -489,38 +496,44 @@ export const HouseDesignList = ({
                   : "No house designs found"}
               </h3>
               <p className="text-brand-muted mb-4">
-                {canShowAllDesigns
+                {lockedDesignId
+                  ? "The configured house design is not available for this block yet."
+                  : canShowAllDesigns
                   ? "Nothing matched the preferences you selected for this block. You can adjust them or view all compatible designs instead."
                   : "We couldn't find any house designs matching your current criteria. Try adjusting your filters to see more options."}
               </p>
             </div>
-            <div className="space-y-3">
-              {canShowAllDesigns && (
+            {!lockedDesignId && (
+              <div className="space-y-3">
+                {canShowAllDesigns && (
+                  <Button
+                    label="Show all designs"
+                    onClick={onShowAllDesigns}
+                    className="w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
+                  />
+                )}
                 <Button
-                  label="Show all designs"
-                  onClick={onShowAllDesigns}
-                  className="w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
+                  label={
+                    canShowAllDesigns ? "Adjust preferences" : "Adjust filters"
+                  }
+                  onClick={onShowFilter}
+                  variant={canShowAllDesigns ? "outline" : undefined}
+                  className={
+                    canShowAllDesigns
+                      ? "w-full border border-brand text-brand py-2 px-4 rounded-lg font-medium hover:bg-brand-muted transition-colors"
+                      : "w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
+                  }
                 />
-              )}
-              <Button
-                label={canShowAllDesigns ? "Adjust preferences" : "Adjust filters"}
-                onClick={onShowFilter}
-                variant={canShowAllDesigns ? "outline" : undefined}
-                className={
-                  canShowAllDesigns
-                    ? "w-full border border-brand text-brand py-2 px-4 rounded-lg font-medium hover:bg-brand-muted transition-colors"
-                    : "w-full bg-brand-primary text-white py-2 px-4 rounded-lg font-medium hover:bg-[var(--color-primary-hover)] transition-colors"
-                }
-              />
-              <div className="text-sm text-brand-muted">
-                <p className="mb-2">Try these suggestions:</p>
-                <ul className="text-left space-y-1">
-                  <li>• Increase the number of bedrooms or bathrooms</li>
-                  <li>• Adjust the size range</li>
-                  <li>• Change the number of car spaces</li>
-                </ul>
+                <div className="text-sm text-brand-muted">
+                  <p className="mb-2">Try these suggestions:</p>
+                  <ul className="text-left space-y-1">
+                    <li>• Increase the number of bedrooms or bathrooms</li>
+                    <li>• Adjust the size range</li>
+                    <li>• Change the number of car spaces</li>
+                  </ul>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -529,15 +542,17 @@ export const HouseDesignList = ({
 
   return (
     <div className="p-6 overflow-y-auto h-full">
-      <div className="mb-4 flex justify-end">
-        <Button
-          label={filterContent.title}
-          leftIcon={<Funnel className="h-4 w-4" />}
-          variant="outline"
-          className="border border-brand rounded-lg px-3 py-1 flex items-center gap-2 text-brand bg-brand"
-          onClick={onShowFilter}
-        />
-      </div>
+      {!hideFilterControl && (
+        <div className="mb-4 flex justify-end">
+          <Button
+            label={filterContent.title}
+            leftIcon={<Funnel className="h-4 w-4" />}
+            variant="outline"
+            className="border border-brand rounded-lg px-3 py-1 flex items-center gap-2 text-brand bg-brand"
+            onClick={onShowFilter}
+          />
+        </div>
+      )}
       {showingAllDesigns && hasActiveFilters && (
         <div className="mb-4 rounded-xl border border-brand bg-brand-accent px-4 py-3 text-sm text-brand">
           Your selected preferences returned no exact matches, so you&apos;re
@@ -568,6 +583,7 @@ export const HouseDesignList = ({
           const pricingLines = getDesignCardPriceLines({
             lotSalesMode: normalizeLotSalesMode(lot.salesMode),
             lotPrice: lot.price,
+            buildPrice: lot.houseAndLandBuildPrice,
             designArea: house.area,
           });
 

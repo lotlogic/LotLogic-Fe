@@ -23,7 +23,6 @@ const ModalTitle: React.FC<{ title: string; onClose: () => void }> = ({
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
-      borderBottom: "1px solid var(--color-border)",
       padding: "20px",
       margin: 0,
     }}

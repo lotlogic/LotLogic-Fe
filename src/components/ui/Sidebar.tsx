@@ -171,7 +171,7 @@ export const Sidebar = ({
             {/* Header */}
             <Box
               className={clsx(
-                "flex border-b border-brand bg-brand rounded-t-2xl",
+                "flex bg-brand rounded-t-2xl",
                 isMinimized ? "items-center p-3" : "items-start p-4 pb-3"
               )}
             >
@@ -236,7 +236,7 @@ export const Sidebar = ({
     >
       <div
         className={clsx(
-          "border-b border-brand sticky top-0 z-10 bg-white rounded-t-2xl flex",
+          "sticky top-0 z-10 bg-white rounded-t-2xl flex",
           isMinimized ? "items-center p-3 gap-1" : "items-start p-6 pb-4"
         )}
       >

@@ -470,7 +470,7 @@ export const SavedPropertiesSidebar = ({
               <div className="h-1 w-12 rounded-full bg-brand-muted" />
             </div>
 
-            <div className="flex items-start rounded-t-2xl border-b border-brand bg-brand p-4 pb-3">
+            <div className="flex items-start rounded-t-2xl bg-brand p-4 pb-3">
               <div className="flex-grow">
                 <h2 className="text-xl font-bold text-brand">Your Shortlist</h2>
                 <p className="mt-1 text-sm text-brand-muted">
@@ -555,7 +555,7 @@ export const SavedPropertiesSidebar = ({
             <div className="h-1 w-12 rounded-full bg-brand-muted"></div>
           </div>
 
-          <div className="border-b border-brand p-4">
+          <div className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-brand">Your Shortlist</h2>

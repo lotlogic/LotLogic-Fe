@@ -9,6 +9,7 @@ import {
   getHouseAndLandPriceBreakdown,
   getLotPriceText,
 } from "@/lib/utils/lotPricing";
+import { normalizeLotSalesMode } from "@/constants/lotSalesMode";
 import { getZoningColor, hexToRgba } from "@/lib/utils/zoning";
 import { useModalStore } from "@/stores/modalStore";
 import { useRotationStore } from "@/stores/rotationStore";
@@ -91,6 +92,19 @@ const getDocumentLabel = (
     return documentName;
   }
   return String(document.fileName ?? "").trim() || "Document";
+};
+
+const getDesignBuilderName = (design: HouseDesignItem | null | undefined) => {
+  const builderRecord =
+    design?.builder && typeof design.builder === "object"
+      ? design.builder
+      : null;
+  const builderName =
+    String(design?.builderName ?? "").trim() ||
+    String(builderRecord?.name ?? "").trim() ||
+    (typeof design?.builder === "string" ? design.builder.trim() : "");
+
+  return builderName || "the builder";
 };
 
 export const LotSidebar = ({
@@ -189,12 +203,94 @@ export const LotSidebar = ({
     max_size,
     min_size,
   ]);
-  const activeHouseDesignFilters = showAllDesigns ? null : filtersToPass;
+  const packageFloorPlanId =
+    lot.houseAndLandFloorPlanId !== undefined &&
+    lot.houseAndLandFloorPlanId !== null
+      ? String(lot.houseAndLandFloorPlanId).trim()
+      : "";
+  const isConfiguredHouseAndLandPackage =
+    normalizeLotSalesMode(lot.salesMode) === "house_and_land" &&
+    packageFloorPlanId.length > 0;
+  const activeHouseDesignFilters = isConfiguredHouseAndLandPackage
+    ? null
+    : showAllDesigns
+    ? null
+    : filtersToPass;
 
   const { data: houseDesignsData } = useHouseDesigns(
     lotId,
     activeHouseDesignFilters,
-    showHouseDesigns
+    showHouseDesigns || isConfiguredHouseAndLandPackage
+  );
+  const packageHouseDesign = React.useMemo(
+    () =>
+      isConfiguredHouseAndLandPackage
+        ? houseDesignsData?.houseDesigns?.find(
+            (designItem) => designItem.id === packageFloorPlanId
+          ) ?? null
+        : null,
+    [
+      houseDesignsData?.houseDesigns,
+      isConfiguredHouseAndLandPackage,
+      packageFloorPlanId,
+    ]
+  );
+
+  const selectDesignForLotPreview = React.useCallback(
+    (selectedDesign: HouseDesignItem | null) => {
+      if (
+        selectedDesign &&
+        onSelectFloorPlan &&
+        selectedDesign.floorPlanImage &&
+        geometry &&
+        geometry.type === "Polygon"
+      ) {
+        setManualRotation(0);
+        const ring = geometry.coordinates[0];
+        if (ring && ring.length >= 4) {
+          const houseArea = selectedDesign.area
+            ? Number.parseFloat(selectedDesign.area.toString())
+            : 0;
+          const lotArea = lot.size ? Number.parseFloat(lot.size.toString()) : 0;
+          const scaleFactor =
+            lotArea > 0 && houseArea > 0 ? Math.sqrt(houseArea / lotArea) : 1;
+          const centerLng =
+            ring.reduce((sum, coord) => sum + coord[0], 0) / ring.length;
+          const centerLat =
+            ring.reduce((sum, coord) => sum + coord[1], 0) / ring.length;
+
+          const scaledCoordinates = ring.map((coord) => {
+            const deltaLng = (coord[0] - centerLng) * scaleFactor;
+            const deltaLat = (coord[1] - centerLat) * scaleFactor;
+            return [centerLng + deltaLng, centerLat + deltaLat] as [
+              number,
+              number
+            ];
+          });
+
+          onSelectFloorPlan({
+            url: getImageUrl(selectedDesign.floorPlanImage),
+            coordinates: [
+              scaledCoordinates[0],
+              scaledCoordinates[1],
+              scaledCoordinates[2],
+              scaledCoordinates[3],
+            ] as [
+              [number, number],
+              [number, number],
+              [number, number],
+              [number, number]
+            ],
+            houseArea,
+            houseWidth: selectedDesign.width,
+            houseDepth: selectedDesign.depth,
+          });
+        }
+      } else if (!selectedDesign && onSelectFloorPlan) {
+        onSelectFloorPlan(null);
+      }
+    },
+    [geometry, lot.size, onSelectFloorPlan, setManualRotation]
   );
 
   useEffect(() => {
@@ -237,6 +333,21 @@ export const LotSidebar = ({
     }
   }, [houseDesignsData?.zoning, onZoningDataUpdate]);
 
+  useEffect(() => {
+    if (!open || !isConfiguredHouseAndLandPackage || !packageHouseDesign) {
+      return;
+    }
+
+    setSelectedHouseDesignForModals(packageHouseDesign);
+    setSelectedHouseDesignId(packageHouseDesign.id);
+    selectDesignForLotPreview(packageHouseDesign);
+  }, [
+    isConfiguredHouseAndLandPackage,
+    open,
+    packageHouseDesign,
+    selectDesignForLotPreview,
+  ]);
+
   if (!open || !lot) return null;
 
   const zoningColor = getZoningColor(lot.zoning);
@@ -260,6 +371,9 @@ export const LotSidebar = ({
     buildPrice: lot.houseAndLandBuildPrice,
   });
   const isSold = lot.lifecycleStage === "sold";
+  const packageDesignTitle =
+    packageHouseDesign?.title || lot.houseAndLandFloorPlanName || "";
+  const packageBuilderName = getDesignBuilderName(packageHouseDesign);
 
   const openSummaryView = () => {
     setShowFilter(false);
@@ -300,7 +414,13 @@ export const LotSidebar = ({
       setQuoteSelectedFacade(null);
       setShowHouseDesigns(true);
     } else if (showHouseDesigns) {
-      openPreferencesView();
+      if (isConfiguredHouseAndLandPackage) {
+        setShowHouseDesigns(false);
+        setShowFilter(false);
+        setShowAllDesigns(false);
+      } else {
+        openPreferencesView();
+      }
     } else if (showFilter) {
       openSummaryView();
     }
@@ -310,60 +430,21 @@ export const LotSidebar = ({
     setSelectedHouseDesignId(null);
   };
 
+  const handleShowPackageDesign = () => {
+    setShowAllDesigns(false);
+    setShowHouseDesigns(true);
+    setShowFilter(false);
+    if (packageHouseDesign) {
+      setSelectedHouseDesignForModals(packageHouseDesign);
+      setSelectedHouseDesignId(packageHouseDesign.id);
+      selectDesignForLotPreview(packageHouseDesign);
+    }
+    onFocusLot?.();
+  };
+
   const handleDesignSelectedInList = (selectedDesign: HouseDesignItem | null) => {
     setSelectedHouseDesignForModals(selectedDesign);
-
-    if (
-      selectedDesign &&
-      onSelectFloorPlan &&
-      selectedDesign.floorPlanImage &&
-      geometry &&
-      geometry.type === "Polygon"
-    ) {
-      setManualRotation(0);
-      const ring = geometry.coordinates[0];
-      if (ring && ring.length >= 4) {
-        const houseArea = selectedDesign.area
-          ? Number.parseFloat(selectedDesign.area.toString())
-          : 0;
-        const lotArea = lot.size ? Number.parseFloat(lot.size.toString()) : 0;
-        const scaleFactor =
-          lotArea > 0 && houseArea > 0 ? Math.sqrt(houseArea / lotArea) : 1;
-        const centerLng =
-          ring.reduce((sum, coord) => sum + coord[0], 0) / ring.length;
-        const centerLat =
-          ring.reduce((sum, coord) => sum + coord[1], 0) / ring.length;
-
-        const scaledCoordinates = ring.map((coord) => {
-          const deltaLng = (coord[0] - centerLng) * scaleFactor;
-          const deltaLat = (coord[1] - centerLat) * scaleFactor;
-          return [centerLng + deltaLng, centerLat + deltaLat] as [
-            number,
-            number
-          ];
-        });
-
-        onSelectFloorPlan({
-          url: getImageUrl(selectedDesign.floorPlanImage),
-          coordinates: [
-            scaledCoordinates[0],
-            scaledCoordinates[1],
-            scaledCoordinates[2],
-            scaledCoordinates[3],
-          ] as [
-            [number, number],
-            [number, number],
-            [number, number],
-            [number, number]
-          ],
-          houseArea,
-          houseWidth: selectedDesign.width,
-          houseDepth: selectedDesign.depth,
-        });
-      }
-    } else if (!selectedDesign && onSelectFloorPlan) {
-      onSelectFloorPlan(null);
-    }
+    selectDesignForLotPreview(selectedDesign);
   };
 
   const handleViewDocumentsClick = (selectedDesign: HouseDesignItem) => {
@@ -393,6 +474,9 @@ export const LotSidebar = ({
   };
 
   const handleEnquireNow = (selectedDesign: HouseDesignItem) => {
+    setSelectedHouseDesignId(selectedDesign.id);
+    setSelectedHouseDesignForModals(selectedDesign);
+    selectDesignForLotPreview(selectedDesign);
     setQuoteDesign(selectedDesign);
     setInitialQuoteJourneyType(null);
     setQuoteSelectedFacade(
@@ -403,8 +487,18 @@ export const LotSidebar = ({
   };
 
   const handleSecureLot = () => {
-    setQuoteDesign(null);
-    setQuoteSelectedFacade(null);
+    const packageDesign = isConfiguredHouseAndLandPackage
+      ? packageHouseDesign
+      : null;
+    if (packageDesign) {
+      setSelectedHouseDesignId(packageDesign.id);
+      setSelectedHouseDesignForModals(packageDesign);
+      selectDesignForLotPreview(packageDesign);
+    }
+    setQuoteDesign(packageDesign);
+    setQuoteSelectedFacade(
+      packageDesign ? getInitialFacadeSelection(packageDesign) : null
+    );
     setInitialQuoteJourneyType("secure_block");
     setShowQuoteSidebar(true);
   };
@@ -446,10 +540,16 @@ export const LotSidebar = ({
       ) : showHouseDesigns ? (
         <>
           <h2 className="text-2xl font-medium text-brand">
-            {showAllDesigns ? "All compatible designs" : "Design matches"}
+            {isConfiguredHouseAndLandPackage
+              ? "House & land package"
+              : showAllDesigns
+              ? "All compatible designs"
+              : "Design matches"}
           </h2>
           <div className="text-brand-muted mt-1 text-base font-normal">
-            {showAllDesigns
+            {isConfiguredHouseAndLandPackage
+              ? packageDesignTitle || "Configured house design for this block"
+              : showAllDesigns
               ? `Showing ${designMatchCount} design${
                   designMatchCount === 1 ? "" : "s"
                 } that work on this block`
@@ -552,6 +652,7 @@ export const LotSidebar = ({
                 lifecycleStage: lot.lifecycleStage,
                 salesMode: lot.salesMode,
                 price: lot.price,
+                houseAndLandBuildPrice: lot.houseAndLandBuildPrice,
               }}
               onShowFilter={() => {
                 setShowAllDesigns(false);
@@ -567,6 +668,10 @@ export const LotSidebar = ({
               onViewFacades={handleViewFacadesClick}
               selectedDesignId={selectedHouseDesignId}
               onSelectedDesignIdChange={setSelectedHouseDesignId}
+              lockedDesignId={
+                isConfiguredHouseAndLandPackage ? packageFloorPlanId : null
+              }
+              hideFilterControl={isConfiguredHouseAndLandPackage}
               hasActiveFilters={hasAnyFilters}
               showingAllDesigns={showAllDesigns}
             />
@@ -599,24 +704,44 @@ export const LotSidebar = ({
               <div className="bg-white rounded-xl shadow border border-brand p-6">
                 <div className="text-left mb-4">
                   <p className="text-brand-muted text-base font-medium">
-                    Find floor plans that fit this lot, or secure it now if
-                    you&apos;re ready.
+                    {isConfiguredHouseAndLandPackage
+                      ? `This is a House and land package from ${packageBuilderName}.`
+                      : "Find floor plans that fit this lot, or secure it now if you're ready."}
                   </p>
+                  {isConfiguredHouseAndLandPackage && packageDesignTitle && (
+                    <p className="mt-2 text-sm text-brand-muted">
+                      {packageDesignTitle} has already been selected for this
+                      block.
+                    </p>
+                  )}
                 </div>
 
-                <Button
-                  label="Show me matching floor plans"
-                  rightIcon={<ArrowRight className="h-6 w-8" />}
-                  className="w-full text-base py-4 rounded-xl font-semibold animated-gradient-button transition-all duration-300 shadow-md cursor-pointer"
-                  onClick={openPreferencesView}
-                  disabled={isSold}
-                />
+                {isConfiguredHouseAndLandPackage ? (
+                  <Button
+                    label="Show me the house design"
+                    rightIcon={<ArrowRight className="h-6 w-8" />}
+                    className="w-full text-base py-4 rounded-xl font-semibold animated-gradient-button transition-all duration-300 shadow-md cursor-pointer"
+                    onClick={handleShowPackageDesign}
+                    disabled={isSold || !packageHouseDesign}
+                  />
+                ) : (
+                  <Button
+                    label="Show me matching floor plans"
+                    rightIcon={<ArrowRight className="h-6 w-8" />}
+                    className="w-full text-base py-4 rounded-xl font-semibold animated-gradient-button transition-all duration-300 shadow-md cursor-pointer"
+                    onClick={openPreferencesView}
+                    disabled={isSold}
+                  />
+                )}
                 <Button
                   label="Secure this lot"
                   variant="ghost"
                   className="mt-3 w-full rounded-xl border-brand-primary bg-white py-4 text-base font-semibold text-brand hover:bg-brand-accent hover:text-brand"
                   onClick={handleSecureLot}
-                  disabled={isSold}
+                  disabled={
+                    isSold ||
+                    (isConfiguredHouseAndLandPackage && !packageHouseDesign)
+                  }
                 />
               </div>
             </div>

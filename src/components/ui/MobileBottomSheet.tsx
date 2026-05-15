@@ -101,7 +101,7 @@ export const MobileBottomSheet = ({
 
         {/* Header */}
         {(title || subtitle) && (
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 {title && (

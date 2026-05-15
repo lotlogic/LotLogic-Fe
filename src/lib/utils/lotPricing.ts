@@ -21,6 +21,21 @@ export const formatLotCurrency = (value: number | null | undefined) => {
   return currencyFormatter.format(value);
 };
 
+export const getHouseAndLandTotalPrice = ({
+  blockPrice,
+  buildPrice,
+}: {
+  blockPrice?: number | null;
+  buildPrice?: number | null;
+}) => {
+  const hasBlockPrice =
+    typeof blockPrice === "number" && Number.isFinite(blockPrice);
+  const hasBuildPrice =
+    typeof buildPrice === "number" && Number.isFinite(buildPrice);
+
+  return hasBlockPrice && hasBuildPrice ? blockPrice + buildPrice : null;
+};
+
 export const getLotStatusText = (
   lifecycleStage: unknown
 ): { lifecycle: LotLifecycleValue | null; label: string } => {
@@ -88,14 +103,9 @@ export const getHouseAndLandPriceBreakdown = ({
 
   const blockPriceText = formatLotCurrency(blockPrice) ?? "Price on request";
   const buildPriceText = formatLotCurrency(buildPrice) ?? "Price on request";
-  const hasBlockPrice =
-    typeof blockPrice === "number" && Number.isFinite(blockPrice);
-  const hasBuildPrice =
-    typeof buildPrice === "number" && Number.isFinite(buildPrice);
-  const totalPriceText =
-    hasBlockPrice && hasBuildPrice
-      ? formatLotCurrency(blockPrice + buildPrice)
-      : null;
+  const totalPriceText = formatLotCurrency(
+    getHouseAndLandTotalPrice({ blockPrice, buildPrice })
+  );
 
   return [
     { label: "Block price", value: blockPriceText },
@@ -144,14 +154,19 @@ export const estimateBuildCostRange = (
 export const getDesignCardPriceText = ({
   lotSalesMode,
   lotPrice,
+  buildPrice,
   designArea,
 }: {
   lotSalesMode: LotSalesModeValue | null;
   lotPrice?: number | null;
+  buildPrice?: number | null;
   designArea?: string | number | null;
 }) => {
   if (lotSalesMode === "house_and_land") {
-    const formattedPrice = formatLotCurrency(lotPrice);
+    const packagePrice =
+      getHouseAndLandTotalPrice({ blockPrice: lotPrice, buildPrice }) ??
+      lotPrice;
+    const formattedPrice = formatLotCurrency(packagePrice);
     return formattedPrice
       ? `House & Land from ${formattedPrice}`
       : "House & Land price on request";
@@ -166,14 +181,23 @@ export const getDesignCardPriceText = ({
 export const getDesignCardPriceLines = ({
   lotSalesMode,
   lotPrice,
+  buildPrice,
   designArea,
 }: {
   lotSalesMode: LotSalesModeValue | null;
   lotPrice?: number | null;
+  buildPrice?: number | null;
   designArea?: string | number | null;
 }) => {
   if (lotSalesMode === "house_and_land") {
-    return [getDesignCardPriceText({ lotSalesMode, lotPrice, designArea })];
+    return [
+      getDesignCardPriceText({
+        lotSalesMode,
+        lotPrice,
+        buildPrice,
+        designArea,
+      }),
+    ];
   }
 
   const estimate = estimateBuildCostRange(designArea, lotPrice);
