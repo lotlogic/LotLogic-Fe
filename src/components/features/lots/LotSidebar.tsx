@@ -63,6 +63,14 @@ const buildDesignGalleryImages = (design: HouseDesignItem | null) => {
     });
   }
 
+  if (design.floorPlanImage) {
+    images.push({
+      src: getImageUrl(design.floorPlanImage),
+      alt: `${design.title} floor plan`,
+      label: "Floor plan",
+    });
+  }
+
   return images;
 };
 
@@ -710,8 +718,7 @@ export const LotSidebar = ({
                   </p>
                   {isConfiguredHouseAndLandPackage && packageDesignTitle && (
                     <p className="mt-2 text-sm text-brand-muted">
-                      {packageDesignTitle} has already been selected for this
-                      block.
+                      {packageDesignTitle} is included with this package.
                     </p>
                   )}
                 </div>
