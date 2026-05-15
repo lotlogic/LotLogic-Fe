@@ -700,7 +700,13 @@ export const HouseDesignList = ({
                       textColor={builderCardBranding.textColor}
                     />
                   </div>
-                  <div className="rounded-full border border-brand-primary bg-white px-3 py-1.5 text-xs font-semibold text-brand transition-colors hover:bg-brand-accent hover:text-brand-primary">
+                  <div
+                    className={`cursor-pointer rounded-full border border-[var(--color-primary)] px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      isSelected
+                        ? "bg-[var(--color-primary)] text-white"
+                        : "bg-white text-brand hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
+                    }`}
+                  >
                     {isSelected
                       ? "Selected for lot preview"
                       : "Click to preview on your block"}
@@ -708,7 +714,13 @@ export const HouseDesignList = ({
                 </div>
               )}
               {!builderCardBranding && (
-                <div className="mt-4 inline-flex rounded-full border border-brand-primary bg-white px-3 py-1.5 text-xs font-semibold text-brand transition-colors hover:bg-brand-accent hover:text-brand-primary">
+                <div
+                  className={`mt-4 inline-flex cursor-pointer rounded-full border border-[var(--color-primary)] px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    isSelected
+                      ? "bg-[var(--color-primary)] text-white"
+                      : "bg-white text-brand hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
+                  }`}
+                >
                   {isSelected
                     ? "Selected for lot preview"
                     : "Click to preview on your block"}
@@ -795,7 +807,7 @@ export const HouseDesignList = ({
                     });
                   }}
                   variant="ghost"
-                  className="cursor-pointer rounded-lg border-brand-primary bg-white py-2 px-4 font-medium text-brand transition-colors hover:bg-brand-accent hover:text-brand"
+                  className="cursor-pointer rounded-lg border-[var(--color-primary)] bg-white py-2 px-4 font-medium text-brand transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
                 />
                 <Button
                   label="View facades"
@@ -820,7 +832,7 @@ export const HouseDesignList = ({
                     });
                   }}
                   variant="ghost"
-                  className="cursor-pointer rounded-lg border-brand-primary bg-white py-2 px-4 font-medium text-brand transition-colors hover:bg-brand-accent hover:text-brand"
+                  className="cursor-pointer rounded-lg border-[var(--color-primary)] bg-white py-2 px-4 font-medium text-brand transition-colors hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
                 />
               </div>
 

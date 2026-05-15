@@ -435,7 +435,7 @@ export const GetYourQuoteSidebar = ({
                 <Button
                   label="Explore available blocks"
                   variant="ghost"
-                  className="w-full rounded-lg border-brand-primary bg-white py-3 text-brand hover:bg-brand-accent hover:text-brand"
+                  className="w-full rounded-lg border-[var(--color-primary)] bg-white py-3 text-brand hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
                   onClick={handleExploreAvailableBlocks}
                 />
               </div>

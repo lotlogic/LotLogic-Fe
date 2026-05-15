@@ -743,7 +743,7 @@ export const LotSidebar = ({
                 <Button
                   label="Secure this lot"
                   variant="ghost"
-                  className="mt-3 w-full rounded-xl border-brand-primary bg-white py-4 text-base font-semibold text-brand hover:bg-brand-accent hover:text-brand"
+                  className="mt-3 w-full rounded-xl border-[var(--color-primary)] bg-white py-4 text-base font-semibold text-brand hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
                   onClick={handleSecureLot}
                   disabled={
                     isSold ||
@@ -821,7 +821,7 @@ export const LotSidebar = ({
                     href={document.documentUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="rounded-lg border border-brand bg-white px-4 py-3 text-sm font-medium text-brand transition hover:border-brand-primary hover:bg-brand-accent"
+                    className="rounded-lg border border-brand bg-white px-4 py-3 text-sm font-medium text-brand transition hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white"
                   >
                     {getDocumentLabel(document)}
                     {size ? (
