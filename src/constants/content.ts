@@ -2,22 +2,22 @@
 export const APP_CONTENT = {
   // App-wide content
   app: {
-    name: "LotLogic",
+    name: "LotCheck",
     tagline: "Build Your Dream Home",
     description: "Find your perfect lot and design your dream home",
   },
 
   // Brand assets
   brand: {
-    logo: "/images/logo.png",
-    favicon: "/images/logo.png",
-    logoAlt: "LotLogic Logo",
-    title: "LOTLOGIC",
+    logo: "/images/logos/lotcheck-logo-full-colour.svg",
+    favicon: "/favicon.png",
+    logoAlt: "LotCheck Logo",
+    title: "LotCheck",
   },
 
   // Header content
   header: {
-    title: "LotLogic",
+    title: "LotCheck",
     subtitle: "Build Your Dream Home",
     searchPlaceholder: "Search for lots...",
   },
@@ -31,10 +31,10 @@ export const APP_CONTENT = {
 
   // Lot sidebar content
   lotSidebar: {
-    buildYourSite: "Build Your Site",
-    houseDesigns: "House Designs",
+    buildYourSite: "What can I build here?",
+    houseDesigns: "Design matches",
     planningRules: "Planning Rules",
-    showMeWhatICanBuild: "Show Me What I Can Build Here",
+    showMeWhatICanBuild: "What can I build here?",
     lotId: "Lot ID",
     area: "Area",
     type: "Type",
@@ -47,11 +47,11 @@ export const APP_CONTENT = {
 
   // House design content
   houseDesign: {
-    title: "House Designs",
+    title: "Design matches",
     filter: "Filter",
     reset: "Reset",
-    showHouseDesign: "Show House Design",
-    enquireNow: "Get Cost Estimates",
+    showHouseDesign: "Show me matching floor plans",
+    enquireNow: "Get a detailed quote",
     bedrooms: "Bedrooms",
     bathrooms: "Bathrooms",
     cars: "Cars",
@@ -65,8 +65,8 @@ export const APP_CONTENT = {
 
   // Quote sidebar content
   quote: {
-    title: "Get Building Cost Estimate",
-    subtitle: "Select builders and get quotes for your dream home",
+    title: "What would you like to do?",
+    subtitle: "What would you like to do?",
     yourName: "Your Name",
     emailAddress: "Email Address",
     phoneNumber: "Phone Number",
@@ -76,10 +76,12 @@ export const APP_CONTENT = {
     submit: "Submit",
     submitting: "Submitting...",
     thankYou: "Thank You!",
-    enquirySubmitted: "Your enquiry has been successfully submitted.",
-    lotSecured: "Your lot has been successfully secured and is now reserved for your review.",
+    enquirySubmitted: "Thanks - you'll hear from us within 2 business days.",
+    lotSecured:
+      "Your lot has been successfully secured and is now reserved for your review.",
     reserveYourLot: "Reserve Your Lot Today",
-    secureLotDescription: "Secure Lot {lotId} with a refundable deposit while you compare builder quotes",
+    secureLotDescription:
+      "Secure Lot {lotId} with a refundable deposit while you compare builder quotes",
     secureThisLot: "Secure this lot",
     mayBeLater: "Keep Exploring",
     deposit: "$1,000",
@@ -91,8 +93,9 @@ export const APP_CONTENT = {
     savedProperties: "Your Shortlist",
     savedPropertiesDescription: "List of properties that you've shortlisted.",
     noSavedProperties: "No saved properties",
-    noSavedPropertiesDescription: "Start exploring properties and save them to your shortlist.",
-    viewDetails: "View Details",
+    noSavedPropertiesDescription:
+      "Start exploring properties and save them to your shortlist.",
+    viewDetails: "View details",
     floorplanRotation: "Floorplan Rotation",
   },
 
@@ -144,39 +147,39 @@ export const APP_CONTENT = {
 
   // Brand colors (for easy customization)
   colors: {
-    primary: "#2F5D62",
-    secondary: "#EAEFEF",
-    accent: "#1a3d42",
+    primary: "#EF7B6C",
+    secondary: "#2B3D48",
+    accent: "#D9685A",
     success: "#10B981",
     warning: "#F59E0B",
     error: "#EF4444",
     // Additional colors found in components
-    toast: "#345B5B",
+    toast: "#2B3D48",
     gray: {
       100: "#F7F7F8",
-      200: "#EAEFEF",
-      300: "#D1D5DB",
-      400: "#9CA3AF",
-      600: "#6B7280",
-      700: "#374151",
+      200: "#E5E9EC",
+      300: "#D0D7DC",
+      400: "#A1AAB2",
+      600: "#5F6E76",
+      700: "#44535B",
     },
     text: {
-      primary: "#000000",
-      secondary: "#6B7280",
-      light: "#9CA3AF",
+      primary: "#2B3D48",
+      secondary: "#5F6E76",
+      light: "#A1AAB2",
     },
     background: {
       primary: "#FFFFFF",
-      secondary: "#F9FAFB",
-      accent: "#eaf3f2",
+      secondary: "#F7F8F9",
+      accent: "#FFF2F0",
     },
   },
 
   // Typography
   typography: {
     fontFamily: {
-      primary: "Inter, system-ui, sans-serif",
-      secondary: "Georgia, serif",
+      primary: "Montserrat, Arial, sans-serif",
+      secondary: "Calibri, Arial, sans-serif",
     },
     fontSize: {
       xs: "0.75rem",
@@ -256,22 +259,25 @@ export const APP_CONTENT = {
 
 // Helper function to get nested content with fallback
 export function getContent(path: string, fallback?: string): string {
-  const keys = path.split('.');
+  const keys = path.split(".");
   let current: unknown = APP_CONTENT;
-  
+
   for (const key of keys) {
-    if (current && typeof current === 'object' && key in current) {
+    if (current && typeof current === "object" && key in current) {
       current = (current as Record<string, unknown>)[key];
     } else {
       return fallback || path;
     }
   }
-  
-  return typeof current === 'string' ? current : fallback || path;
+
+  return typeof current === "string" ? current : fallback || path;
 }
 
 // Helper function to format content with variables
-export function formatContent(template: string, variables: Record<string, string | number>): string {
+export function formatContent(
+  template: string,
+  variables: Record<string, string | number>
+): string {
   return template.replace(/\{(\w+)\}/g, (match, key) => {
     return variables[key]?.toString() || match;
   });
@@ -281,10 +287,34 @@ export function formatContent(template: string, variables: Record<string, string
 export type ContentPath = keyof typeof APP_CONTENT;
 
 // Export individual sections for easier imports
-export const { app, brand, header, sidebar, lotSidebar, houseDesign, quote, map, filter, summary, validation, errors, success, loading, colors, typography, spacing, sizing, shadows, transitions } = APP_CONTENT;
+export const {
+  app,
+  brand,
+  header,
+  sidebar,
+  lotSidebar,
+  houseDesign,
+  quote,
+  map,
+  filter,
+  summary,
+  validation,
+  errors,
+  success,
+  loading,
+  colors,
+  typography,
+  spacing,
+  sizing,
+  shadows,
+  transitions,
+} = APP_CONTENT;
 
 // Utility function to get color values for Tailwind classes
-export function getColorClass(colorPath: string, type: 'bg' | 'text' | 'border' | 'ring' = 'bg'): string {
+export function getColorClass(
+  colorPath: string,
+  type: "bg" | "text" | "border" | "ring" = "bg"
+): string {
   const color = getContent(`colors.${colorPath}`);
   return `${type}-[${color}]`;
 }
@@ -292,4 +322,4 @@ export function getColorClass(colorPath: string, type: 'bg' | 'text' | 'border' 
 // Utility function to get sizing values
 export function getSizingClass(sizingPath: string): string {
   return getContent(`sizing.${sizingPath}`);
-} 
+}

@@ -12,8 +12,8 @@ declare global {
 
 // Generate a Mixpanel-compatible ID (24-character hex string)
 export const generateMixpanelCompatibleId = (): string => {
-  const chars = '0123456789abcdef';
-  let result = '';
+  const chars = "0123456789abcdef";
+  let result = "";
   for (let i = 0; i < 24; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -36,7 +36,10 @@ const getAnalytics = () => {
 };
 
 // User identification and traits
-export const identifyUser = (userId: string, traits: Record<string, unknown>) => {
+export const identifyUser = (
+  userId: string,
+  traits: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
     analytics.identify(userId, traits);
@@ -44,17 +47,23 @@ export const identifyUser = (userId: string, traits: Record<string, unknown>) =>
 };
 
 // Track user events
-export const trackEvent = (event: string, properties?: Record<string, unknown>) => {
+export const trackEvent = (
+  event: string,
+  properties?: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
     analytics.track(event, properties);
   } else {
-    console.error('Analytics not available for event:', event);
+    console.error("Analytics not available for event:", event);
   }
 };
 
 // Track page views
-export const trackPage = (page: string, properties?: Record<string, unknown>) => {
+export const trackPage = (
+  page: string,
+  properties?: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
     analytics.page(page, properties);
@@ -62,10 +71,13 @@ export const trackPage = (page: string, properties?: Record<string, unknown>) =>
 };
 
 // Track user segmentation
-export const trackUserSegment = (segment: string, preferences: Record<string, unknown>) => {
+export const trackUserSegment = (
+  segment: string,
+  preferences: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.identify('anonymous', {
+    analytics.identify("anonymous", {
       segment,
       preferences,
       userType: segment,
@@ -79,10 +91,13 @@ export const trackUserSegment = (segment: string, preferences: Record<string, un
 };
 
 // Track lot interactions
-export const trackLotView = (lotId: string, lotData: Record<string, unknown>) => {
+export const trackLotView = (
+  lotId: string,
+  lotData: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track('Lot Viewed', {
+    analytics.track("Lot Viewed", {
       lotId,
       lotArea: lotData.areaSqm,
       lotZoning: lotData.zoning,
@@ -97,10 +112,13 @@ export const trackLotView = (lotId: string, lotData: Record<string, unknown>) =>
 };
 
 // Track house design interactions
-export const trackHouseDesignView = (designId: string, designData: Record<string, unknown>) => {
+export const trackHouseDesignView = (
+  designId: string,
+  designData: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track('House Design Viewed', {
+    analytics.track("House Design Viewed", {
       designId,
       designName: designData.name,
       bedrooms: designData.bedrooms,
@@ -111,10 +129,13 @@ export const trackHouseDesignView = (designId: string, designData: Record<string
 };
 
 // Track lot selection
-export const trackLotSelected = (lotId: string, lotData: Record<string, unknown>) => {
+export const trackLotSelected = (
+  lotId: string,
+  lotData: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track('Lot Selected', {
+    analytics.track("Lot Selected", {
       lotId,
       lotArea: lotData.areaSqm,
       lotZoning: lotData.zoning,
@@ -127,7 +148,7 @@ export const trackLotSelected = (lotId: string, lotData: Record<string, unknown>
 export const trackEnquirySubmitted = (enquiryData: Record<string, unknown>) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track('Enquiry Submitted', {
+    analytics.track("Enquiry Submitted", {
       lotId: enquiryData.lotId,
       houseDesignId: enquiryData.houseDesignId,
       facadeId: enquiryData.facadeId,
@@ -137,10 +158,13 @@ export const trackEnquirySubmitted = (enquiryData: Record<string, unknown>) => {
 };
 
 // Track search events
-export const trackSearch = (searchTerm: string, filters: Record<string, unknown>) => {
+export const trackSearch = (
+  searchTerm: string,
+  filters: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track('Search Performed', {
+    analytics.track("Search Performed", {
       searchTerm,
       filters,
     });
@@ -148,10 +172,13 @@ export const trackSearch = (searchTerm: string, filters: Record<string, unknown>
 };
 
 // Track saved properties
-export const trackPropertySaved = (lotId: string, action: 'saved' | 'removed') => {
+export const trackPropertySaved = (
+  lotId: string,
+  action: "saved" | "removed"
+) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track(`Property ${action === 'saved' ? 'Saved' : 'Removed'}`, {
+    analytics.track(`Property ${action === "saved" ? "Saved" : "Removed"}`, {
       lotId,
       action,
     });
@@ -159,10 +186,13 @@ export const trackPropertySaved = (lotId: string, action: 'saved' | 'removed') =
 };
 
 // Track filter interactions
-export const trackFilterApplied = (filterType: string, filterValue: unknown) => {
+export const trackFilterApplied = (
+  filterType: string,
+  filterValue: unknown
+) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track('Filter Applied', {
+    analytics.track("Filter Applied", {
       filterType,
       filterValue,
     });
@@ -170,7 +200,10 @@ export const trackFilterApplied = (filterType: string, filterValue: unknown) => 
 };
 
 // Track house design interactions
-export const trackHouseDesignInteraction = (action: string, designData: Record<string, unknown>) => {
+export const trackHouseDesignInteraction = (
+  action: string,
+  designData: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
     analytics.track(`House Design ${action}`, {
@@ -185,7 +218,10 @@ export const trackHouseDesignInteraction = (action: string, designData: Record<s
 };
 
 // Track quote form interactions
-export const trackQuoteFormInteraction = (action: string, formData: Record<string, unknown>) => {
+export const trackQuoteFormInteraction = (
+  action: string,
+  formData: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
     analytics.track(`Quote Form ${action}`, {
@@ -197,12 +233,14 @@ export const trackQuoteFormInteraction = (action: string, formData: Record<strin
   }
 };
 
-
 // Track sidebar interactions
-export const trackSidebarInteraction = (sidebarType: string, action: string) => {
+export const trackSidebarInteraction = (
+  sidebarType: string,
+  action: string
+) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track('Sidebar Interaction', {
+    analytics.track("Sidebar Interaction", {
       sidebarType,
       action,
     });
@@ -213,7 +251,7 @@ export const trackSidebarInteraction = (sidebarType: string, action: string) => 
 export const trackModalInteraction = (modalType: string, action: string) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track('Modal Interaction', {
+    analytics.track("Modal Interaction", {
       modalType,
       action,
     });
@@ -221,10 +259,13 @@ export const trackModalInteraction = (modalType: string, action: string) => {
 };
 
 // Track user journey milestones
-export const trackUserJourneyMilestone = (milestone: string, data: Record<string, unknown>) => {
+export const trackUserJourneyMilestone = (
+  milestone: string,
+  data: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track('User Journey Milestone', {
+    analytics.track("User Journey Milestone", {
       milestone,
       ...data,
     });
@@ -232,10 +273,14 @@ export const trackUserJourneyMilestone = (milestone: string, data: Record<string
 };
 
 // Track error events
-export const trackError = (errorType: string, errorMessage: string, context: Record<string, unknown>) => {
+export const trackError = (
+  errorType: string,
+  errorMessage: string,
+  context: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track('Error Occurred', {
+    analytics.track("Error Occurred", {
       errorType,
       errorMessage,
       ...context,
@@ -244,10 +289,14 @@ export const trackError = (errorType: string, errorMessage: string, context: Rec
 };
 
 // Track performance metrics
-export const trackPerformance = (metric: string, value: number, context: Record<string, unknown>) => {
+export const trackPerformance = (
+  metric: string,
+  value: number,
+  context: Record<string, unknown>
+) => {
   const analytics = getAnalytics();
   if (analytics) {
-    analytics.track('Performance Metric', {
+    analytics.track("Performance Metric", {
       metric,
       value,
       ...context,

@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+import { X } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface MobileBottomSheetProps {
   isOpen: boolean;
@@ -10,14 +10,14 @@ interface MobileBottomSheetProps {
   className?: string;
 }
 
-export function MobileBottomSheet({
+export const MobileBottomSheet = ({
   isOpen,
   onClose,
   title,
   subtitle,
   children,
-  className = ''
-}: MobileBottomSheetProps) {
+  className = "",
+}: MobileBottomSheetProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [currentY, setCurrentY] = useState(0);
@@ -37,14 +37,14 @@ export function MobileBottomSheet({
 
   const handleTouchEnd = () => {
     if (!isDragging) return;
-    
+
     const deltaY = currentY - startY;
     const threshold = 100; // pixels to drag down to close
-    
+
     if (deltaY > threshold) {
       onClose();
     }
-    
+
     setIsDragging(false);
   };
 
@@ -58,13 +58,13 @@ export function MobileBottomSheet({
   // Prevent body scroll when open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen]);
 
@@ -80,7 +80,7 @@ export function MobileBottomSheet({
         className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
         onClick={handleBackdropClick}
       />
-      
+
       {/* Bottom Sheet */}
       <div
         ref={sheetRef}
@@ -98,10 +98,10 @@ export function MobileBottomSheet({
         <div className="flex justify-center pt-3 pb-2">
           <div className="w-12 h-1 bg-gray-300 rounded-full" />
         </div>
-        
+
         {/* Header */}
         {(title || subtitle) && (
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 {title && (
@@ -110,9 +110,7 @@ export function MobileBottomSheet({
                   </h2>
                 )}
                 {subtitle && (
-                  <p className="text-sm text-gray-600">
-                    {subtitle}
-                  </p>
+                  <p className="text-sm text-gray-600">{subtitle}</p>
                 )}
               </div>
               <button
@@ -125,12 +123,12 @@ export function MobileBottomSheet({
             </div>
           </div>
         )}
-        
+
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto">{children}</div>
       </div>
     </>
   );
-}
+};
+
+export default MobileBottomSheet;

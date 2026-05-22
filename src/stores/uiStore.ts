@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface UIState {
   hideRotationControls: boolean;
@@ -7,7 +7,6 @@ interface UIState {
 
 export const useUIStore = create<UIState>((set) => ({
   hideRotationControls: false,
-  setHideRotationControls: (hide: boolean) => set({ hideRotationControls: hide }),
+  setHideRotationControls: (hide: boolean) =>
+    set({ hideRotationControls: hide }),
 }));
-
-

@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
-import { APP_CONTENT, getContent, formatContent } from '../constants/content';
+import { useMemo } from "react";
+import { APP_CONTENT, formatContent, getContent } from "../constants/content";
 
-export function useContent() {
+export const useContent = () => {
   const content = useMemo(() => {
     return {
       // Direct access to content sections
@@ -24,7 +24,7 @@ export function useContent() {
       shadows: APP_CONTENT.shadows,
       transitions: APP_CONTENT.transitions,
       brand: APP_CONTENT.brand,
-      
+
       // Helper functions
       get: getContent,
       format: formatContent,
@@ -36,7 +36,10 @@ export function useContent() {
       },
 
       // Validation helpers
-      getValidation: (type: keyof typeof APP_CONTENT.validation, variables?: Record<string, string | number>) => {
+      getValidation: (
+        type: keyof typeof APP_CONTENT.validation,
+        variables?: Record<string, string | number>
+      ) => {
         const message = APP_CONTENT.validation[type];
         return variables ? formatContent(message, variables) : message;
       },
@@ -50,7 +53,7 @@ export function useContent() {
       getSuccess: (type: keyof typeof APP_CONTENT.success) => {
         return APP_CONTENT.success[type];
       },
-      
+
       // Loading helpers
       getLoading: (type: keyof typeof APP_CONTENT.loading) => {
         return APP_CONTENT.loading[type];
@@ -59,67 +62,39 @@ export function useContent() {
   }, []);
 
   return content;
-}
+};
 
 // Hook for specific content sections
-export function useAppContent() {
-  return APP_CONTENT.app;
-}
+export const useAppContent = () => APP_CONTENT.app;
 
-export function useHeaderContent() {
-  return APP_CONTENT.header;
-}
+export const useHeaderContent = () => APP_CONTENT.header;
 
-export function useSidebarContent() {
-  return APP_CONTENT.sidebar;
-}
+export const useSidebarContent = () => APP_CONTENT.sidebar;
 
-export function useLotSidebarContent() {
-  return APP_CONTENT.lotSidebar;
-}
+export const useLotSidebarContent = () => APP_CONTENT.lotSidebar;
 
-export function useHouseDesignContent() {
-  return APP_CONTENT.houseDesign;
-}
+export const useHouseDesignContent = () => APP_CONTENT.houseDesign;
 
-export function useQuoteContent() {
-  return APP_CONTENT.quote;
-}
+export const useQuoteContent = () => APP_CONTENT.quote;
 
-export function useMapContent() {
-  return APP_CONTENT.map;
-}
+export const useMapContent = () => APP_CONTENT.map;
 
-export function useFilterContent() {
-  return APP_CONTENT.filter;
-}
+export const useFilterContent = () => APP_CONTENT.filter;
 
-export function useSummaryContent() {
-  return APP_CONTENT.summary;
-}
+export const useSummaryContent = () => APP_CONTENT.summary;
 
-export function useValidationContent() {
-  return APP_CONTENT.validation;
-}
+export const useValidationContent = () => APP_CONTENT.validation;
 
-export function useErrorContent() {
-  return APP_CONTENT.errors;
-}
+export const useErrorContent = () => APP_CONTENT.errors;
 
-export function useSuccessContent() {
-  return APP_CONTENT.success;
-}
+export const useSuccessContent = () => APP_CONTENT.success;
 
-export function useLoadingContent() {
-  return APP_CONTENT.loading;
-}
+export const useLoadingContent = () => APP_CONTENT.loading;
 
-export function useThemeContent() {
-  return {
-    colors: APP_CONTENT.colors,
-    typography: APP_CONTENT.typography,
-    spacing: APP_CONTENT.spacing,
-    shadows: APP_CONTENT.shadows,
-    transitions: APP_CONTENT.transitions,
-  };
-} 
+export const useThemeContent = () => ({
+  colors: APP_CONTENT.colors,
+  typography: APP_CONTENT.typography,
+  spacing: APP_CONTENT.spacing,
+  shadows: APP_CONTENT.shadows,
+  transitions: APP_CONTENT.transitions,
+});

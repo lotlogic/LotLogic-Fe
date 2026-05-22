@@ -1,34 +1,53 @@
 import { z } from "zod";
-
-// export interface FilterRowProps {
-//   icon: React.ReactNode;
-//   label: string;
-//   value: [number, number];
-//   setValue: (v: [number, number]) => void;
-//   minRange: number;
-//   maxRange: number;
-// }
-
-
+import type { EnquiryJourneyValue } from "@/constants/enquiry";
 export interface HouseDesignImage {
+  facadeId?: string;
   src: string;
-  faced: string; 
+  faced: string;
+}
+
+export interface FloorPlanDocument {
+  id: string;
+  documentName?: string | null;
+  fileName: string;
+  documentUrl: string;
+  fileSizeBytes?: number | null;
+  mimeType?: string | null;
+}
+
+export interface SelectedFacadeOption {
+  facadeId?: string;
+  label: string;
 }
 
 export interface HouseDesignItem {
   id: string;
   title: string;
-  area: string; 
-  minLotWidth?: number;
-  minLotDepth?: number;
-  image: string; 
-  images: HouseDesignImage[]; 
+  area: string;
+  homeSize?: string | null;
+  price?: number | null;
+  builderId?: string;
+  builderName?: string;
+  builder?:
+    | {
+        id?: string;
+        name?: string;
+        logoUrl?: string | null;
+        brandingBgColor?: string | null;
+        brandingTextColor?: string | null;
+      }
+    | string;
+  width?: number;
+  depth?: number;
+  image: string;
+  images: HouseDesignImage[];
+  documents?: FloorPlanDocument[];
   bedrooms: number;
   bathrooms: number;
   cars: number;
   storeys: number;
   isFavorite: boolean;
-  floorPlanImage?: string; 
+  floorPlanImage?: string;
 }
 
 export interface HouseDesignListProps {
@@ -38,32 +57,58 @@ export interface HouseDesignListProps {
     car: number[];
     min_size?: number;
     max_size?: number;
+    rumpus?: boolean;
+    alfresco?: boolean;
+    pergola?: boolean;
   };
   lot: {
+    estateId?: string | number;
     lotId: string | number;
+    lotDbId?: string | number;
+    lotDisplayId?: string | number;
     suburb: string;
     address: string;
     size: string | number;
     zoning: string;
     overlays: string;
+    lifecycleStage?: string | null;
+    salesMode?: string | null;
+    price?: number | null;
+    houseAndLandBuildPrice?: number | null;
   };
   onShowFilter: () => void;
-  onDesignClick: (design: HouseDesignItem | null) => void; 
+  onShowAllDesigns?: () => void;
+  onDesignClick: (design: HouseDesignItem | null) => void;
   onEnquireNow?: (design: HouseDesignItem) => void;
-  onViewFloorPlan?: (design: HouseDesignItem) => void; 
-  onViewFacades?: (design: HouseDesignItem) => void; 
+  onViewDocuments?: (design: HouseDesignItem) => void;
+  onViewFacades?: (design: HouseDesignItem, initialIndex?: number) => void;
+  selectedDesignId?: string | null;
+  onSelectedDesignIdChange?: (designId: string | null) => void;
+  lockedDesignId?: string | null;
+  hideFilterControl?: boolean;
+  hasActiveFilters?: boolean;
+  showingAllDesigns?: boolean;
 }
 
 export interface GetYourQuoteSidebarProps {
   open: boolean;
   onClose: () => void;
   onBack?: () => void;
+  onExploreAvailableBlocks?: () => void;
   selectedHouseDesign: HouseDesignItem | null;
+  selectedFacade?: SelectedFacadeOption | null;
+  initialJourneyType?: EnquiryJourneyValue | null;
   lotDetails: {
     id: string | number;
+    estateId?: string | number;
+    blockKey?: string | number;
+    displayId?: string | number;
     suburb: string;
     address: string;
     size?: number;
+    lifecycleStage?: string | null;
+    salesMode?: string | null;
+    price?: number | null;
   };
 }
 
@@ -87,7 +132,7 @@ export interface FilterSectionProps {
     max_size?: string;
     bedroom?: string;
     bathroom?: string;
-    car? : string;
+    car?: string;
   };
 }
 
@@ -102,10 +147,9 @@ export interface HouseSizeInputRowProps {
     max_size?: string;
     bedroom?: string;
     bathroom?: string;
-    car? : string;
+    car?: string;
   };
 }
-
 
 export interface FilterRowProps {
   icon: React.ReactNode;
@@ -119,7 +163,7 @@ export interface FilterRowProps {
     max_size?: string;
     bedroom?: string;
     bathroom?: string;
-    car? : string;
+    car?: string;
   };
 }
 
@@ -133,65 +177,78 @@ export interface DesignRowProps {
   rumpus: boolean;
   alfresco: boolean;
   pergola: boolean;
-  onChange: (key: 'rumpus' | 'alfresco' | 'pergola', value: boolean) => void;
+  onChange: (key: "rumpus" | "alfresco" | "pergola", value: boolean) => void;
 }
 
 export type RangeValue = [number, number];
 export type RangeSetter = React.Dispatch<React.SetStateAction<RangeValue>>;
 
-
 export const quoteFormSchema = z.object({
-  yourName: z.string()
+  yourName: z
+    .string()
     .min(2, "Name must be at least 2 characters")
     .max(50, "Name must be less than 50 characters")
-    .regex(/^[a-zA-Z\s'-]+$/, "Name can only contain letters, spaces, hyphens, and apostrophes")
-    .transform(name => name.trim()),
+    .regex(
+      /^[a-zA-Z\s'-]+$/,
+      "Name can only contain letters, spaces, hyphens, and apostrophes"
+    )
+    .transform((name) => name.trim()),
 
-  emailAddress: z.string()
+  emailAddress: z
+    .string()
     .min(1, "Email is required")
     .email("Please enter a valid email address")
-    .transform(email => email.toLowerCase().trim()),
+    .transform((email) => email.toLowerCase().trim()),
 
-  phoneNumber: z.string()
+  phoneNumber: z
+    .string()
     .min(1, "Phone number is required")
     .refine((phone) => {
       // Clean the phone number
-      const cleanPhone = phone.replace(/[\s\-()]/g, '');
-      
+      const cleanPhone = phone.replace(/[\s\-()]/g, "");
+
       // Australian mobile numbers: 04xx xxx xxx
       const mobileRegex = /^04\d{8}$/;
-      
+
       // Australian landline numbers
       const landlineRegex = /^0[2-9]\d{8}$/;
-      
+
       // International format with +61
       const internationalRegex = /^\+61[2-9]\d{8}$/;
-      
+
       // Check if it's a valid format
-      const isValidFormat = mobileRegex.test(cleanPhone) || 
-                           landlineRegex.test(cleanPhone) || 
-                           internationalRegex.test(cleanPhone);
-      
+      const isValidFormat =
+        mobileRegex.test(cleanPhone) ||
+        landlineRegex.test(cleanPhone) ||
+        internationalRegex.test(cleanPhone);
+
       // Additional check for minimum length after cleaning
       const isValidLength = cleanPhone.length >= 10 && cleanPhone.length <= 15;
-      
+
       return isValidFormat && isValidLength;
     }, "Please enter a valid Australian phone number)"),
 
-  selectedBuilders: z.array(z.string())
-    .min(1, "Please select at least one builder"),
+  selectedBuilders: z
+    .array(z.string())
+    .default([]),
 
-  additionalComments: z.string()
+  additionalComments: z
+    .string()
     .max(500, "Additional comments must be less than 500 characters")
     .optional()
-    .transform(comments => comments?.trim() || ''),
+    .transform((comments) => comments?.trim() || ""),
 });
 
 export type QuoteFormData = z.infer<typeof quoteFormSchema>;
 
 export type FloorPlan = {
   url: string;
-  coordinates: [[number, number], [number, number], [number, number], [number, number]];
+  coordinates: [
+    [number, number],
+    [number, number],
+    [number, number],
+    [number, number]
+  ];
   houseArea?: number;
   houseWidth?: number;
   houseDepth?: number;

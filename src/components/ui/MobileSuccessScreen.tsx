@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle } from "lucide-react";
 
 interface MobileSuccessScreenProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ interface MobileSuccessScreenProps {
   className?: string;
 }
 
-export function MobileSuccessScreen({
+export const MobileSuccessScreen = ({
   isOpen,
   onClose,
   onBack,
@@ -25,15 +25,17 @@ export function MobileSuccessScreen({
   depositAmount = "$1,000",
   onSecureLot,
   onKeepExploring,
-  className = ''
-}: MobileSuccessScreenProps) {
+  className = "",
+}: MobileSuccessScreenProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className={`
+    <div
+      className={`
       fixed inset-0 z-50 bg-white flex flex-col
       ${className}
-    `}>
+    `}
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center gap-3">
@@ -78,10 +80,13 @@ export function MobileSuccessScreen({
               Reserve Your Lot Today
             </h2>
             <p className="text-gray-600 text-sm mb-4">
-              Secure Lot {lotId} with a refundable deposit while you compare builder quotes
+              Secure Lot {lotId} with a refundable deposit while you compare
+              builder quotes
             </p>
             <div className="text-center mb-4">
-              <span className="text-3xl font-bold text-gray-900">{depositAmount}</span>
+              <span className="text-3xl font-bold text-gray-900">
+                {depositAmount}
+              </span>
             </div>
             <div className="space-y-3">
               <button
@@ -102,4 +107,6 @@ export function MobileSuccessScreen({
       </div>
     </div>
   );
-}
+};
+
+export default MobileSuccessScreen;

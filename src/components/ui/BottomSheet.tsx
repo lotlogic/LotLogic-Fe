@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { X } from 'lucide-react';
-import { useResponsive } from '@/hooks/useResponsive';
+import { useResponsive } from "@/hooks/useResponsive";
+import { X } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface BottomSheetProps {
   isOpen: boolean;
@@ -13,16 +13,16 @@ interface BottomSheetProps {
   className?: string;
 }
 
-export function BottomSheet({
+export const BottomSheet = ({
   isOpen,
   onClose,
   title,
   subtitle,
   children,
-  maxHeight = '80vh',
+  maxHeight = "80vh",
   showDragHandle = true,
-  className = ''
-}: BottomSheetProps) {
+  className = "",
+}: BottomSheetProps) => {
   const { isMobile } = useResponsive();
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
@@ -44,14 +44,14 @@ export function BottomSheet({
 
   const handleTouchEnd = () => {
     if (!isMobile || !isDragging) return;
-    
+
     const deltaY = currentY - startY;
     const threshold = 100; // pixels to drag down to close
-    
+
     if (deltaY > threshold) {
       onClose();
     }
-    
+
     setIsDragging(false);
   };
 
@@ -65,13 +65,13 @@ export function BottomSheet({
   // Prevent body scroll when open
   useEffect(() => {
     if (isOpen && isMobile) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = "unset";
     };
   }, [isOpen, isMobile]);
 
@@ -87,19 +87,19 @@ export function BottomSheet({
         className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
         onClick={handleBackdropClick}
       />
-      
+
       {/* Bottom Sheet */}
       <div
         ref={sheetRef}
         className={`
           fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl
           transition-transform duration-300 ease-out
-          ${isMobile ? 'h-full' : 'max-h-[80vh]'}
+          ${isMobile ? "h-full" : "max-h-[80vh]"}
           ${className}
         `}
         style={{
           transform,
-          maxHeight: isMobile ? '100%' : maxHeight,
+          maxHeight: isMobile ? "100%" : maxHeight,
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -111,10 +111,10 @@ export function BottomSheet({
             <div className="w-12 h-1 bg-gray-300 rounded-full" />
           </div>
         )}
-        
+
         {/* Header */}
         {(title || subtitle) && (
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 {title && (
@@ -123,9 +123,7 @@ export function BottomSheet({
                   </h2>
                 )}
                 {subtitle && (
-                  <p className="text-sm text-gray-600">
-                    {subtitle}
-                  </p>
+                  <p className="text-sm text-gray-600">{subtitle}</p>
                 )}
               </div>
               <button
@@ -138,12 +136,12 @@ export function BottomSheet({
             </div>
           </div>
         )}
-        
+
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {children}
-        </div>
+        <div className="flex-1 overflow-y-auto">{children}</div>
       </div>
     </>
   );
-}
+};
+
+export default BottomSheet;

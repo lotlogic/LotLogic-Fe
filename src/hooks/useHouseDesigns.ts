@@ -1,22 +1,79 @@
-import { useQuery } from '@tanstack/react-query';
-import { lotApi, type HouseDesignFilterRequest, type HouseDesignItemResponse } from '../lib/api/lotApi';
-import type { HouseDesignItem } from '../types/houseDesign';
+import { useQuery } from "@tanstack/react-query";
+import {
+  lotApi,
+  type HouseDesignFilterRequest,
+  type HouseDesignItemResponse,
+} from "../lib/api/lotApi";
+import type { HouseDesignItem } from "../types/houseDesign";
+
+const normalizeText = (value: unknown): string | undefined => {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+  const normalized = String(value).trim();
+  return normalized || undefined;
+};
+
+const resolveBuilderContext = (
+  apiDesign: HouseDesignItemResponse
+): Pick<HouseDesignItem, "builderId" | "builderName" | "builder"> => {
+  const rawBuilder = apiDesign.builder;
+  const builderRecord =
+    rawBuilder && typeof rawBuilder === "object"
+      ? (rawBuilder as {
+          id?: string | null;
+          name?: string | null;
+          logoUrl?: string | null;
+          brandingBgColor?: string | null;
+          brandingTextColor?: string | null;
+        })
+      : undefined;
+
+  const builderId =
+    normalizeText(apiDesign.builderId) ??
+    normalizeText(builderRecord?.id) ??
+    (typeof rawBuilder === "string" ? normalizeText(rawBuilder) : undefined);
+  const builderName =
+    normalizeText(apiDesign.builderName) ??
+    normalizeText(builderRecord?.name) ??
+    (typeof rawBuilder === "string" ? normalizeText(rawBuilder) : undefined);
+
+  const builder =
+    builderRecord &&
+    (normalizeText(builderRecord.id) || normalizeText(builderRecord.name))
+      ? {
+          id: normalizeText(builderRecord.id),
+          name: normalizeText(builderRecord.name),
+          logoUrl: normalizeText(builderRecord.logoUrl) ?? null,
+          brandingBgColor: normalizeText(builderRecord.brandingBgColor) ?? null,
+          brandingTextColor:
+            normalizeText(builderRecord.brandingTextColor) ?? null,
+        }
+      : typeof rawBuilder === "string"
+      ? normalizeText(rawBuilder)
+      : undefined;
+
+  return {
+    builderId,
+    builderName,
+    builder,
+  };
+};
 
 // Convert API response to frontend format
-const convertApiResponseToHouseDesign = (apiDesign: HouseDesignItemResponse): HouseDesignItem => {
+const convertApiResponseToHouseDesign = (
+  apiDesign: HouseDesignItemResponse
+): HouseDesignItem => {
+  const builderContext = resolveBuilderContext(apiDesign);
+
   return {
-    id: apiDesign.id,
-    title: apiDesign.title,
+    ...apiDesign,
     area: apiDesign.area.toString(),
-    minLotWidth: apiDesign.minLotWidth,
-    minLotDepth: apiDesign.minLotDepth,
-    image: apiDesign.image,
-    images: apiDesign.images,
-    bedrooms: apiDesign.bedrooms,
-    bathrooms: apiDesign.bathrooms,
-    cars: apiDesign.cars,
+    homeSize: apiDesign.homeSize ?? null,
+    builderId: builderContext.builderId,
+    builderName: builderContext.builderName,
+    builder: builderContext.builder,
     storeys: 1, // Default to 1 storey
-    isFavorite: apiDesign.isFavorite,
     floorPlanImage: apiDesign.floorPlanImage || undefined,
   };
 };
@@ -27,28 +84,56 @@ export const useHouseDesigns = (
   enabled: boolean = true
 ) => {
   return useQuery({
-    queryKey: ['house-designs', lotId, JSON.stringify(filters)],
-    queryFn: async (): Promise<{ houseDesigns: HouseDesignItem[]; zoning: { fsr: number; frontSetback: number; rearSetback: number; sideSetback: number } }> => {
+    queryKey: ["house-designs", lotId, JSON.stringify(filters)],
+    queryFn: async (): Promise<{
+      houseDesigns: HouseDesignItem[];
+      zoning: {
+        fsr?: number;
+        frontSetback?: number;
+        rearSetback?: number;
+        sideSetback?: number;
+      };
+    }> => {
       if (!lotId) {
-        return { houseDesigns: [], zoning: { fsr: 300, frontSetback: 4, rearSetback: 3, sideSetback: 3 } };
+        return {
+          houseDesigns: [],
+          zoning: {},
+        };
       }
-      
+
       // If no filters, create empty filter object for API
       const filtersToSend = filters || {
-        bedroom: [],
-        bathroom: [],
-        car: [],
+        bedroom: undefined,
+        bathroom: undefined,
+        car: undefined,
       };
-      
+
       const apiResponse = await lotApi.filterHouseDesigns(lotId, filtersToSend);
-      
+
       // Handle case where apiResponse or houseDesigns might be undefined
       const houseDesigns = apiResponse?.houseDesigns || [];
-      const zoning = apiResponse?.zoning || { fsr: 300, frontSetback: 4, rearSetback: 3, sideSetback: 3 };
-      
+      const zoning = {
+        fsr:
+          typeof apiResponse?.zoning?.fsr === "number"
+            ? apiResponse.zoning.fsr
+            : undefined,
+        frontSetback:
+          typeof apiResponse?.zoning?.frontSetback === "number"
+            ? apiResponse.zoning.frontSetback
+            : undefined,
+        rearSetback:
+          typeof apiResponse?.zoning?.rearSetback === "number"
+            ? apiResponse.zoning.rearSetback
+            : undefined,
+        sideSetback:
+          typeof apiResponse?.zoning?.sideSetback === "number"
+            ? apiResponse.zoning.sideSetback
+            : undefined,
+      };
+
       return {
         houseDesigns: houseDesigns.map(convertApiResponseToHouseDesign),
-        zoning: zoning
+        zoning: zoning,
       };
     },
     enabled: enabled && !!lotId,

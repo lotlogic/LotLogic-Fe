@@ -1,40 +1,50 @@
+/* Keep Mapbox chrome behind application UI overlays */
+.mapboxgl-control-container,
+.mapboxgl-ctrl-top-left,
+.mapboxgl-ctrl-top-right,
+.mapboxgl-ctrl-bottom-left,
+.mapboxgl-ctrl-bottom-right,
+.mapboxgl-ctrl {
+  z-index: 1 !important;
+}
+
 /* Mapbox control positioning */
 .mapboxgl-ctrl-top-right {
-    top: 51px !important;
-    right: 12px !important;
-  }
+  top: 51px !important;
+  right: 12px !important;
+}
 
 /* Navigation control positioning - place it above custom controls */
 .mapboxgl-ctrl-group.mapboxgl-ctrl-zoom {
-    top: 12px !important;
-    right: 12px !important;
-  }
-  
-  .mapboxgl-ctrl-bottom-left {
-    bottom: 12px !important;
-    left: 12px !important;
-  }
-  
-  .mapboxgl-ctrl-group {
-    border-radius: 8px !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-    overflow: hidden;
-  }
-  
-  .mapboxgl-ctrl button {
-    width: 36px !important;
-    height: 36px !important;
-  }
-  
-  .mapboxgl-ctrl button:hover {
-    background-color: #f5f5f5 !important;
-  }
-  
-  /* Scale control styling */
-  .mapboxgl-ctrl-scale {
-    background-color: rgba(255, 255, 255, 0.8) !important;
-    border-radius: 4px !important;
-    padding: 4px 8px !important;
-    border: 1px solid #ddd !important;
-    font-size: 12px !important;
-  }
+  top: 12px !important;
+  right: 12px !important;
+}
+
+.mapboxgl-ctrl-bottom-left {
+  bottom: 12px !important;
+  left: 12px !important;
+}
+
+.mapboxgl-ctrl-group {
+  border-radius: 8px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  overflow: hidden;
+}
+
+.mapboxgl-ctrl button {
+  width: 36px !important;
+  height: 36px !important;
+}
+
+.mapboxgl-ctrl button:hover {
+  background-color: var(--color-bg-secondary) !important;
+}
+
+/* Scale control styling */
+.mapboxgl-ctrl-scale {
+  background-color: var(--color-bg-primary) !important;
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+  border: 1px solid var(--color-border) !important;
+  font-size: 12px !important;
+}

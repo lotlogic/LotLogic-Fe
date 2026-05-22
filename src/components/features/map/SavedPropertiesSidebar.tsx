@@ -1,365 +1,636 @@
-import  { useState, useRef, useEffect } from 'react';
-import { X, BedDouble, Bath, Car, ExternalLink, Bookmark } from 'lucide-react';
-import type { SavedPropertiesSidebarProps } from '@/types/ui';
-import { getZoningColor } from '@/lib/utils/zoning';
-import { getOverlaysColor } from '@/lib/utils/overlays';
-import { getImageUrl } from '@/lib/api/lotApi';
-import { getColorClass, colors } from '@/constants/content';
-import { useSavedPropertiesStore } from '@/stores/savedPropertiesStore';
-import { Button } from '@/components/ui/Button';
-import { useMobile } from '@/hooks/useMobile';
-export function SavedPropertiesSidebar({ 
-    open, 
-    onClose, 
-    // onViewDetails 
-}: Omit<SavedPropertiesSidebarProps, 'savedProperties'>) {
-    const sidebarRef = useRef<HTMLDivElement>(null);
-    const [isClient, setIsClient] = useState(false);
-    const isMobile = useMobile();
-    const [drawerHeight, setDrawerHeight] = useState<'50vh' | '100vh'>('50vh');
-    const [isDragging, setIsDragging] = useState(false);
-    const [startY, setStartY] = useState(0);
-    const [startHeight, setStartHeight] = useState<'50vh' | '100vh'>('50vh');
-    const drawerRef = useRef<HTMLDivElement>(null);
-    
-    // Use Zustand store for saved properties
-    const { savedProperties: storeSavedProperties, removeFromSaved } = useSavedPropertiesStore();
+import Button from "@/components/ui/Button";
+import { GetYourQuoteSidebar } from "@/components/features/quote/QuoteSideBar";
+import { useMobile } from "@/hooks/useMobile";
+import { getImageUrl } from "@/lib/api/lotApi";
+import { getOverlaysColor } from "@/lib/utils/overlays";
+import { getZoningColor } from "@/lib/utils/zoning";
+import { useSavedPropertiesStore } from "@/stores/savedPropertiesStore";
+import type { HouseDesignItem } from "@/types/houseDesign";
+import type { SavedPropertiesSidebarProps, SavedProperty } from "@/types/ui";
+import {
+  Bath,
+  BedDouble,
+  Bookmark,
+  Car,
+  ChevronLeft,
+  ChevronRight,
+  MailQuestionMark,
+  X,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
-    // Handle client-side initialization
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
+type DesignMediaItem = {
+  kind: "floorplan" | "facade";
+  src: string;
+  alt: string;
+  label: string;
+};
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-                onClose();
-            }
-        };
+const REMOVE_SHORTLIST_MESSAGE =
+  "This will remove this from your shortlist. Are you sure you want to do that?";
 
-        const handleEscapeKey = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onClose();
-            }
-        };
+const buildSavedDesignMedia = (property: SavedProperty): DesignMediaItem[] => {
+  const mediaItems: DesignMediaItem[] = [];
+  const floorPlanSrc = getImageUrl(property.houseDesign.floorPlanImage);
 
-        if (open) {
-            document.addEventListener('mousedown', handleClickOutside);
-            document.addEventListener('keydown', handleEscapeKey);
-        } else {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('keydown', handleEscapeKey);
-        }
+  if (floorPlanSrc) {
+    mediaItems.push({
+      kind: "floorplan",
+      src: floorPlanSrc,
+      alt: `${property.houseDesign.title} floor plan`,
+      label: "Floor plan",
+    });
+  }
 
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            document.removeEventListener('keydown', handleEscapeKey);
-        };
-
-    }, [open, onClose]);
-
-    // Touch handlers for drawer functionality
-    const handleTouchStart = (e: React.TouchEvent) => {
-        if (!isMobile) return;
-        setIsDragging(true);
-        setStartY(e.touches[0].clientY);
-        setStartHeight(drawerHeight);
-    };
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-        if (!isMobile || !isDragging) return;
-        e.preventDefault();
-        
-        const currentY = e.touches[0].clientY;
-        const deltaY = startY - currentY;
-        const threshold = 80; // pixels to trigger height change
-        
-        if (deltaY > threshold && startHeight === '50vh') {
-            setDrawerHeight('100vh');
-        } else if (deltaY < -threshold && startHeight === '100vh') {
-            setDrawerHeight('50vh');
-        } else if (deltaY < -threshold && startHeight === '50vh') {
-            // From half height, dragging down beyond threshold closes the drawer
-            onClose();
-        }
-    };
-
-    const handleTouchEnd = () => {
-        if (!isMobile) return;
-        setIsDragging(false);
-    };
-
-    // Reset height when opening
-    useEffect(() => {
-        if (open && isMobile) {
-            setDrawerHeight('50vh');
-        }
-    }, [open, isMobile]);
-
-     if (!open) return null;
-
-    // Mobile: Use drawer functionality
-    if (isMobile) {
-        return (
-            <div
-                ref={drawerRef}
-                className="fixed bottom-16 left-0 right-0 bg-white shadow-2xl z-50 transition-all duration-300 ease-in-out"
-                style={{
-                    height: drawerHeight === '100vh' ? 'calc(100vh - 4rem)' : '70vh',
-                    borderTopLeftRadius: '16px',
-                    borderTopRightRadius: '16px',
-                }}
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-            >
-                {/* Drawer Handle */}
-                <div 
-                    className="flex justify-center pt-2 pb-1 cursor-pointer"
-                    onClick={() => setDrawerHeight(drawerHeight === '50vh' ? '100vh' : '50vh')}
-                >
-                    <div className="w-12 h-1 bg-gray-300 rounded-full" />
-                </div>
-
-                {/* Header */}
-                <div className="flex items-start border-b border-gray-200 bg-white rounded-t-2xl p-4 pb-3">
-                    <div className="flex-grow">
-                        <h2 className="text-xl font-bold text-gray-900">Your Shortlist</h2>
-                        <p className="text-sm text-gray-600 mt-1">List of properties that you&apos;ve shortlisted.</p>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700"
-                        aria-label="Close"
-                    >
-                        <X className="h-6 w-6" />
-                    </button>
-                </div>
-
-                {/* Content */}
-                <div className="flex-grow overflow-y-auto min-h-0 p-4">
-                    {!isClient ? (
-                        <div className="flex items-center justify-center h-32">
-                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                        </div>
-                    ) : storeSavedProperties.length === 0 ? (
-                        <div className="text-center py-8">
-                            <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">No saved properties yet</h3>
-                            <p className="text-gray-500">Start exploring lots and save your favorite house designs!</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {storeSavedProperties.map((property, index) => (
-                                <div key={`${property.lotId}-${property.houseDesign.id}-${index}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                                    {/* Lot Info Header */}
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-xs text-black">
-                                            Lot ID: {property.lotId}, {property.suburb}, {property.address}
-                                        </div>
-                                        <Bookmark
-                                            className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${getColorClass('primary', 'text')} ${
-                                                property.houseDesign.isFavorite ? 'fill-current' : "fill-white"
-                                            }`}
-                                            style={{
-                                            color: property.houseDesign.isFavorite ? colors.primary : undefined,
-                                            }}
-                                            onClick={() => {
-                                                removeFromSaved(property.lotId, property.houseDesign.id);
-                                            }}
-                                        />
-                                    </div>
-
-                                    {/* Lot Details */}
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <div className="flex items-center gap-1 text-xs text-black">
-                                            <ExternalLink className="h-4 w-4" />
-                                            {property.size}m²
-                                        </div>
-                                        {property.zoning && 
-                                            <span className="text-xs px-4 py-2 rounded-full text-black items-center justify-between"
-                                                style={{ backgroundColor: getZoningColor(property.zoning) }}>{property.zoning}
-                                            </span>
-                                        }
-                                        {property.overlays && (
-                                            <span className="px-2 py-1 text-black text-xs rounded-full items-center justify-between"
-                                                style={{ backgroundColor: getOverlaysColor(property.overlays) }}>
-                                                {property.overlays}
-                                            </span>
-                                        )}
-                                    </div>
-
-                                    {/* House Design */}
-                                    <div className="flex gap-4">
-                                        <img 
-                                            src={getImageUrl(property.houseDesign.floorPlanImage) || getImageUrl(property.houseDesign.images?.[0]?.src) || property.houseDesign.image} 
-                                            alt={property.houseDesign.title}
-                                            className="w-16 h-16 rounded-lg object-cover"
-                                        />
-                                        <div className="flex-1">
-                                            <h4 className="font-semibold text-black text-sm">
-                                                {property.houseDesign.title}
-                                            </h4>
-                                            <p className="text-xs text-black mb-2">Single Storey</p>
-                                            <div className="flex items-center gap-3 text-xs text-black">
-                                                <span className="flex items-center gap-1">
-                                                    <BedDouble className="h-3 w-3" />
-                                                    {property.houseDesign.bedrooms}
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <Bath className="h-3 w-3" />
-                                                    {property.houseDesign.bathrooms}
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <Car className="h-3 w-3" />
-                                                    {property.houseDesign.cars}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <Button
-                                            variant="primary"
-                                            // onClick={() => onViewDetails(property)}
-                                            className={`${getColorClass('primary')} px-1 py-2.5 rounded-md text-sm font-medium hover:${getColorClass('accent')} transition-colors w-30 h-9 mt-12`}
-                                        >
-                                            View Details
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
+  (property.houseDesign.images || []).forEach((image, index) => {
+    const facadeSrc = getImageUrl(image.src);
+    if (!facadeSrc) {
+      return;
     }
 
-    // Desktop: Use original sidebar implementation
+    mediaItems.push({
+      kind: "facade",
+      src: facadeSrc,
+      alt: `${property.houseDesign.title} ${image.faced || `Facade ${index + 1}`}`,
+      label: image.faced || `Facade ${index + 1}`,
+    });
+  });
+
+  if (mediaItems.length === 0) {
+    const fallbackSrc = getImageUrl(property.houseDesign.image);
+    if (fallbackSrc) {
+      mediaItems.push({
+        kind: "facade",
+        src: fallbackSrc,
+        alt: `${property.houseDesign.title} facade`,
+        label: "Facade",
+      });
+    }
+  }
+
+  return mediaItems;
+};
+
+const getSavedPropertyKey = (property: SavedProperty) =>
+  `${property.estateId || "default"}-${property.lotId}-${property.houseDesign.id}`;
+
+const normalizeMediaIndex = (index: number, mediaLength: number) => {
+  if (mediaLength <= 0) {
+    return 0;
+  }
+  return ((index % mediaLength) + mediaLength) % mediaLength;
+};
+
+const toHouseDesignItem = (
+  houseDesign: SavedProperty["houseDesign"]
+): HouseDesignItem => ({
+  id: houseDesign.id,
+  title: houseDesign.title,
+  area: houseDesign.area || "",
+  builderId: houseDesign.builderId,
+  builderName: houseDesign.builderName,
+  width: houseDesign.width,
+  depth: houseDesign.depth,
+  image: houseDesign.image || "",
+  images: houseDesign.images || [],
+  bedrooms: houseDesign.bedrooms,
+  bathrooms: houseDesign.bathrooms,
+  cars: houseDesign.cars,
+  storeys: houseDesign.storeys,
+  isFavorite: true,
+  floorPlanImage: houseDesign.floorPlanImage,
+});
+
+const toLotSizeNumber = (size?: string | number) => {
+  if (typeof size === "number") {
+    return size;
+  }
+
+  if (typeof size === "string") {
+    const parsed = parseFloat(size);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return undefined;
+};
+
+type SavedPropertyCardProps = {
+  property: SavedProperty;
+  mediaIndex: number;
+  onMediaIndexChange: (nextIndex: number, mediaLength: number) => void;
+  onRemove: (property: SavedProperty) => void;
+  onGetCostEstimate: (property: SavedProperty) => void;
+};
+
+const SavedPropertyCard = ({
+  property,
+  mediaIndex,
+  onMediaIndexChange,
+  onRemove,
+  onGetCostEstimate,
+}: SavedPropertyCardProps) => {
+  const mediaItems = buildSavedDesignMedia(property);
+  const mediaCount = mediaItems.length;
+  const activeMediaIndex = normalizeMediaIndex(mediaIndex, mediaCount);
+  const activeMedia = mediaItems[activeMediaIndex];
+
+  return (
+    <div className="rounded-2xl border border-brand bg-brand p-4 shadow-sm">
+      <div className="relative overflow-hidden rounded-xl border border-brand bg-brand-muted">
+        {activeMedia ? (
+          <img
+            src={activeMedia.src}
+            alt={activeMedia.alt}
+            className="h-52 w-full object-cover sm:h-56"
+          />
+        ) : (
+          <div className="flex h-52 w-full items-center justify-center text-sm text-brand-muted sm:h-56">
+            No media available
+          </div>
+        )}
+
+        {mediaCount > 1 && (
+          <>
+            <button
+              type="button"
+              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/60"
+              aria-label="Previous media"
+              onClick={(event) => {
+                event.stopPropagation();
+                onMediaIndexChange(activeMediaIndex - 1, mediaCount);
+              }}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/60"
+              aria-label="Next media"
+              onClick={(event) => {
+                event.stopPropagation();
+                onMediaIndexChange(activeMediaIndex + 1, mediaCount);
+              }}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </>
+        )}
+
+        {activeMedia && (
+          <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/55 px-3 py-1 text-xs font-medium text-white">
+            {activeMedia.label}
+          </div>
+        )}
+
+        {mediaCount > 1 && (
+          <div className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white">
+            {activeMediaIndex + 1}/{mediaCount}
+          </div>
+        )}
+      </div>
+
+      {mediaCount > 1 && (
+        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+          {mediaItems.map((media, index) => (
+            <button
+              key={`${property.houseDesign.id}-${media.kind}-${index}`}
+              type="button"
+              className={`h-14 w-20 shrink-0 overflow-hidden rounded-md border-2 transition ${
+                index === activeMediaIndex
+                  ? "border-brand-primary"
+                  : "border-transparent opacity-80 hover:opacity-100"
+              }`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onMediaIndexChange(index, mediaCount);
+              }}
+            >
+              <img
+                src={media.src}
+                alt={media.alt}
+                className="h-full w-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className="mt-4 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-lg font-bold text-brand">
+            {property.houseDesign.title}
+          </div>
+          <div className="mt-1 text-sm text-brand-muted">
+            Lot ID: {property.lotDisplayId ?? property.lotId}, {property.suburb},{" "}
+            {property.address}
+          </div>
+        </div>
+        <button
+          type="button"
+          className="shrink-0 rounded-full p-2 -m-2 touch-manipulation"
+          aria-label="Remove from shortlist"
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove(property);
+          }}
+        >
+          <Bookmark
+            className="h-6 w-6 fill-current"
+            style={{ color: "var(--color-primary)" }}
+          />
+        </button>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {property.size && (
+          <span className="rounded-full bg-brand-muted px-3 py-1 text-xs text-brand">
+            {property.size}m²
+          </span>
+        )}
+        {property.zoning && (
+          <span
+            className="rounded-full px-3 py-1 text-xs text-brand"
+            style={{ backgroundColor: getZoningColor(property.zoning) }}
+          >
+            {property.zoning}
+          </span>
+        )}
+        {property.overlays && (
+          <span
+            className="rounded-full px-3 py-1 text-xs text-brand"
+            style={{ backgroundColor: getOverlaysColor(property.overlays) }}
+          >
+            {property.overlays}
+          </span>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-4 text-sm font-medium text-brand">
+        <span className="flex items-center gap-1">
+          <BedDouble className="h-5 w-5 text-brand" />
+          {property.houseDesign.bedrooms}
+        </span>
+        <span className="flex items-center gap-1">
+          <Bath className="h-5 w-5 text-brand" />
+          {property.houseDesign.bathrooms}
+        </span>
+        <span className="flex items-center gap-1">
+          <Car className="h-5 w-5 text-brand" />
+          {property.houseDesign.cars}
+        </span>
+      </div>
+
+      <Button
+        label="Get a detailed quote"
+        leftIcon={<MailQuestionMark className="h-4 w-4" />}
+        variant="outline"
+        onClick={(event) => {
+          event.stopPropagation();
+          onGetCostEstimate(property);
+        }}
+        className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-brand bg-brand py-3 px-4 font-medium text-brand transition-colors hover:border-primary hover:bg-primary hover:text-white"
+      />
+    </div>
+  );
+};
+
+export const SavedPropertiesSidebar = ({
+  open,
+  onClose,
+  onViewDetails: _onViewDetails,
+}: Omit<SavedPropertiesSidebarProps, "savedProperties">) => {
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const [isClient, setIsClient] = useState(false);
+  const isMobile = useMobile();
+  const [drawerHeight, setDrawerHeight] = useState<"50vh" | "100vh">("50vh");
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
+  const [startHeight, setStartHeight] = useState<"50vh" | "100vh">("50vh");
+  const [mediaIndexByPropertyKey, setMediaIndexByPropertyKey] = useState<
+    Record<string, number>
+  >({});
+  const [isQuoteSidebarOpen, setIsQuoteSidebarOpen] = useState(false);
+  const [quoteProperty, setQuoteProperty] = useState<SavedProperty | null>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    savedProperties: storeSavedProperties,
+    removeFromSaved,
+    hydrateFromCookie,
+  } = useSavedPropertiesStore();
+
+  const savedProperties = storeSavedProperties as SavedProperty[];
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      hydrateFromCookie();
+    }
+  }, [open, hydrateFromCookie]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscapeKey);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [open, onClose]);
+
+  const handleTouchStart = (event: React.TouchEvent) => {
+    if (!isMobile) return;
+    setIsDragging(true);
+    setStartY(event.touches[0].clientY);
+    setStartHeight(drawerHeight);
+  };
+
+  const handleTouchMove = (event: React.TouchEvent) => {
+    if (!isMobile || !isDragging) return;
+    event.preventDefault();
+
+    const currentY = event.touches[0].clientY;
+    const deltaY = startY - currentY;
+    const threshold = 80;
+
+    if (deltaY > threshold && startHeight === "50vh") {
+      setDrawerHeight("100vh");
+    } else if (deltaY < -threshold && startHeight === "100vh") {
+      setDrawerHeight("50vh");
+    } else if (deltaY < -threshold && startHeight === "50vh") {
+      onClose();
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (!isMobile) return;
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (open && isMobile) {
+      setDrawerHeight("50vh");
+    }
+  }, [open, isMobile]);
+
+  const setMediaIndex = (
+    propertyKey: string,
+    nextIndex: number,
+    mediaLength: number
+  ) => {
+    setMediaIndexByPropertyKey((prev) => ({
+      ...prev,
+      [propertyKey]: normalizeMediaIndex(nextIndex, mediaLength),
+    }));
+  };
+
+  const handleRemove = (property: SavedProperty) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(REMOVE_SHORTLIST_MESSAGE)
+    ) {
+      return;
+    }
+
+    removeFromSaved(property.lotId, property.houseDesign.id, property.estateId);
+  };
+
+  const handleGetCostEstimate = (property: SavedProperty) => {
+    setQuoteProperty(property);
+    setIsQuoteSidebarOpen(true);
+  };
+
+  const renderSavedList = () => (
+    <div className="space-y-4">
+      {savedProperties.map((property) => {
+        const propertyKey = getSavedPropertyKey(property);
+        return (
+          <SavedPropertyCard
+            key={propertyKey}
+            property={property}
+            mediaIndex={mediaIndexByPropertyKey[propertyKey] ?? 0}
+            onMediaIndexChange={(nextIndex, mediaLength) =>
+              setMediaIndex(propertyKey, nextIndex, mediaLength)
+            }
+            onRemove={handleRemove}
+            onGetCostEstimate={handleGetCostEstimate}
+          />
+        );
+      })}
+    </div>
+  );
+
+  if (!open) return null;
+
+  if (isMobile) {
     return (
+      <>
+        {!isQuoteSidebarOpen && (
+          <div
+            ref={drawerRef}
+            className="fixed bottom-16 left-0 right-0 bg-brand shadow-2xl z-50 transition-all duration-300 ease-in-out"
+            style={{
+              height: drawerHeight === "100vh" ? "calc(100vh - 4rem)" : "70vh",
+              borderTopLeftRadius: "16px",
+              borderTopRightRadius: "16px",
+            }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div
+              className="flex justify-center pt-2 pb-1 cursor-pointer"
+              onClick={() =>
+                setDrawerHeight(drawerHeight === "50vh" ? "100vh" : "50vh")
+              }
+            >
+              <div className="h-1 w-12 rounded-full bg-brand-muted" />
+            </div>
+
+            <div className="flex items-start rounded-t-2xl bg-brand p-4 pb-3">
+              <div className="flex-grow">
+                <h2 className="text-xl font-bold text-brand">Your Shortlist</h2>
+                <p className="mt-1 text-sm text-brand-muted">
+                  List of properties that you&apos;ve shortlisted.
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-full p-2 text-brand-muted hover:bg-brand-muted hover:text-brand"
+                aria-label="Close"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-grow overflow-y-auto p-4">
+              {!isClient ? (
+                <div className="flex h-32 items-center justify-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-t-2 border-brand-primary"></div>
+                </div>
+              ) : savedProperties.length === 0 ? (
+                <div className="py-8 text-center">
+                  <Bookmark className="mx-auto mb-4 h-12 w-12 text-brand-muted" />
+                  <h3 className="mb-2 text-lg font-medium text-brand">
+                    No saved properties yet
+                  </h3>
+                  <p className="text-brand-muted">
+                    Start exploring lots and save your favorite house designs!
+                  </p>
+                </div>
+              ) : (
+                renderSavedList()
+              )}
+            </div>
+          </div>
+        )}
+
+        {quoteProperty && (
+          <GetYourQuoteSidebar
+            open={isQuoteSidebarOpen}
+            onClose={() => {
+              setIsQuoteSidebarOpen(false);
+              setQuoteProperty(null);
+            }}
+            onBack={() => {
+              setIsQuoteSidebarOpen(false);
+            }}
+            selectedHouseDesign={toHouseDesignItem(quoteProperty.houseDesign)}
+            selectedFacade={
+              quoteProperty.houseDesign.images?.[0]
+                ? {
+                    facadeId: quoteProperty.houseDesign.images[0].facadeId,
+                    label:
+                      quoteProperty.houseDesign.images[0].faced || "Facade 1",
+                  }
+                : null
+            }
+            lotDetails={{
+              id: quoteProperty.lotId,
+              estateId: quoteProperty.estateId,
+              displayId: quoteProperty.lotDisplayId ?? quoteProperty.lotId,
+              suburb: quoteProperty.suburb || "",
+              address: quoteProperty.address || "",
+              size: toLotSizeNumber(quoteProperty.size),
+            }}
+          />
+        )}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {!isQuoteSidebarOpen && (
         <div
-            ref={sidebarRef}
-            className={`absolute bg-white shadow-lg z-30 transition-transform duration-300 ease-in-out
+          ref={sidebarRef}
+          className={`absolute bg-brand shadow-lg z-30 transition-transform duration-300 ease-in-out
                 bottom-0 left-0 right-0 h-[70vh] w-full
                         md:bottom-auto md:left-auto md:top-0 md:right-0 md:h-full md:w-[350px]`}
         >
-            {/* Draggable Handle - Only show on mobile */}
-            <div className="flex justify-center pt-3 pb-2 md:hidden">
-                <div className="w-12 h-1 bg-gray-300 rounded-full"></div>
-            </div>
+          <div className="flex justify-center pb-2 pt-3 md:hidden">
+            <div className="h-1 w-12 rounded-full bg-brand-muted"></div>
+          </div>
 
-            {/* Header */}
-            <div className="p-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900">Your Shortlist</h2>
-                        <p className="text-sm text-gray-600 mt-1">List of properties that you&apos;ve shortlisted.</p>
-                    </div>
-                    <button 
-                        onClick={onClose}
-                        className="text-gray-900 hover:text-black-900 pb-6 rounded hover:bg-gray-100 transition-colors"
-                    >
-                        <X className="h-8 w-7" />
-                    </button>
+          <div className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-brand">Your Shortlist</h2>
+                <p className="mt-1 text-sm text-brand-muted">
+                  List of properties that you&apos;ve shortlisted.
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded pb-6 text-brand transition-colors hover:bg-brand-muted hover:text-brand"
+              >
+                <X className="h-8 w-7" />
+              </button>
+            </div>
+          </div>
+
+          <div className="h-[calc(100%-80px)] overflow-y-auto p-4">
+            {!isClient ? (
+              <div className="py-8 text-center">
+                <div className="animate-pulse">
+                  <Bookmark className="mx-auto mb-4 h-12 w-12 text-brand-muted" />
+                  <h3 className="mb-2 text-lg font-medium text-brand">
+                    Loading...
+                  </h3>
                 </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-4 overflow-y-auto h-[calc(100%-80px)]">
-                {!isClient ? (
-                    // Show loading state during SSR to prevent hydration mismatch
-                    <div className="text-center py-8">
-                        <div className="animate-pulse">
-                            <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-2">Loading...</h3>
-                        </div>
-                    </div>
-                ) : storeSavedProperties.length === 0 ? (
-                    <div className="text-center py-8">
-                        <Bookmark className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No saved properties</h3>
-                        <p className="text-gray-600">Start exploring properties and save them to your shortlist.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {storeSavedProperties
-                            .map((property, index) => (
-                            <div key={`${property.lotId}-${property.houseDesign.id}-${index}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                                {/* Lot Info Header */}
-                                <div className="flex items-center justify-between">
-                                    <div className="text-xs text-black">
-                                        Lot ID: {property.lotId}, {property.suburb}, {property.address}
-                                    </div>
-                                    <Bookmark
-                                        className={`h-6 w-6 text-gray-600 cursor-pointer transition-colors duration-200 flex-shrink-0 ${getColorClass('primary', 'text')} ${
-                                            property.houseDesign.isFavorite ? 'fill-current' : "fill-white"
-                                        }`}
-                                        style={{
-                                        color: property.houseDesign.isFavorite ? colors.primary : undefined,
-                                        }}
-                                        onClick={() => {
-                                            removeFromSaved(property.lotId, property.houseDesign.id);
-                                        }}
-                                    />
-                                </div>
-
-                                {/* Lot Details */}
-                                <div className="flex items-center gap-2 mb-3">
-                                    <div className="flex items-center gap-1 text-xs text-black">
-                                        <ExternalLink className="h-4 w-4" />
-                                        {property.size}m²
-                                    </div>
-                                    {property.zoning && 
-                                        <span className="text-xs px-4 py-2 rounded-full text-black items-center justify-between"
-                                            style={{ backgroundColor: getZoningColor(property.zoning) }}>{property.zoning}
-                                        </span>
-                                    }
-                                    {property.overlays && (
-                                        <span className="px-2 py-1 text-black text-xs rounded-full items-center justify-between"
-                                            style={{ backgroundColor: getOverlaysColor(property.overlays) }}>
-                                            {property.overlays}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* House Design */}
-                                <div className="flex gap-4">
-                                    <img 
-                                        src={getImageUrl(property.houseDesign.floorPlanImage) || getImageUrl(property.houseDesign.images?.[0]?.src) || property.houseDesign.image} 
-                                        alt={property.houseDesign.title}
-                                        className="w-16 h-16 rounded-lg object-cover"
-                                    />
-                                    <div className="flex-1">
-                                        <h4 className="font-semibold text-black text-sm">
-                                            {property.houseDesign.title}
-                                        </h4>
-                                        <p className="text-xs text-black mb-2">Single Storey</p>
-                                        <div className="flex items-center gap-3 text-xs text-black">
-                                            <span className="flex items-center gap-1">
-                                                <BedDouble className="h-3 w-3" />
-                                                {property.houseDesign.bedrooms}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Bath className="h-3 w-3" />
-                                                {property.houseDesign.bathrooms}
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Car className="h-3 w-3" />
-                                                {property.houseDesign.cars}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <Button
-                                        variant="primary"
-                                        // onClick={() => onViewDetails(property)}
-                                        className={`${getColorClass('primary')} px-1 py-2.5 rounded-md text-sm font-medium hover:${getColorClass('accent')} transition-colors w-30 h-9 mt-12`}
-                                    >
-                                        View Details
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+              </div>
+            ) : savedProperties.length === 0 ? (
+              <div className="py-8 text-center">
+                <Bookmark className="mx-auto mb-4 h-12 w-12 text-brand-muted" />
+                <h3 className="mb-2 text-lg font-medium text-brand">
+                  No saved properties
+                </h3>
+                <p className="text-brand-muted">
+                  Start exploring properties and save them to your shortlist.
+                </p>
+              </div>
+            ) : (
+              renderSavedList()
+            )}
+          </div>
         </div>
-    );
-} 
+      )}
+
+      {quoteProperty && (
+        <GetYourQuoteSidebar
+          open={isQuoteSidebarOpen}
+          onClose={() => {
+            setIsQuoteSidebarOpen(false);
+            setQuoteProperty(null);
+          }}
+          onBack={() => {
+            setIsQuoteSidebarOpen(false);
+          }}
+          selectedHouseDesign={toHouseDesignItem(quoteProperty.houseDesign)}
+          selectedFacade={
+            quoteProperty.houseDesign.images?.[0]
+              ? {
+                  facadeId: quoteProperty.houseDesign.images[0].facadeId,
+                  label:
+                    quoteProperty.houseDesign.images[0].faced || "Facade 1",
+                }
+              : null
+          }
+          lotDetails={{
+            id: quoteProperty.lotId,
+            estateId: quoteProperty.estateId,
+            displayId: quoteProperty.lotDisplayId ?? quoteProperty.lotId,
+            suburb: quoteProperty.suburb || "",
+            address: quoteProperty.address || "",
+            size: toLotSizeNumber(quoteProperty.size),
+          }}
+        />
+      )}
+    </>
+  );
+};
+
+export default SavedPropertiesSidebar;

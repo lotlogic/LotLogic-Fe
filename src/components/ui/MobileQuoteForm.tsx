@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { TextModal } from '@/components/ui/DynamicModal';
-import { PrivacyPolicyContent } from '@/components/ui/PrivacyPolicyContent';
-import { ArrowLeft, ChevronDown } from 'lucide-react';
+import { TextModal } from "@/components/ui/DynamicModal";
+import { PrivacyPolicyContent } from "@/components/ui/PrivacyPolicyContent";
+import { ArrowLeft, ChevronDown } from "lucide-react";
+import React, { useState } from "react";
 
 interface MobileQuoteFormProps {
   isOpen: boolean;
@@ -26,19 +26,19 @@ interface QuoteFormData {
   termsAccepted: boolean;
 }
 
-export function MobileQuoteForm({
+export const MobileQuoteForm = ({
   isOpen,
   onClose,
   onBack,
   onSubmit,
   selectedLot,
   selectedDesign,
-  className = ''
-}: MobileQuoteFormProps) {
+  className = "",
+}: MobileQuoteFormProps) => {
   const [formData, setFormData] = useState<QuoteFormData>({
     builders: [],
-    additionalComments: '',
-    termsAccepted: false
+    additionalComments: "",
+    termsAccepted: false,
   });
   const [showTerms, setShowTerms] = useState(false);
 
@@ -59,10 +59,12 @@ export function MobileQuoteForm({
   if (!isOpen) return null;
 
   return (
-    <div className={`
+    <div
+      className={`
       fixed inset-0 z-50 bg-white flex flex-col
       ${className}
-    `}>
+    `}
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center gap-3">
@@ -75,7 +77,9 @@ export function MobileQuoteForm({
               <ArrowLeft className="h-5 w-5 text-gray-600" />
             </button>
           )}
-          <h1 className="text-xl font-bold text-gray-900">Get Building Cost Estimate</h1>
+          <h1 className="text-xl font-bold text-gray-900">
+            What would you like to do?
+          </h1>
         </div>
         <button
           onClick={onClose}
@@ -91,13 +95,18 @@ export function MobileQuoteForm({
         <div className="space-y-6">
           {/* Description */}
           <p className="text-gray-600 text-sm">
-            Select builders and get cost estimates for your dream home
+            Choose what you would like to do next.
           </p>
 
           {/* Estimated Cost Banner (static example) */}
           {selectedDesign?.size && (
-            <div className="rounded-2xl p-4" style={{ backgroundColor: '#BFCDCE' }}>
-              <div className="text-gray-900 font-semibold text-base">Estimated Building Cost</div>
+            <div
+              className="rounded-2xl p-4"
+              style={{ backgroundColor: "var(--color-bg-accent)" }}
+            >
+              <div className="text-gray-900 font-semibold text-base">
+                Estimated Building Cost
+              </div>
             </div>
           )}
 
@@ -112,10 +121,9 @@ export function MobileQuoteForm({
                 className="w-full p-3 border border-gray-300 rounded-lg bg-white text-left flex items-center justify-between"
               >
                 <span className="text-gray-500">
-                  {formData.builders.length > 0 
+                  {formData.builders.length > 0
                     ? `${formData.builders.length} builders selected`
-                    : 'Select builders'
-                  }
+                    : "Select builders"}
                 </span>
                 <ChevronDown className="h-4 w-4 text-gray-400" />
               </button>
@@ -129,16 +137,23 @@ export function MobileQuoteForm({
             </label>
             <textarea
               value={formData.additionalComments}
-              onChange={(e) => setFormData(prev => ({ ...prev, additionalComments: e.target.value }))}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  additionalComments: e.target.value,
+                }))
+              }
               placeholder="Any specific requirements or questions?"
-              className="w-full p-3 border border-gray-300 rounded-lg resize-none h-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-3 border border-gray-300 rounded-lg resize-none h-24 focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)]"
             />
           </div>
 
           {/* Your Selection */}
           {(selectedLot || selectedDesign) && (
             <div className="space-y-3">
-              <h3 className="text-sm font-medium text-gray-700">Your Selection</h3>
+              <h3 className="text-sm font-medium text-gray-700">
+                Your Selection
+              </h3>
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex gap-3">
                   {/* Floor Plan Thumbnail */}
@@ -147,7 +162,7 @@ export function MobileQuoteForm({
                       <span className="text-xs text-gray-500">Floor Plan</span>
                     </div>
                   </div>
-                  
+
                   {/* Selection Details */}
                   <div className="flex-1">
                     {selectedLot && (
@@ -158,7 +173,8 @@ export function MobileQuoteForm({
                     {selectedDesign && (
                       <>
                         <p className="text-sm text-gray-600">
-                          Floor Plan: {selectedDesign.name} ({selectedDesign.size})
+                          Floor Plan: {selectedDesign.name} (
+                          {selectedDesign.size})
                         </p>
                         <p className="text-sm text-gray-600">
                           Faced: {selectedDesign.facade}
@@ -177,12 +193,24 @@ export function MobileQuoteForm({
               <input
                 type="checkbox"
                 checked={formData.termsAccepted}
-                onChange={(e) => setFormData(prev => ({ ...prev, termsAccepted: e.target.checked }))}
-                className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    termsAccepted: e.target.checked,
+                  }))
+                }
+                className="mt-1 w-4 h-4 text-[var(--color-primary)] border-gray-300 rounded focus:ring-[var(--color-primary)] focus:ring-2"
               />
               <span className="text-sm text-gray-700">
-                I agree to the{' '}
-                <a href="#" className="text-blue-600 hover:underline" onClick={(e) => { e.preventDefault(); setShowTerms(true); }}>
+                I agree to the{" "}
+                <a
+                  href="#"
+                  className="text-[var(--color-primary)] hover:underline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowTerms(true);
+                  }}
+                >
                   Terms & Conditions
                 </a>
               </span>
@@ -211,4 +239,6 @@ export function MobileQuoteForm({
       />
     </div>
   );
-}
+};
+
+export default MobileQuoteForm;

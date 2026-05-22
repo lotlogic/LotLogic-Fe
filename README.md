@@ -254,6 +254,12 @@ This project is proprietary software. All rights reserved.
 
 ---
 
+## 📚 Handover Pack
+
+Operational handover documentation for the frontend, backend, and public assessment flow lives in [`docs/ops/README.md`](docs/ops/README.md).
+
+---
+
 ## 🔗 Related Projects
 
 - **LotLogic Backend** - API services

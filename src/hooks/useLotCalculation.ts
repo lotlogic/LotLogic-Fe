@@ -1,9 +1,9 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { lotApi } from '../lib/api/lotApi';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { lotApi } from "../lib/api/lotApi";
 
-export function useLotCalculation(lotId: string | null) {
+export const useLotCalculation = (lotId: string | null) => {
   return useQuery({
-    queryKey: ['lot-calculation', lotId],
+    queryKey: ["lot-calculation", lotId],
     queryFn: () => lotApi.calculateDesignsOnLot(lotId!),
     enabled: !!lotId, // Only run query if lotId is provided
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -13,11 +13,11 @@ export function useLotCalculation(lotId: string | null) {
     refetchOnWindowFocus: false,
     refetchOnMount: true,
   });
-}
+};
 
-export function useLotDimensions(lotId: string | null) {
+export const useLotDimensions = (lotId: string | null) => {
   const { data, isLoading, error } = useLotCalculation(lotId);
-  
+
   return {
     dimensions: data?.matches?.[0]?.lotDimensions || null,
     zoning: data?.zoning || null,
@@ -25,19 +25,19 @@ export function useLotDimensions(lotId: string | null) {
     isLoading,
     error,
   };
-}
+};
 
 // Hook for prefetching lot calculations
-export function usePrefetchLotCalculation() {
+export const usePrefetchLotCalculation = () => {
   const queryClient = useQueryClient();
-  
+
   const prefetchLotCalculation = (lotId: string) => {
     queryClient.prefetchQuery({
-      queryKey: ['lot-calculation', lotId],
+      queryKey: ["lot-calculation", lotId],
       queryFn: () => lotApi.calculateDesignsOnLot(lotId),
       staleTime: 5 * 60 * 1000,
     });
   };
-  
+
   return { prefetchLotCalculation };
-} 
+};

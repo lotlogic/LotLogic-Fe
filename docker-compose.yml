@@ -15,23 +15,21 @@
 #       - /app/node_modules
 #     command: npm run dev -- --host 0.0.0.0
 
-
-
 services:
   lotlogic-react-dev:
     build:
       context: .
-      dockerfile: Dockerfile.dev   # use the dev Dockerfile below
+      dockerfile: Dockerfile.dev # use the dev Dockerfile below
     ports:
       - "3002:5173"
     environment:
       - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true   # helps file watching in containers
+      - CHOKIDAR_USEPOLLING=true # helps file watching in containers
     env_file:
       - .env
     volumes:
-      - .:/app                      
-      - node_modules:/app/node_modules   # keep deps in a named volume
+      - .:/app
+      - node_modules:/app/node_modules # keep deps in a named volume
     command: >
       sh -c "npm ci || npm i; npm run dev -- --host 0.0.0.0"
 

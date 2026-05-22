@@ -1,5 +1,12 @@
-import React from 'react';
-import { ArrowLeft, Filter, BedDouble, Bath, Car, Building2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Bath,
+  BedDouble,
+  Building2,
+  Car,
+  Filter,
+} from "lucide-react";
+import React from "react";
 
 interface FilterOption {
   id: string;
@@ -26,7 +33,7 @@ interface MobileFilterProps {
   className?: string;
 }
 
-export function MobileFilter({
+export const MobileFilter = ({
   isOpen,
   onClose,
   onBack,
@@ -35,16 +42,16 @@ export function MobileFilter({
   selectedFilters,
   onFilterChange,
   onApplyFilters,
-  className = ''
-}: MobileFilterProps) {
+  className = "",
+}: MobileFilterProps) => {
   // const { isMobile } = useResponsive();
 
   const handleOptionToggle = (categoryId: string, value: string | number) => {
     const currentValues = selectedFilters[categoryId] || [];
     const newValues = currentValues.includes(value)
-      ? currentValues.filter(v => v !== value)
+      ? currentValues.filter((v) => v !== value)
       : [...currentValues, value];
-    
+
     onFilterChange(categoryId, newValues);
   };
 
@@ -55,10 +62,12 @@ export function MobileFilter({
   if (!isOpen) return null;
 
   return (
-    <div className={`
+    <div
+      className={`
       fixed inset-0 z-50 bg-white flex flex-col
       ${className}
-    `}>
+    `}
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center gap-3">
@@ -105,7 +114,9 @@ export function MobileFilter({
                     <input
                       type="checkbox"
                       checked={isOptionSelected(category.id, option.value)}
-                      onChange={() => handleOptionToggle(category.id, option.value)}
+                      onChange={() =>
+                        handleOptionToggle(category.id, option.value)
+                      }
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                     />
                     <span className="text-sm font-medium text-gray-900">
@@ -130,48 +141,50 @@ export function MobileFilter({
       </div>
     </div>
   );
-}
+};
+
+export default MobileFilter;
 
 // Predefined filter categories for house designs
 export const HOUSE_DESIGN_FILTERS: FilterCategory[] = [
   {
-    id: 'bedroom',
-    label: 'Bedroom',
+    id: "bedroom",
+    label: "Bedroom",
     icon: BedDouble,
     options: [
-      { id: 'bed-3', label: '3 bedroom', value: 3 },
-      { id: 'bed-4', label: '4 bedroom', value: 4 },
-      { id: 'bed-5', label: '5 bedroom', value: 5 },
-    ]
+      { id: "bed-3", label: "3 bedroom", value: 3 },
+      { id: "bed-4", label: "4 bedroom", value: 4 },
+      { id: "bed-5", label: "5 bedroom", value: 5 },
+    ],
   },
   {
-    id: 'bathroom',
-    label: 'Bathroom',
+    id: "bathroom",
+    label: "Bathroom",
     icon: Bath,
     options: [
-      { id: 'bath-1', label: '1 bathroom', value: 1 },
-      { id: 'bath-2', label: '2 bathroom', value: 2 },
-      { id: 'bath-3', label: '3 bathroom', value: 3 },
-    ]
+      { id: "bath-1", label: "1 bathroom", value: 1 },
+      { id: "bath-2", label: "2 bathroom", value: 2 },
+      { id: "bath-3", label: "3 bathroom", value: 3 },
+    ],
   },
   {
-    id: 'car',
-    label: 'Cars',
+    id: "car",
+    label: "Cars",
     icon: Car,
     options: [
-      { id: 'car-1', label: '1 car', value: 1 },
-      { id: 'car-2', label: '2 car', value: 2 },
-      { id: 'car-3', label: '3 car', value: 3 },
-    ]
+      { id: "car-1", label: "1 car", value: 1 },
+      { id: "car-2", label: "2 car", value: 2 },
+      { id: "car-3", label: "3 car", value: 3 },
+    ],
   },
   {
-    id: 'features',
-    label: 'Additional Features',
+    id: "features",
+    label: "Additional Features",
     icon: Building2,
     options: [
-      { id: 'rumpus', label: 'Rumpus', value: 'rumpus' },
-      { id: 'alfresco', label: 'Alfresco', value: 'alfresco' },
-      { id: 'pergola', label: 'Pergola', value: 'pergola' },
-    ]
-  }
+      { id: "rumpus", label: "Rumpus", value: "rumpus" },
+      { id: "alfresco", label: "Alfresco", value: "alfresco" },
+      { id: "pergola", label: "Pergola", value: "pergola" },
+    ],
+  },
 ];

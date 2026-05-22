@@ -1,10 +1,67 @@
-import { useQuery } from '@tanstack/react-query';
-import { lotApi, type DatabaseLot } from '../lib/api/lotApi';
+import { useQuery } from "@tanstack/react-query";
+import { lotApi, type DatabaseLot } from "../lib/api/lotApi";
+import {
+  getLotLifecycleLabel,
+  normalizeLotLifecycle,
+  type LotLifecycleValue,
+} from "@/constants/lotLifecycle";
+import { normalizeLotSalesMode } from "@/constants/lotSalesMode";
+import { getHouseAndLandTotalPrice } from "@/lib/utils/lotPricing";
 
-export const useLots = () => {
+const compactCurrencyFormatter = new Intl.NumberFormat("en-AU", {
+  style: "currency",
+  currency: "AUD",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+const formatLotLabelPrice = (value: number | null | undefined) => {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return compactCurrencyFormatter
+    .format(value)
+    .replace(".0K", "K")
+    .replace(".0M", "M");
+};
+
+const formatLotLabelSize = (value: number | null | undefined) => {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+
+  return `${Math.round(value)}m²`;
+};
+
+const buildDetailedLotLabel = ({
+  lotNumber,
+  areaSqm,
+  price,
+  lifecycleStage,
+}: {
+  lotNumber: string;
+  areaSqm?: number | null;
+  price?: number | null;
+  lifecycleStage?: LotLifecycleValue | null;
+}) => {
+  const sizeLabel = formatLotLabelSize(areaSqm);
+  const priceLabel = formatLotLabelPrice(price);
+  const statusLabel =
+    lifecycleStage === "reserved" || lifecycleStage === "sold"
+      ? getLotLifecycleLabel(lifecycleStage)
+      : null;
+  const metadataLines = [statusLabel, sizeLabel, priceLabel].filter(Boolean);
+
+  return metadataLines.length > 0
+    ? `${lotNumber}\n${metadataLines.join("\n")}`
+    : lotNumber;
+};
+
+export const useLots = (estateId?: string) => {
   return useQuery({
-    queryKey: ['lots'],
-    queryFn: lotApi.getAllLots,
+    queryKey: ["lots", estateId ?? "all"],
+    queryFn: () => lotApi.getAllLots(estateId),
     staleTime: 1 * 60 * 1000, // 1 minutes
     refetchOnWindowFocus: false,
   });
@@ -12,61 +69,88 @@ export const useLots = () => {
 
 export const convertLotsToGeoJSON = (lots: DatabaseLot[]) => {
   return {
-    type: 'FeatureCollection' as const,
-    features: lots.map((lot) => {
+    type: "FeatureCollection" as const,
+    features: lots.reduce<GeoJSON.Feature[]>((acc, lot) => {
+      const lifecycleStage = normalizeLotLifecycle(lot.lifecycleStage);
+      const lotId = String(lot.id);
+      const lotNumber = lot.blockNumber != null ? String(lot.blockNumber) : lotId;
+      const detailedLotLabel = buildDetailedLotLabel({
+        lotNumber,
+        areaSqm: lot.areaSqm,
+        price:
+          normalizeLotSalesMode(lot.salesMode) === "house_and_land" &&
+          lot.houseAndLandFloorPlanId
+            ? getHouseAndLandTotalPrice({
+                blockPrice: lot.price,
+                buildPrice: lot.houseAndLandBuildPrice,
+              }) ?? lot.price
+            : lot.price,
+        lifecycleStage,
+      });
+
       // ---- Extract s1..s4 and check exact match ----
       const propsArr = lot?.geojson?.properties || [];
 
-      const keys = propsArr.flatMap(o => Object.keys(o));
+      const keys = propsArr.flatMap((o) => Object.keys(o));
       const uniq = Array.from(new Set(keys));
 
       const hasExactS1S2S3S4 =
         keys.length === 4 &&
         uniq.length === 4 &&
-        ['s1', 's2', 's3', 's4'].every(k => uniq.includes(k));
+        ["s1", "s2", "s3", "s4"].every((k) => uniq.includes(k));
 
       // Extract values
-      const s1 = propsArr.find(o => 's1' in o)?.s1 ?? null;
-      const s2 = propsArr.find(o => 's2' in o)?.s2 ?? null;
-      const s3 = propsArr.find(o => 's3' in o)?.s3 ?? null;
-      const s4 = propsArr.find(o => 's4' in o)?.s4 ?? null;
+      const s1 = propsArr.find((o) => "s1" in o)?.s1 ?? null;
+      const s2 = propsArr.find((o) => "s2" in o)?.s2 ?? null;
+      const s3 = propsArr.find((o) => "s3" in o)?.s3 ?? null;
+      const s4 = propsArr.find((o) => "s4" in o)?.s4 ?? null;
 
-      // Normalize lifecycleStage
-      const lifecycleStage = String(lot.lifecycleStage ?? 'unavailable').toLowerCase();
+      const isRed = hasExactS1S2S3S4;
+      const selectable = lifecycleStage !== "sold";
 
-      // Determine if lot is red
-      const isRed = lifecycleStage === 'available' && hasExactS1S2S3S4;
-
-      return {
-        type: 'Feature' as const,
+      acc.push({
+        type: "Feature" as const,
         geometry: lot.geometry,
         properties: {
           BLOCK_KEY: lot.blockKey,
-          ADDRESSES: lot.address ?? '',
-          BLOCK_DERIVED_AREA: lot.areaSqm != null ? String(lot.areaSqm) : '',
-          DISTRICT_NAME: lot.district ?? '',
-          LAND_USE_POLICY_ZONES: lot.zoning ?? 'unknown',
-          OVERLAY_PROVISION_ZONES: lot.overlays?.join(', ') ?? '',
-          LOT_NUMBER: Number(lot.id),
-          STAGE: lot.lifecycleStage ?? 'available',
-          ID: Number(lot.id),
+          ADDRESSES: lot.address ?? "",
+          BLOCK_DERIVED_AREA: lot.areaSqm != null ? String(lot.areaSqm) : "",
+          DISTRICT_NAME: lot.district ?? "",
+          LAND_USE_POLICY_ZONES: lot.zoning ?? "unknown",
+          OVERLAY_PROVISION_ZONES: lot.overlays?.join(", ") ?? "",
+          lotLabel: lotNumber,
+          lotLabelDetailed: detailedLotLabel,
+          LOT_NUMBER: lotNumber,
+          STAGE: lifecycleStage,
+          ID: lotId,
           BLOCK_NUMBER: lot.blockNumber ?? null,
           SECTION_NUMBER: lot.sectionNumber ?? null,
+          salesMode: lot.salesMode,
+          price: lot.price,
+          houseAndLandFloorPlanId: lot.houseAndLandFloorPlanId ?? null,
+          houseAndLandFloorPlanName: lot.houseAndLandFloorPlanName ?? null,
+          houseAndLandBuildPrice: lot.houseAndLandBuildPrice ?? null,
+          selectable,
           DISTRICT_CODE: 1,
-          OBJECTID: Number(lot.id),
-          databaseId: lot.id,
+          OBJECTID: lotId,
+          databaseId: lotId,
           areaSqm: lot.areaSqm,
-          division: lot.division ?? '',
-          estateId: lot.estateId ?? '',
+          division: lot.division ?? "",
+          estateId: lot.estateId ?? "",
           lifecycleStage,
-          s1, s2, s3, s4,
+          s1,
+          s2,
+          s3,
+          s4,
           hasExactS1S2S3S4,
           isRed,
           width: lot.geojson.width,
           depth: lot.geojson.depth,
-          frontageCoordinate: lot.frontageCoordinate
-        }
-      };
-    })
+          frontageCoordinate: lot.frontageCoordinate,
+        },
+      });
+
+      return acc;
+    }, []),
   };
 };

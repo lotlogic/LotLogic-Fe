@@ -1,13 +1,15 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 // https://vite.dev/config/
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      '@': '/src'
-    }
+      "@": "/src",
+    },
   },
   build: {
     // Temporarily disable manual chunk splitting to fix module initialization issues
@@ -37,7 +39,7 @@ export default defineConfig({
     //         // Group other node_modules
     //         return 'vendor';
     //       }
-        
+
     //       // Component chunks
     //       if (id.includes('components/features/map/')) {
     //         return 'map-components';
@@ -48,7 +50,7 @@ export default defineConfig({
     //       if (id.includes('components/features/quote/')) {
     //         return 'quote-components';
     //       }
-        
+
     //       // Default chunk
     //       return 'index';
     //     }
@@ -56,4 +58,4 @@ export default defineConfig({
     // },
     chunkSizeWarningLimit: 2000, // Increase limit to accommodate Mapbox
   },
-})
+});

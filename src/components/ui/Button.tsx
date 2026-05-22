@@ -1,101 +1,116 @@
-// Button.tsx
-import type { ButtonHTMLAttributes, ReactNode } from "react";
-import { cn } from "@/lib/utils"; // use cn (clsx + tailwind-merge)
-import { colors } from "@/constants/content";
+import { cn } from "@/lib/utils";
+import type { ComponentProps, ReactNode } from "react";
 
-const BRAND = {
-  base: colors.primary,
-  hover: colors.accent,
-  disabled: `${colors.primary}B3`,
-};
+export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost";
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "outline" | "ghost";
-  loading?: boolean;
+export type ButtonProps = ComponentProps<"button"> & {
+  label: string;
+  variant?: ButtonVariant;
   leftIcon?: ReactNode;
   rightIcon?: ReactNode;
-  children: ReactNode;
+  iconOnly?: boolean;
+  loading?: boolean;
 };
 
-export function Button({
-  variant = "primary",
-  loading = false,
-  leftIcon,
-  rightIcon,
-  className,
-  children,
-  disabled,
-  ...props
-}: ButtonProps) {
-  const isPrimary = variant === "primary";
-  const isOutline = variant === "outline";
+export const Button = (props: ButtonProps) => {
+  const {
+    label,
+    leftIcon,
+    rightIcon,
+    iconOnly,
+    variant = "primary",
+    loading = false,
+    disabled = false,
+    children,
+    className,
+    ...rest
+  } = props;
 
-  let style: React.CSSProperties | undefined = undefined;
+  const baseClasses = [
+    "relative",
+    "inline-flex",
+    "items-center",
+    "justify-center",
+    "gap-2",
+    "font-medium",
+    "px-4",
+    "py-2",
+    "border",
+    "border-transparent",
+    "rounded",
+    "transition-colors",
+    "duration-200",
+    "outline-primary",
+    "outline-offset-2",
+    "focus-visible:outline-2",
+    "disabled:opacity-70",
+    "disabled:cursor-not-allowed",
+    "data-[loading]:text-transparent!",
+  ];
 
-  if (isPrimary) {
-    style = { backgroundColor: disabled || loading ? BRAND.disabled : BRAND.base, color: "#fff" };
-  }
-
-  if (isOutline) {
-    style = {
-      ...style,
-      backgroundColor: "#fff",
-      color: BRAND.base,
-      borderColor: BRAND.base,
-      borderWidth: 1,
-      borderStyle: "solid",
-    };
-  }
+  const buttonClasses: Record<ButtonVariant, string[]> = {
+    primary: [
+      "text-white",
+      "bg-primary",
+      "outline-primary",
+      "disabled:bg-primary",
+      "hover:bg-primary-hover",
+      "focus-visible:bg-primary-hover",
+    ],
+    secondary: [
+      "text-brand",
+      "bg-brand-muted",
+      "outline-[var(--color-border)]",
+      "disabled:bg-brand-muted",
+      "hover:bg-brand",
+      "focus-visible:bg-brand",
+    ],
+    outline: [
+      "bg-primary",
+      "bg-brand",
+      "border-primary",
+      "disabled:bg-brand",
+      "hover:text-white",
+      "hover:bg-primary",
+      "focus-visible:text-white",
+      "focus-visible:bg-primary",
+    ],
+    ghost: [
+      "bg-primary",
+      "bg-transparent",
+      "border-primary",
+      "disabled:bg-transparent",
+      "hover:text-white",
+      "hover:bg-primary",
+      "focus-visible:text-white",
+      "focus-visible:bg-primary",
+    ],
+  };
 
   return (
     <button
-      className={cn(
-        "inline-flex items-center justify-center gap-2 rounded px-4 py-2 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2",
-        {
-          "text-white": isPrimary,
-          // keep outline neutral; let inline styles + your className control colors
-          "bg-white": isOutline,
-          "bg-gray-100 text-gray-800 hover:bg-gray-200": variant === "secondary",
-          "bg-transparent": variant === "ghost",
-          "opacity-70 cursor-not-allowed": loading || disabled,
-        },
-        className
-      )}
-      style={style}
+      className={cn(...baseClasses, ...buttonClasses[variant], className)}
       disabled={loading || disabled}
-      onMouseOver={(e) => {
-        if (loading || disabled) return;
-        if (isPrimary) {
-          e.currentTarget.style.backgroundColor = BRAND.hover;
-        }
-        if (isOutline) {
-          e.currentTarget.style.backgroundColor = BRAND.base;
-          e.currentTarget.style.color = "#fff";
-          e.currentTarget.style.borderColor = BRAND.base;
-        }
-      }}
-      onMouseOut={(e) => {
-        if (loading || disabled) return;
-        if (isPrimary) {
-          e.currentTarget.style.backgroundColor = BRAND.base;
-        }
-        if (isOutline) {
-          e.currentTarget.style.backgroundColor = "#fff";
-          e.currentTarget.style.color = BRAND.base;
-          e.currentTarget.style.borderColor = BRAND.base;
-        }
-      }}
-      {...props}
+      data-loading={loading || undefined}
+      {...rest}
     >
-      {loading ? (
-        <span className="animate-spin h-5 w-5 border-2 border-t-transparent border-white rounded-full" />
-      ) : (
-        <>
-          {leftIcon}
-          {children}
-          {rightIcon}
-        </>
+      {loading && (
+        <span
+          className={cn([
+            "absolute animate-spin size-5 border-2 border-white rounded-full",
+            { "border-gray-800": variant === "secondary" },
+            {
+              "border-primary": variant === "outline" || variant === "ghost",
+            },
+            "border-t-transparent",
+          ])}
+        />
       )}
+      {leftIcon}
+      {label}
+      {rightIcon}
     </button>
   );
-}
+};
+
+export default Button;

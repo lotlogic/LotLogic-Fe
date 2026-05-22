@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface RotationState {
   manualRotation: number;
@@ -14,13 +14,16 @@ export const useRotationStore = create<RotationState>((set, get) => ({
   manualRotation: 0,
   pendingRotation: null,
   isCalculating: false,
-  setManualRotation: (rotation: number) => set({ manualRotation: rotation, pendingRotation: null }),
-  setPendingRotation: (rotation: number | null) => set({ pendingRotation: rotation }),
+  setManualRotation: (rotation: number) =>
+    set({ manualRotation: rotation, pendingRotation: null }),
+  setPendingRotation: (rotation: number | null) =>
+    set({ pendingRotation: rotation }),
   applyPendingRotation: () => {
     const { pendingRotation } = get();
     if (pendingRotation !== null) {
       set({ manualRotation: pendingRotation, pendingRotation: null });
     }
   },
-  setIsCalculating: (calculating: boolean) => set({ isCalculating: calculating }),
+  setIsCalculating: (calculating: boolean) =>
+    set({ isCalculating: calculating }),
 }));

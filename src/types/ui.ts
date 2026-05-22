@@ -1,5 +1,3 @@
-// UI component types and interfaces
-
 export interface Option {
   id: string;
   label: string;
@@ -31,7 +29,6 @@ export interface LayersButtonProps {
   isActive?: boolean;
 }
 
-
 export interface SavedButtonProps {
   onClick: () => void;
   isActive?: boolean;
@@ -46,7 +43,9 @@ export interface SavedPropertiesSidebarProps {
 
 export interface SavedProperty {
   id: string;
+  estateId?: string | number;
   lotId: string | number;
+  lotDisplayId?: string | number;
   suburb?: string;
   address?: string;
   size?: string | number;
@@ -56,7 +55,11 @@ export interface SavedProperty {
     id: string;
     title: string;
     image: string;
-    images?: { src: string; faced: string }[];
+    builderId?: string;
+    builderName?: string;
+    width?: number;
+    depth?: number;
+    images?: { src: string; faced: string; facadeId?: string }[];
     floorPlanImage?: string;
     area?: string;
     bedrooms: number;
@@ -85,4 +88,4 @@ export interface LotData {
   type?: string;
   zoning?: string;
   overlays?: string;
-} 
+}

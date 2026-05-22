@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
-import { Search, X } from 'lucide-react';
-import axios from 'axios';
+import showToast from "@/components/ui/Toast";
+import axios from "axios";
+import { Search, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface MobileSearchProps {
   isOpen: boolean;
@@ -14,8 +15,8 @@ interface SearchResult {
   center: [number, number];
 }
 
-export default function MobileSearch({ isOpen, onSearch }: MobileSearchProps) {
-  const [query, setQuery] = useState('');
+export const MobileSearch = ({ isOpen, onSearch }: MobileSearchProps) => {
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -25,13 +26,16 @@ export default function MobileSearch({ isOpen, onSearch }: MobileSearchProps) {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -50,15 +54,23 @@ export default function MobileSearch({ isOpen, onSearch }: MobileSearchProps) {
     try {
       const accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
       const response = await axios.get(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?` +
-        `access_token=${accessToken}&` +
-        `country=au&` +
-        `types=address,poi,neighborhood,place&` +
-        `limit=5`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+          searchQuery
+        )}.json?` +
+          `access_token=${accessToken}&` +
+          `country=au&` +
+          `types=address,poi,neighborhood,place&` +
+          `limit=5`
       );
 
       setResults(response.data.features || []);
     } catch (error) {
+      console.error("Mobile search error:", error);
+      showToast({
+        message: "Search failed. Please try again.",
+        type: "error",
+        options: { autoClose: 4000 },
+      });
       setResults([]);
     } finally {
       setIsLoading(false);
@@ -75,16 +87,18 @@ export default function MobileSearch({ isOpen, onSearch }: MobileSearchProps) {
 
   const handleResultClick = (result: SearchResult) => {
     // Dispatch custom event for map to fly to coordinates
-    window.dispatchEvent(new CustomEvent('search-result-selected', {
-      detail: { coordinates: result.center }
-    }));
+    window.dispatchEvent(
+      new CustomEvent("search-result-selected", {
+        detail: { coordinates: result.center },
+      })
+    );
     setQuery(result.place_name);
     setIsDropdownOpen(false);
     onSearch?.(result.place_name);
   };
 
   const handleClear = () => {
-    setQuery('');
+    setQuery("");
     setResults([]);
     setIsDropdownOpen(false);
   };
@@ -94,7 +108,7 @@ export default function MobileSearch({ isOpen, onSearch }: MobileSearchProps) {
   return (
     <div className="absolute top-4 left-4 right-4 z-50">
       <div ref={searchRef} className="relative">
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-brand-muted">
           <Search className="h-4 w-4" />
         </div>
         <input
@@ -107,12 +121,12 @@ export default function MobileSearch({ isOpen, onSearch }: MobileSearchProps) {
           }}
           onFocus={() => setIsDropdownOpen(true)}
           placeholder="Search for an address..."
-          className="w-full pl-10 pr-10 py-3 border border-black bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-10 pr-10 py-3 border border-brand bg-brand rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:border-transparent text-brand placeholder:text-brand-muted"
         />
         {query && (
           <button
             onClick={handleClear}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-brand-muted hover:text-brand"
           >
             <X className="h-4 w-4" />
           </button>
@@ -120,10 +134,10 @@ export default function MobileSearch({ isOpen, onSearch }: MobileSearchProps) {
 
         {/* Search Results Dropdown */}
         {isDropdownOpen && (query || isLoading) && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-brand border border-brand rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
             {isLoading ? (
-              <div className="p-3 text-center text-gray-500">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mx-auto"></div>
+              <div className="p-3 text-center text-brand-muted">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-primary mx-auto"></div>
                 <span className="ml-2">Searching...</span>
               </div>
             ) : results.length > 0 ? (
@@ -132,46 +146,24 @@ export default function MobileSearch({ isOpen, onSearch }: MobileSearchProps) {
                   <button
                     key={result.id}
                     onClick={() => handleResultClick(result)}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none border-b border-gray-100 last:border-b-0"
+                    className="w-full text-left px-3 py-2 hover:bg-brand-muted focus:bg-brand-muted focus:outline-none border-b border-brand last:border-b-0"
                   >
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-brand">
                       {result.place_name}
                     </div>
                   </button>
                 ))}
               </div>
             ) : query && !isLoading ? (
-              <div className="p-3 text-center text-gray-500">
+              <div className="p-3 text-center text-brand-muted">
                 No results found
               </div>
             ) : null}
           </div>
         )}
       </div>
-
-      {/* Recent Searches - Only show when no query and no results */}
-      {/* {!query && !isLoading && results.length === 0 && (
-        <div className="mt-3">
-          <h3 className="text-sm font-medium text-gray-900 mb-2">Recent Searches</h3>
-          <div className="space-y-1">
-            {['Rydalmere', '15 Bowden Street', 'Lot 205'].map((search, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  setQuery(search);
-                  onSearch?.(search);
-                }}
-                className="w-full text-left p-2 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <Search className="h-3 w-3 text-gray-400" />
-                  <span className="text-sm text-gray-700">{search}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )} */}
     </div>
   );
-}
+};
+
+export default MobileSearch;

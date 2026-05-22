@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from "react";
 
 export const useMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -12,9 +12,9 @@ export const useMobile = () => {
     };
 
     checkMobile();
-    window.addEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
 
-    return () => window.removeEventListener('resize', checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
   return isMobile;
@@ -22,24 +22,26 @@ export const useMobile = () => {
 
 // Additional hook for more granular device detection
 export const useDeviceType = () => {
-  const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+  const [deviceType, setDeviceType] = useState<"mobile" | "tablet" | "desktop">(
+    "desktop"
+  );
 
   useEffect(() => {
     const checkDeviceType = () => {
       const width = window.innerWidth;
       if (width <= 768) {
-        setDeviceType('mobile');
+        setDeviceType("mobile");
       } else if (width <= 1024) {
-        setDeviceType('tablet');
+        setDeviceType("tablet");
       } else {
-        setDeviceType('desktop');
+        setDeviceType("desktop");
       }
     };
 
     checkDeviceType();
-    window.addEventListener('resize', checkDeviceType);
+    window.addEventListener("resize", checkDeviceType);
 
-    return () => window.removeEventListener('resize', checkDeviceType);
+    return () => window.removeEventListener("resize", checkDeviceType);
   }, []);
 
   return deviceType;
